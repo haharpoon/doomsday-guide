@@ -29,6 +29,40 @@ BANNER = r"""
  #####   ###   #####  ######  ######
 """.strip("\n")
 
+SMALL_BANNER = r"""
++--------------------------------------------------------+
+|  D O O M S D A Y   F I E L D   G U I D E               |
+|  offline survival sheets . no network needed           |
++--------------------------------------------------------+
+""".strip("\n")
+
+
+def term_size():
+    size = shutil.get_terminal_size((80, 24))
+    return size.columns, size.lines
+
+
+def compact():
+    cols, rows = term_size()
+    return cols < 80 or rows < 30
+
+
+def is_console():
+    return sys.stdout.isatty() and __import__("os").environ.get("TERM") == "linux"
+
+
+def set_palette():
+    """Pip-Boy green on the Linux console (OSC P n rrggbb). No-op elsewhere."""
+    if is_console():
+        sys.stdout.write("\033]P21AFF80\033]PA1AFF80\033]P80A5C2E")
+        sys.stdout.flush()
+
+
+def reset_palette():
+    if is_console():
+        sys.stdout.write("\033]R")
+        sys.stdout.flush()
+
 
 def paint(code, text):
     if sys.stdout.isatty():
@@ -54,7 +88,7 @@ def pause(msg="Enter returns. q goes back. "):
 
 
 def wrap_text(text):
-    width = max(40, shutil.get_terminal_size((80, 24)).columns - 2)
+    width = max(20, term_size()[0] - 2)
     out = []
     for paragraph in text.splitlines():
         if not paragraph.strip():
@@ -70,7 +104,7 @@ def wrap_text(text):
 
 def show_pages(text):
     lines = wrap_text(text).splitlines() or ["(empty)"]
-    height = max(8, shutil.get_terminal_size((80, 24)).lines - 4)
+    height = max(4, term_size()[1] - 3)
     index = 0
     while index < len(lines):
         print("\n".join(lines[index : index + height]))
@@ -143,8 +177,13 @@ def fetch(url):
         return response.read().decode("utf-8", errors="replace")
 
 
+def page_length():
+    rows = term_size()[1]
+    return max(3, min(8, (rows - 5) // 2))
+
+
 def search(query, book, start=0):
-    params = {"pattern": query, "start": str(start), "pageLength": "8"}
+    params = {"pattern": query, "start": str(start), "pageLength": str(page_length())}
     if book:
         params["books.name"] = book
     html = fetch(HOST + "/search?" + urllib.parse.urlencode(params))
@@ -210,8 +249,13 @@ def run_search(book):
         print(bright(f"{total} entries. Showing {start + 1}-{start + len(hits)}."))
         for number, (title, _href, snippet) in enumerate(hits, start=1):
             print(green(f"{number}  {title}"))
-            print(dim("   " + snippet[:200]))
-        print(dim("Type a number and Enter to read it. n then Enter for the next results. q back."))
+            cols = term_size()[0]
+            limit = max(10, cols - 4) if compact() else 200
+            print(dim("   " + snippet[:limit]))
+        if compact():
+            print(dim("number=read  n=next  q=back"))
+        else:
+            print(dim("Type a number and Enter to read it. n then Enter for the next results. q back."))
         choice = input(green("read> ")).strip().lower()
         if choice in ("q", "b", ""):
             return
@@ -852,10 +896,14 @@ Look up hypothermia, frostbite, trench foot, dehydration, and heat stroke in Med
 
 def home():
     print()
-    print(bright(BANNER))
-    print(green("DOOMSDAY GUIDE"))
-    print(dim("On this Pi. Enter moves forward. q goes back. No Page Up or Page Down."))
-    print()
+    if compact():
+        print(bright(SMALL_BANNER))
+        print(dim("Type a number, then Enter. q goes back."))
+    else:
+        print(bright(BANNER))
+        print(green("DOOMSDAY GUIDE"))
+        print(dim("On this Pi. Enter moves forward. q goes back. No Page Up or Page Down."))
+        print()
     print(green("1  Shelter"))
     print(green("2  Medicine"))
     print(green("3  Water"))
@@ -868,18 +916,6 @@ def home():
     print(green("q  Leave"))
 
 
-def more_menu():
-    submenu(
-        "MORE",
-        "Signaling, clothing, places, and the full search.",
-        [
-            ("Signaling", SIGNALING),
-            ("Clothing and weather", CLOTHING),
-            ("Places, open the travel guide", "Type s on the next screen and enter a town, region, river, or country."),
-        ],
-    )
-
-
 def open_places_note():
     print()
     print(bright("PLACES"))
@@ -888,69 +924,33 @@ def open_places_note():
     run_search(VOY)
 
 
-def main():
-    while True:
-        home()
-        choice = input(green("field> ")).strip().lower()
-        if choice in ("q", "quit", "exit"):
-            print(green("Guide closed. Type field to open it again."))
-            return
-        if choice == "1":
-            submenu("SHELTER", "Build small, get off the ground, stay out of the wind.", SHELTER)
-        elif choice == "2":
-            print()
-            print(bright("MEDICINE"))
-            print(green("Offline medical encyclopedia on this Pi."))
-            print(green("Look up a condition or a symptom: hypothermia, burn, bleeding,"))
-            print(green("fracture, dehydration, diarrhea, wound, infection, frostbite."))
-            print(green("This guide does not give drug doses."))
-            run_search(MED)
-        elif choice == "3":
-            submenu("WATER", "Settle, then boil when you can.", WATER, MED)
-        elif choice == "4":
-            submenu("FIRE", "Small fire, bare soil, cold ashes before you leave.", FIRE)
-        elif choice == "5":
-            submenu("KNOTS", "Dress every knot. Leave a tail a hand long.", KNOTS_MAIN + [("More knots", None)])
-        elif choice == "6":
-            show_sheet("FOOD", FOOD)
-            print(dim("s searches the medical archive. Enter returns."))
-            if input(green("field> ")).strip().lower() == "s":
-                run_search(MED)
-        elif choice == "7":
-            show_sheet("SANITATION", SANITATION)
-            print(dim("s searches the medical archive. Enter returns."))
-            if input(green("field> ")).strip().lower() == "s":
-                run_search(MED)
-        elif choice == "8":
-            show_sheet("NAVIGATION", NAVIGATION)
-        elif choice == "9":
-            while True:
-                print()
-                print(bright("MORE"))
-                print(green("1  Signaling"))
-                print(green("2  Clothing and weather"))
-                print(green("3  Places"))
-                print(green("4  Search all archives"))
-                print(green("q  Back"))
-                sub = input(green("field> ")).strip().lower()
-                if sub in ("q", "b", ""):
-                    break
-                if sub == "1":
-                    show_sheet("SIGNALING", SIGNALING)
-                elif sub == "2":
-                    show_sheet("CLOTHING AND WEATHER", CLOTHING)
-                elif sub == "3":
-                    open_places_note()
-                elif sub == "4":
-                    run_search("")
-                else:
-                    print(green("Type a number from the list, then Enter."))
-        else:
-            print(green("Type a number from the list, then Enter."))
+def run_cavemap():
+    """Launch Zerb's Cave Mapper if it is installed, then come back here."""
+    import subprocess
+    exe = shutil.which("cavemap")
+    if not exe:
+        print(green("Cave Mapper is not installed yet."))
+        pause()
+        return
+    try:
+        subprocess.call([exe])
+    except Exception as error:
+        print(green(f"Cave Mapper could not start ({error})."))
+        pause()
+
+
+def boot_prompt():
+    """Ask once at start-up whether to go straight into Cave Mapper."""
+    if not shutil.which("cavemap"):
+        return
+    answer = input(bright("Start Cave Mapper? [y/n] ")).strip().lower()
+    if answer in ("y", "yes"):
+        run_cavemap()
 
 
 def patched_main():
     """Knots item 9 opens the second knot list instead of a blank sheet."""
+    boot_prompt()
     while True:
         home()
         choice = input(green("field> ")).strip().lower()
@@ -1013,6 +1013,7 @@ def patched_main():
                 print(green("2  Clothing and weather"))
                 print(green("3  Places"))
                 print(green("4  Search all archives"))
+                print(green("5  Cave Mapper"))
                 print(green("q  Back"))
                 sub = input(green("field> ")).strip().lower()
                 if sub in ("q", "b", ""):
@@ -1025,6 +1026,8 @@ def patched_main():
                     open_places_note()
                 elif sub == "4":
                     run_search("")
+                elif sub == "5":
+                    run_cavemap()
                 else:
                     print(green("Type a number from the list, then Enter."))
         else:
@@ -1032,8 +1035,11 @@ def patched_main():
 
 
 if __name__ == "__main__":
+    set_palette()
     try:
         patched_main()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print()
         print(green("Guide closed. Type field to open it again."))
+    finally:
+        reset_palette()
