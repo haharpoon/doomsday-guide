@@ -9,9 +9,9 @@ curl -fsSL https://raw.githubusercontent.com/haharpoon/doomsday-guide/main/insta
 sudo bash /tmp/install.sh
 ```
 
-The installer asks whether login on this screen should open the touch guide or the keyboard guide. If a touchscreen is connected, touch is the default. It also installs `python3-pygame` and `python3-evdev`, and adds your user to the `input` and `video` groups so the touchscreen and framebuffer are readable after the next login.
+The installer asks whether login on this screen should open the touch guide or the keyboard guide. If a touchscreen is connected, touch is the default. It installs `python3-pygame`, `python3-evdev`, `python3-numpy`, and `python3-serial`, copies `cavemap` onto `PATH`, and adds your user to the `input`, `video`, and `dialout` groups. Log in again so those groups apply.
 
-Type `field` for the keyboard menu. Type `field_touch` for the 480×320 touchscreen. Tap a section. Prev and Next turn pages, and so does a swipe. Search uses the on-screen keyboard. Cave Mapper is on the home screen when `cavemap` is installed.
+Type `field` for the keyboard menu. Type `field_touch` for the 480×320 touchscreen. Tap a section. Prev and Next turn pages, and so does a swipe. Search uses the on-screen keyboard. Cave Mapper is on the home screen and runs the `cavemap` command.
 
 The picture is written to `/dev/fb0` (16-bit color). Touch calibration is `~/.touchcal.json`:
 
@@ -19,6 +19,42 @@ The picture is written to `/dev/fb0` (16-bit color). Touch calibration is `~/.to
 {"cx": [a, b, c], "cy": [d, e, f]}
 ```
 
-Screen position is `x = a*rawX + b*rawY + c` and `y = d*rawX + e*rawY + f`. The touch device is the ADS7846. On a desktop with no framebuffer, `field_touch` opens a window instead.
+Screen position is `x = a*rawX + b*rawY + c` and `y = d*rawX + e*rawY + f`. Raw values are ABS_X / ABS_Y from the ADS7846. On a desktop with no framebuffer, `field_touch` opens a window instead.
 
-In the keyboard guide, type a number, then Enter. Enter continues a page. `n` is the next set of search results. `q` goes back. Page Up and Page Down are not used.
+In the keyboard guide, type a number, then Enter. Enter continues a page. `n` is the next set of search results. `q` goes back. Page Up and Page Down are not used. Once `cavemap` is on `PATH`, the keyboard guide asks `Start Cave Mapper?` at startup and lists it under More.
+
+## Cave Mapper
+
+Pip-Boy SCAN screen for the 3.5 inch LCD (480×320).
+
+On the Pi:
+
+```bash
+cavemap
+```
+
+That needs `/dev/fb0` and `/dev/input`. Use sudo, or the groups above. `q`, Esc, or the on-screen BACK button leaves the scanner and restores the console. Keys `1`–`4` select room scan, depth, cave log, and the perimeter tripwire. Drag the room, or use the arrow keys, to turn it.
+
+Nothing is wired to a sensor yet, so the picture is labelled DEMO DATA. A desktop window, for trying it off the Pi:
+
+```bash
+python3 cavemap.py --window
+```
+
+`python3 cavemap.py --dump screenshots` writes one 480×320 PNG of each mode. The frames in `screenshots/` are from that demo.
+
+### ESP32 link
+
+A USB serial device (`/dev/ttyACM*`, `/dev/ttyUSB*`, or `/dev/serial/by-id/*`) is read at 115200 8N1 and replaces the demo. `CAVEMAP_PORT` or `--serial /dev/ttyACM0` picks the port. `--demo` keeps the built-in data. `dialout` is the usual group for that port. The GPIO UART stays with the console.
+
+UTF-8, one record per line, LF or CRLF. Blank lines and lines starting with `#` are ignored.
+
+```
+F m0 m1 ... m63     VL53L5CX frame, 64 millimetre ranges, row-major.
+                    0 or anything above 4000 is no return.
+A pan tilt          Servo degrees. Pan 0 left, 90 forward, 180 right.
+                    Tilt 0 down, 90 level, 180 up.
+LEFT RIGHT UP DOWN PUSH PULL HOLD BREACH
+                    One word, alone on the line. BREACH trips the
+                    perimeter alarm. HOLD clears it.
+```

@@ -5,23 +5,27 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-if ! dpkg -s python3-pygame >/dev/null 2>&1 || ! dpkg -s python3-evdev >/dev/null 2>&1; then
-  apt-get install -y python3-pygame python3-evdev \
-    || { apt-get update && apt-get install -y python3-pygame python3-evdev; }
+if ! dpkg -s python3-pygame >/dev/null 2>&1 || ! dpkg -s python3-evdev >/dev/null 2>&1 \
+  || ! dpkg -s python3-numpy >/dev/null 2>&1 || ! dpkg -s python3-serial >/dev/null 2>&1; then
+  apt-get install -y python3-pygame python3-evdev python3-numpy python3-serial \
+    || { apt-get update && apt-get install -y python3-pygame python3-evdev python3-numpy python3-serial; }
 fi
 
 BASE="https://raw.githubusercontent.com/haharpoon/doomsday-guide/main"
 curl -fsSL "$BASE/field.py" -o /usr/local/bin/field
 curl -fsSL "$BASE/field_touch.py" -o /usr/local/bin/field_touch
-chmod 755 /usr/local/bin/field /usr/local/bin/field_touch
-python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch
+curl -fsSL "$BASE/cavemap.py" -o /usr/local/bin/cavemap
+chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap
+python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap
 
 TARGET="${SUDO_USER:-}"
 if [ -z "$TARGET" ] || [ "$TARGET" = "root" ]; then
   TARGET=$(awk -F: '$3>=1000 && $1!="nobody" {print $1; exit}' /etc/passwd)
 fi
 HOME_DIR=$(getent passwd "$TARGET" | cut -d: -f6)
-for grp in input video; do
+
+# The guide and the scanner write /dev/fb0 and read /dev/input. The ESP32 shows up as USB serial.
+for grp in input video dialout; do
   if getent group "$grp" >/dev/null; then
     usermod -aG "$grp" "$TARGET" || true
   fi
@@ -144,6 +148,7 @@ ON THIS SCREEN
   Page Up and Page Down are not used.
   Touch guide:  field_touch
   Keyboard guide:  field
+  Cave Mapper:  cavemap
 
 FROM ANOTHER COMPUTER ON THIS NETWORK
   In a browser:  http://\4:8080
@@ -165,4 +170,5 @@ else
   echo "After login on this screen, the keyboard guide opens."
   echo "Touch guide: type field_touch"
 fi
-echo "Log out or reboot once so this screen and the input group take effect."
+echo "Cave Mapper is the cavemap command. Log in again if it cannot open the LCD."
+echo "Log out or reboot once so this screen and the groups take effect."
