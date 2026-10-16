@@ -4,6 +4,10 @@ curl -fsSL "https://raw.githubusercontent.com/haharpoon/doomsday-guide/main/fiel
 chmod 755 /usr/local/bin/field
 python3 -m py_compile /usr/local/bin/field
 
+curl -fsSL "https://raw.githubusercontent.com/haharpoon/doomsday-guide/main/cavemap.py" -o /usr/local/bin/cavemap
+chmod 755 /usr/local/bin/cavemap
+python3 -m py_compile /usr/local/bin/cavemap
+
 TARGET="${SUDO_USER:-}"
 if [ -z "$TARGET" ] || [ "$TARGET" = "root" ]; then
   TARGET=$(awk -F: '$3>=1000 && $1!="nobody" {print $1; exit}' /etc/passwd)
@@ -26,6 +30,11 @@ esac
 BASH
 fi
 chown "$TARGET:$TARGET" "$BR"
+
+# The scanner writes /dev/fb0 and reads /dev/input. The ESP32 shows up as a USB serial port.
+if [ -n "$TARGET" ] && [ "$TARGET" != "root" ]; then
+  usermod -aG video,input,dialout "$TARGET" || true
+fi
 
 if [ -f /etc/issue ] && [ ! -f /etc/issue.doomsday.bak ]; then
   cp -a /etc/issue /etc/issue.doomsday.bak
@@ -71,3 +80,4 @@ echo
 echo "INSTALLED"
 echo "On the HDMI screen, log out or reboot once to see the startup page."
 echo "In this shell, type:  field"
+echo "Cave Mapper is the cavemap command. Log in again if it cannot open the LCD."
