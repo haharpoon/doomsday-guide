@@ -53,7 +53,10 @@ import time
 import warnings
 from dataclasses import dataclass, field
 
-os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+# Same console/framebuffer clash as field_touch: silence pygame before import.
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="pygame")
+warnings.filterwarnings("ignore", message=".*neon capable.*")
 warnings.filterwarnings("ignore", message=".*avx2.*")
 
 try:
