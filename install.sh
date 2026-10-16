@@ -62,9 +62,9 @@ FROM ANOTHER COMPUTER ON THIS NETWORK
 
 ISSUE
 
-if [ -f /etc/default/console-setup ] && ls /usr/share/consolefonts/*Terminus*32x16*.psf.gz >/dev/null 2>&1; then
+if [ -f /etc/default/console-setup ] && ls /usr/share/consolefonts/*Terminus16.psf.gz >/dev/null 2>&1; then
   sed -i 's/^FONTFACE=.*/FONTFACE="Terminus"/' /etc/default/console-setup || true
-  sed -i 's/^FONTSIZE=.*/FONTSIZE="16x32"/' /etc/default/console-setup || true
+  sed -i 's/^FONTSIZE=.*/FONTSIZE="8x16"/' /etc/default/console-setup || true
 fi
 
 echo
