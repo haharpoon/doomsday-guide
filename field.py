@@ -171,9 +171,9 @@ class ArticleText(HTMLParser):
             self.parts.append(text + " ")
 
 
-def fetch(url):
+def fetch(url, timeout=60):
     request = urllib.request.Request(url, headers={"User-Agent": "field-terminal"})
-    with urllib.request.urlopen(request, timeout=60) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read().decode("utf-8", errors="replace")
 
 
@@ -182,11 +182,12 @@ def page_length():
     return max(3, min(8, (rows - 5) // 2))
 
 
-def search(query, book, start=0):
-    params = {"pattern": query, "start": str(start), "pageLength": str(page_length())}
+def search(query, book, start=0, timeout=60, page_size=None):
+    length = page_length() if page_size is None else page_size
+    params = {"pattern": query, "start": str(start), "pageLength": str(length)}
     if book:
         params["books.name"] = book
-    html = fetch(HOST + "/search?" + urllib.parse.urlencode(params))
+    html = fetch(HOST + "/search?" + urllib.parse.urlencode(params), timeout)
     found = re.search(r"of <b>(\d+)</b>", html)
     total = int(found.group(1)) if found else 0
     hits = []
@@ -201,9 +202,9 @@ def search(query, book, start=0):
     return total, hits
 
 
-def article_text(href):
+def article_text(href, timeout=60):
     parser = ArticleText()
-    parser.feed(fetch(HOST + href))
+    parser.feed(fetch(HOST + href, timeout))
     raw = "".join(parser.parts)
     lines = []
     stop = {"references", "see also", "external links", "further reading", "notes"}

@@ -9,27 +9,31 @@ curl -fsSL https://raw.githubusercontent.com/haharpoon/doomsday-guide/main/insta
 sudo bash /tmp/install.sh
 ```
 
-Then type `field`.
+The installer asks whether login on this screen should open the touch guide or the keyboard guide. If a touchscreen is connected, touch is the default. It installs `python3-pygame`, `python3-evdev`, `python3-numpy`, and `python3-serial`, copies `cavemap` onto `PATH`, and adds your user to the `input`, `video`, and `dialout` groups. Log in again so those groups apply.
 
-On the HDMI screen, log in and the guide opens. The startup page is titled DOOMSDAY GUIDE. Type a number, then Enter. Enter continues a page. `n` is the next set of search results. `q` goes back. Page Up and Page Down are not used.
+Type `field` for the keyboard menu. Type `field_touch` for the 480×320 touchscreen. Tap a section. Prev and Next turn pages, and so does a swipe. Search uses the on-screen keyboard. Cave Mapper is on the home screen and runs the `cavemap` command.
+
+The picture is written to `/dev/fb0` (16-bit color). Touch calibration is `~/.touchcal.json`:
+
+```json
+{"cx": [a, b, c], "cy": [d, e, f]}
+```
+
+Screen position is `x = a*rawX + b*rawY + c` and `y = d*rawX + e*rawY + f`. Raw values are ABS_X / ABS_Y from the ADS7846. On a desktop with no framebuffer, `field_touch` opens a window instead.
+
+In the keyboard guide, type a number, then Enter. Enter continues a page. `n` is the next set of search results. `q` goes back. Page Up and Page Down are not used. Once `cavemap` is on `PATH`, the keyboard guide asks `Start Cave Mapper?` at startup and lists it under More.
 
 ## Cave Mapper
 
-Pip-Boy SCAN screen for the 3.5 inch LCD (480×320). Once `cavemap` is on `PATH`, the guide asks `Start Cave Mapper?` at startup and lists it under More.
+Pip-Boy SCAN screen for the 3.5 inch LCD (480×320).
 
 On the Pi:
 
 ```bash
-python3 cavemap.py
+cavemap
 ```
 
-That needs `/dev/fb0` and `/dev/input`. Use sudo, or join the `video` and `input` groups and log in again:
-
-```bash
-sudo usermod -aG video,input,dialout "$USER"
-```
-
-`q`, Esc, or the on-screen BACK button leaves the scanner and restores the console. Keys `1`–`4` select room scan, depth, cave log, and the perimeter tripwire. Drag the room, or use the arrow keys, to turn it. `install.sh` copies the program to `/usr/local/bin/cavemap`.
+That needs `/dev/fb0` and `/dev/input`. Use sudo, or the groups above. `q`, Esc, or the on-screen BACK button leaves the scanner and restores the console. Keys `1`–`4` select room scan, depth, cave log, and the perimeter tripwire. Drag the room, or use the arrow keys, to turn it.
 
 Nothing is wired to a sensor yet, so the picture is labelled DEMO DATA. A desktop window, for trying it off the Pi:
 
@@ -54,5 +58,3 @@ LEFT RIGHT UP DOWN PUSH PULL HOLD BREACH
                     One word, alone on the line. BREACH trips the
                     perimeter alarm. HOLD clears it.
 ```
-
-Touch calibration is `~/.touchcal.json`: `{"cx":[a,b,c],"cy":[d,e,f]}` with `screen_x = a*rawX + b*rawY + c` and the same form for `y`. Raw values are ABS_X / ABS_Y from the ADS7846 device.
