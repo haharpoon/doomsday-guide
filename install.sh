@@ -14,9 +14,10 @@ fi
 BASE="https://raw.githubusercontent.com/haharpoon/doomsday-guide/main"
 curl -fsSL "$BASE/field.py" -o /usr/local/bin/field
 curl -fsSL "$BASE/field_touch.py" -o /usr/local/bin/field_touch
+curl -fsSL "$BASE/tabbar.py" -o /usr/local/bin/tabbar.py
 curl -fsSL "$BASE/cavemap.py" -o /usr/local/bin/cavemap
-chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap
-python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap
+chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/tabbar.py
+python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/tabbar.py
 
 TARGET="${SUDO_USER:-}"
 if [ -z "$TARGET" ] || [ "$TARGET" = "root" ]; then
@@ -146,7 +147,8 @@ This screen is the guide.
 ON THIS SCREEN
   Log in with your username and password.
   The guide opens after you log in.
-  Touchscreen: tap a section. Swipe, or tap Prev and Next, to turn pages.
+  Touchscreen: GUIDE, SCAN, and RADIO are the top bar. Tap a section.
+  Swipe, or tap Prev and Next, to turn pages.
   Keyboard: type a number, then Enter. Enter continues a page. q goes back.
   Page Up and Page Down are not used.
   Touch guide:  field_touch
