@@ -5,7 +5,8 @@ The Pi panel is /dev/fb0 at 480x320, 16-bit RGB565. pygame cannot open that
 framebuffer, so this draws with the dummy SDL driver and writes a frame only
 when the picture changes. With no framebuffer, it opens a 480x320 window.
 
-Touch input is the ADS7846 device via evdev. Calibration in ~/.touchcal.json
+Touch input is the ADS7846 device via evdev. The top bar is GUIDE | SCAN | RADIO
+(see tabbar.py, shared with Cave Mapper). Calibration in ~/.touchcal.json
 is {"cx": [a, b, c], "cy": [d, e, f]}:
 
     x = a*rawX + b*rawY + c
@@ -22,15 +23,24 @@ import select
 import shutil
 import subprocess
 import sys
+import time
 import traceback
+import warnings
 
-os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+# tty1 and /dev/fb0 are the same pixels. pygame's import-time RuntimeWarning
+# ("neon capable ... PYGAME_DETECT_AVX2") is drawn on top of this UI.
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="pygame")
+warnings.filterwarnings("ignore", message=".*neon capable.*")
+warnings.filterwarnings("ignore", message=".*avx2.*")
 
 try:
     import pygame
 except ImportError:
     sys.stderr.write("field_touch needs python3-pygame.\n")
     raise
+
+import tabbar
 
 try:
     import evdev
@@ -74,9 +84,15 @@ HEIGHT = 320
 MARGIN = 4
 GAP = 4
 NAV_H = 60
-MENU_PER = 3
-RESULT_PER = 3
+MENU_PER = 2
+RESULT_PER = 2
 SWIPE = 36
+# Short enough that a Pi 3B can paint it, long enough to read as a slide.
+SLIDE_FRAMES = 4
+SLIDE_FRAME_MS = 28
+DEBOUNCE = 0.20
+KEY_H = 56
+TAB_H = tabbar.TAB_H
 GREEN = (0x1A, 0xFF, 0x80)
 DIM = (0x0A, 0x5C, 0x2E)
 BLACK = (0, 0, 0)
@@ -281,23 +297,33 @@ def map_touch(raw_x, raw_y, calib, width=WIDTH, height=HEIGHT, abs_x=None, abs_y
     return pixel_x, pixel_y
 
 
-def pack_rgb565(frame, stride):
-    """Convert an RGB surface to little-endian RGB565 bytes, one row per stride."""
-    width, height = frame.get_size()
+def _pack_strip(frame, stride, y0, height):
+    """RGB565 bytes for `height` rows of `frame` starting at y0."""
+    width = frame.get_width()
     converted = pygame.Surface((width, height), 0, 16, RGB565_MASKS)
-    converted.blit(frame, (0, 0))
+    converted.blit(frame, (0, -y0))
     pitch = converted.get_pitch()
     raw = bytes(converted.get_buffer().raw)
     row_bytes = width * 2
+    take = min(row_bytes, stride, pitch)
     if stride == pitch:
         return raw
     packed = bytearray(stride * height)
-    take = min(row_bytes, stride, pitch)
     for y in range(height):
         start = y * pitch
         dest = y * stride
         packed[dest : dest + take] = raw[start : start + take]
     return bytes(packed)
+
+
+def pack_rgb565(frame, stride):
+    """Convert an RGB surface to little-endian RGB565 bytes, one row per stride."""
+    return _pack_strip(frame, stride, 0, frame.get_height())
+
+
+def pack_rgb565_rows(frame, stride, y0, y1):
+    """RGB565 bytes for rows [y0, y1) only. Same packing as pack_rgb565."""
+    return _pack_strip(frame, stride, y0, y1 - y0)
 
 
 def read_fb_geometry(path):
@@ -357,21 +383,46 @@ class Framebuffer:
             raise OSError(f"{path} is {self.bpp}-bit, not 16-bit RGB565")
         self.last = None
 
-    def write(self, canvas):
+    def write(self, canvas, rows=None):
         frame = canvas
         if canvas.get_size() != (self.width, self.height):
             frame = pygame.transform.scale(canvas, (self.width, self.height))
+            rows = None
+        if rows is not None and self.last is not None:
+            y0 = max(0, min(self.height, int(rows[0])))
+            y1 = max(y0, min(self.height, int(rows[1])))
+            if y1 > y0:
+                self._write_rows(frame, y0, y1)
+                return
         data = pack_rgb565(frame, self.stride)
         if data == self.last:
             return
+        self._write_at(data, 0)
+        self.last = data
+
+    def _write_rows(self, frame, y0, y1):
+        chunk = pack_rgb565_rows(frame, self.stride, y0, y1)
+        start = y0 * self.stride
+        end = y1 * self.stride
+        last = self.last
+        if bytes(last[start:end]) == chunk:
+            return
+        self._write_at(chunk, start)
+        if isinstance(last, bytearray):
+            last[start:end] = chunk
+        else:
+            buf = bytearray(last)
+            buf[start:end] = chunk
+            self.last = buf
+
+    def _write_at(self, data, offset):
+        self.fd.seek(offset)
         view = memoryview(data)
-        self.fd.seek(0)
         while view:
             wrote = self.fd.write(view)
             if not wrote:
                 raise OSError("short framebuffer write")
             view = view[wrote:]
-        self.last = data
 
     def close(self):
         if self.fd is not None:
@@ -443,13 +494,25 @@ class Display:
         if pygame.display.get_init():
             pygame.display.quit()
 
-    def present(self, canvas):
+    def force_next(self):
+        """Write every pixel on the next present, even if the picture matches."""
+        if self.fb is not None:
+            self.fb.last = None
+
+    def present(self, canvas, rows=None):
         if self.mode == "fb" and self.fb is not None:
-            self.fb.write(canvas)
+            self.fb.write(canvas, rows=rows)
         elif self.mode == "window" and self.window is not None:
-            frame = canvas if self.scale == 1 else pygame.transform.scale(canvas, self.window.get_size())
-            self.window.blit(frame, (0, 0))
-            pygame.display.flip()
+            if self.scale == 1:
+                self.window.blit(canvas, (0, 0))
+                if rows:
+                    pygame.display.update(pygame.Rect(0, rows[0], WIDTH, max(1, rows[1] - rows[0])))
+                else:
+                    pygame.display.flip()
+            else:
+                frame = pygame.transform.scale(canvas, self.window.get_size())
+                self.window.blit(frame, (0, 0))
+                pygame.display.flip()
 
     def canvas_xy(self, x, y):
         if self.scale <= 1:
@@ -659,29 +722,30 @@ def search_hint(book):
     return "Search both archives on this Pi."
 
 
-def letter_rows():
+def letter_rows(shifted=False):
+    def chars(text):
+        return list(text.upper() if shifted else text)
+
     return [
-        list("qwertyuiop"),
-        list("asdfghjkl"),
-        list("zxcvbnm") + ["DEL"],
-        ["NUM", "SPACE", "SEARCH", "BACK"],
+        chars("qwertyuiop"),
+        chars("asdfghjkl"),
+        ["SHIFT"] + chars("zxcvbnm") + ["BKSP"],
+        ["123", "SPACE", "ENTER"],
     ]
 
 
 def number_rows():
     return [
         list("1234567890"),
-        ["-", "'", ".", ",", "/", "?", "!", "(", ")", "DEL"],
-        ["+", ":", ";", '"', "&", "@", "#", "*", "=", "ABC"],
-        ["ABC", "SPACE", "SEARCH", "BACK"],
+        ["-", "'", ".", ",", "/", "?", "!", "(", ")", "BKSP"],
+        ["+", ":", ";", '"', "&", "@", "#", "*", "="],
+        ["ABC", "SPACE", "ENTER"],
     ]
 
 
 def key_label(token):
     if token == "NUM":
         return "123"
-    if token == "SPACE":
-        return "SPACE"
     return token
 
 
@@ -700,7 +764,15 @@ class App:
         self.font_body = None
         self.font_small = None
         self.font_button = None
+        self.font_tab = None
         self.scanlines = None
+        self.tab_hits = []
+        self.tab_pressed = None
+        self.tab_flash = None
+        self.slide_from = None
+        self._band = None
+        self.last_fire = None
+        self.suppress = None
 
     def ensure_fonts(self):
         if not pygame.font.get_init():
@@ -709,6 +781,7 @@ class App:
             self.font_title = load_font(18, bold=True)
             self.font_body = load_font(16)
             self.font_button = load_font(16)
+            self.font_tab = load_font(16)
             self.font_small = load_font(13)
             for screen in self.stack:
                 screen.pop("_lines", None)
@@ -724,46 +797,33 @@ class App:
         return self.stack[-1]
 
     def header_bottom(self):
-        return MARGIN + self.font_title.get_linesize() + 8
+        self.ensure_fonts()
+        return TAB_H + 2 + self.font_title.get_linesize() + 8
 
-    def home_header_bottom(self, with_sub):
-        y = MARGIN + self.font_title.get_linesize()
-        if with_sub:
-            y += 1 + self.font_small.get_linesize()
-        return y + 8
-
-    def home_grid(self, top, cave):
+    def home_grid(self, top):
         rows = 4
-        avail_h = HEIGHT - MARGIN - top
+        avail_h = HEIGHT - 2 - top
         avail_w = WIDTH - 2 * MARGIN
         btn_h = (avail_h - GAP * (rows - 1)) // rows
         btn_w = (avail_w - GAP * 2) // 3
+        extra = avail_w - (btn_w * 3 + GAP * 2)
         rects = []
-        for index in range(9):
-            row, col = divmod(index, 3)
-            rects.append(
-                pygame.Rect(
-                    MARGIN + col * (btn_w + GAP),
-                    top + row * (btn_h + GAP),
-                    btn_w,
-                    btn_h,
-                )
-            )
-        action_y = top + 3 * (btn_h + GAP)
-        if cave:
-            half = (avail_w - GAP) // 2
-            rects.append(pygame.Rect(MARGIN, action_y, half, btn_h))
-            rects.append(pygame.Rect(MARGIN + half + GAP, action_y, avail_w - half - GAP, btn_h))
-        else:
-            rects.append(pygame.Rect(MARGIN, action_y, avail_w, btn_h))
+        for row in range(3):
+            x = MARGIN
+            y = top + row * (btn_h + GAP)
+            for col in range(3):
+                width = btn_w + (1 if col < extra else 0)
+                rects.append(pygame.Rect(x, y, width, btn_h))
+                x += width + GAP
+        rects.append(pygame.Rect(MARGIN, top + 3 * (btn_h + GAP), avail_w, btn_h))
         return rects, btn_h
 
-    def home_uses_subtitle(self):
-        for with_sub in (True, False):
-            _rects, btn_h = self.home_grid(self.home_header_bottom(with_sub), self.cave_on())
-            if btn_h >= 60:
-                return with_sub
-        return False
+    def _tab_pressed_name(self):
+        if self.tab_pressed:
+            return self.tab_pressed
+        if self.pressed and self.pressed.startswith("tab:"):
+            return self.pressed.split(":", 1)[1]
+        return None
 
     def content_width(self):
         return WIDTH - 2 * MARGIN
@@ -803,27 +863,33 @@ class App:
         screen = self.current()
         if screen["kind"] not in ("menu", "reader", "results"):
             return False
+        old = screen.get("page", 0)
+        moved = False
         if delta < 0:
-            if screen.get("page", 0) > 0:
-                screen["page"] -= 1
-                return True
-            return False
-        if screen.get("page", 0) + 1 < self.page_count(screen):
-            screen["page"] += 1
-            return True
-        if screen["kind"] == "results" and len(screen["results"]) < screen.get("total", 0):
+            if old > 0:
+                screen["page"] = old - 1
+                moved = True
+        elif old + 1 < self.page_count(screen):
+            screen["page"] = old + 1
+            moved = True
+        elif screen["kind"] == "results" and len(screen["results"]) < screen.get("total", 0):
             before = len(screen["results"])
             self.fetch_more()
-            if len(screen["results"]) > before and screen["page"] + 1 < self.page_count(screen):
-                screen["page"] += 1
-                return True
-        return False
+            if len(screen["results"]) > before and old + 1 < self.page_count(screen):
+                screen["page"] = old + 1
+                moved = True
+        if moved:
+            self.slide_from = old
+        return moved
 
     def back(self):
         if len(self.stack) > 1:
+            self.slide_from = None
             self.stack.pop()
 
     def open_item(self, item):
+        self.notice = ""
+        self.slide_from = None
         action = item["action"]
         if action == "sheet":
             screen = {
@@ -867,9 +933,24 @@ class App:
         if wid == "exit":
             self.quit_requested = True
             return
-        if wid == "cave":
-            self.pending = "cave"
-            self.notice = "Opening Cave Mapper..."
+        if wid in ("cave", "tab:SCAN"):
+            self.tab_flash = "SCAN"
+            if self.cave_on():
+                self.pending = "cave"
+                self.notice = "Opening Cave Mapper..."
+            else:
+                self.notice = "Cave Mapper is not installed."
+            return
+        if wid == "tab:GUIDE":
+            self.tab_flash = "GUIDE"
+            self.notice = ""
+            self.slide_from = None
+            if screen["kind"] != "home" or len(self.stack) > 1:
+                self.stack = [{"kind": "home"}]
+            return
+        if wid == "tab:RADIO":
+            self.tab_flash = "RADIO"
+            self.notice = "Radio is not available."
             return
         if wid == "back":
             self.back()
@@ -907,23 +988,27 @@ class App:
         screen = self.current()
         if screen["kind"] != "search":
             return
-        if token == "BACK":
+        if token in ("BACK",):
             self.back()
-        elif token == "SEARCH":
+        elif token in ("SEARCH", "ENTER"):
             screen["status"] = "Searching the library on this Pi..."
             screen["status_bad"] = False
             self.pending = "search"
-        elif token == "DEL":
+        elif token in ("DEL", "BKSP"):
             screen["query"] = screen["query"][:-1]
         elif token == "SPACE":
             if len(screen["query"]) < 80:
                 screen["query"] += " "
-        elif token == "NUM":
+        elif token == "SHIFT":
+            screen["shift"] = not screen.get("shift")
+        elif token in ("NUM", "123"):
             screen["num_mode"] = True
         elif token == "ABC":
             screen["num_mode"] = False
         elif len(token) == 1 and len(screen["query"]) < 80:
             screen["query"] += token
+            if token.isalpha():
+                screen["shift"] = False
 
     def run_search(self):
         screen = self.current()
@@ -1018,12 +1103,31 @@ class App:
 
     def pointer(self, kind, x, y):
         if kind == "down":
+            hit = self.hit(x, y)
+            now = time.monotonic()
+            if (
+                hit
+                and self.last_fire is not None
+                and self.last_fire[0] == hit
+                and now - self.last_fire[1] < DEBOUNCE
+            ):
+                self.suppress = hit
+                self.pressed = None
+                self.origin = None
+                self.swiping = False
+                return False
+            self.suppress = None
             self.origin = (x, y)
             self.swiping = False
-            self.pressed = self.hit(x, y)
+            self.pressed = hit
             return True
         if kind == "move":
-            if self.origin is None:
+            if self.suppress or self.origin is None:
+                return False
+            if self.pressed and self.pressed.startswith("tab:"):
+                if self.hit(x, y) != self.pressed:
+                    self.pressed = None
+                    return True
                 return False
             dx = x - self.origin[0]
             dy = y - self.origin[1]
@@ -1031,8 +1135,17 @@ class App:
                 self.swiping = True
                 self.pressed = None
                 return True
+            if self.pressed and self.hit(x, y) != self.pressed:
+                self.pressed = None
+                return True
             return False
         if kind == "up":
+            if self.suppress:
+                self.suppress = None
+                self.pressed = None
+                self.origin = None
+                self.swiping = False
+                return False
             origin = self.origin
             pressed = self.pressed
             swiping = self.swiping
@@ -1043,11 +1156,13 @@ class App:
                 return True
             dx = x - origin[0]
             dy = y - origin[1]
-            if swiping or (abs(dy) >= SWIPE and abs(dy) > abs(dx)):
+            on_tab = bool(pressed) and pressed.startswith("tab:")
+            if (not on_tab) and (swiping or (abs(dy) >= SWIPE and abs(dy) > abs(dx))):
                 if self.current()["kind"] in ("reader", "menu", "results"):
                     self.page_delta(-1 if dy > 0 else 1)
                 return True
             if pressed and self.hit(x, y) == pressed:
+                self.last_fire = (pressed, time.monotonic())
                 self.activate(pressed)
             return True
         return False
@@ -1093,29 +1208,35 @@ class App:
         return False
 
     def hit(self, x, y):
+        for hit in self.tab_hits:
+            if hit["rect"].collidepoint(x, y):
+                return "tab:" + hit["name"]
         for widget in reversed(self.widgets):
             if widget["enabled"] and widget["rect"].collidepoint(x, y):
                 return widget["id"]
         return None
 
-    def add_button(self, canvas, rect, label, wid, enabled=True):
-        pressed = enabled and self.pressed == wid
+    def add_button(self, canvas, rect, label, wid, enabled=True, latched=False):
+        pressed = (enabled and self.pressed == wid) or latched
         draw_button(canvas, rect, label, self.font_button, enabled, pressed)
         self.widgets.append({"rect": rect, "id": wid, "enabled": enabled, "label": label})
 
     def draw_header(self, canvas, title, page=None, pages=None):
-        y = MARGIN
+        y = TAB_H + 2
         counter = ""
         counter_w = 0
         if pages and pages > 1:
             counter = f"{page + 1}/{pages}"
-            counter_w = self.font_small.size(counter)[0] + 8
+            counter_w = self.font_body.size(counter)[0] + 12
         label = ellipsize(self.font_title, title, self.content_width() - counter_w)
         img = self.font_title.render(label, True, GREEN)
         canvas.blit(img, (MARGIN, y))
         if counter:
-            cimg = self.font_small.render(counter, True, DIM)
-            canvas.blit(cimg, (WIDTH - MARGIN - cimg.get_width(), y + 2))
+            cimg = self.font_body.render(counter, True, GREEN)
+            canvas.blit(
+                cimg,
+                (WIDTH - MARGIN - cimg.get_width(), y + max(0, (img.get_height() - cimg.get_height()) // 2)),
+            )
         rule = y + self.font_title.get_linesize() + 3
         pygame.draw.line(canvas, DIM, (MARGIN, rule), (WIDTH - MARGIN, rule))
         return rule + 5
@@ -1152,11 +1273,19 @@ class App:
             specs.append(("Search", "search", True))
         return specs
 
-    def draw(self, canvas):
+    def draw(self, canvas, scan=True):
         self.ensure_fonts()
         self.widgets = []
+        self._band = None
         canvas.fill(BLACK)
         kind = self.current()["kind"]
+        self.tab_hits = tabbar.draw_tabbar(
+            canvas,
+            self.font_tab,
+            active="GUIDE",
+            pressed=self._tab_pressed_name(),
+            enabled={"GUIDE": True, "SCAN": self.cave_on(), "RADIO": False},
+        )
         if kind == "home":
             self.draw_home(canvas)
         elif kind == "menu":
@@ -1167,46 +1296,42 @@ class App:
             self.draw_search(canvas)
         elif kind == "results":
             self.draw_results(canvas)
-        canvas.blit(self.scanlines, (0, 0))
+        if scan:
+            canvas.blit(self.scanlines, (0, 0))
 
     def draw_home(self, canvas):
-        cave = self.cave_on()
-        with_sub = self.home_uses_subtitle()
-        y = MARGIN
-        title = self.font_title.render("DOOMSDAY FIELD GUIDE", True, GREEN)
-        canvas.blit(title, ((WIDTH - title.get_width()) // 2, y))
-        y += self.font_title.get_linesize()
-        if with_sub:
-            y += 1
-            sub_text = self.notice or "ON THIS PI"
-            sub_color = GREEN if self.notice else DIM
-            sub = self.font_small.render(ellipsize(self.font_small, sub_text, self.content_width()), True, sub_color)
-            canvas.blit(sub, ((WIDTH - sub.get_width()) // 2, y))
-            y += self.font_small.get_linesize()
-        y += 3
-        pygame.draw.line(canvas, DIM, (MARGIN, y), (WIDTH - MARGIN, y))
-        y += 5
-        rects, _btn_h = self.home_grid(y, cave)
+        line = self.notice or "ON THIS PI"
+        y = TAB_H + 2
+        img = self.font_small.render(
+            ellipsize(self.font_small, line, self.content_width()),
+            True,
+            GREEN if self.notice else DIM,
+        )
+        top_with_line = y + img.get_height() + 2
+        _rects, tall = self.home_grid(top_with_line)
+        if tall >= 60 or self.notice:
+            canvas.blit(img, ((WIDTH - img.get_width()) // 2, y))
+            top = top_with_line
+        else:
+            top = y
+        rects, _btn_h = self.home_grid(top)
         items = home_items()
         for index, item in enumerate(items):
             self.add_button(canvas, rects[index], item["label"], f"home:{index}")
-        if cave:
-            self.add_button(canvas, rects[9], "Cave Mapper", "cave")
-            self.add_button(canvas, rects[10], "Exit", "exit")
-        else:
-            self.add_button(canvas, rects[9], "Exit", "exit")
+        self.add_button(canvas, rects[9], "Exit", "exit")
 
     def draw_menu(self, canvas):
         screen = self.current()
         pages = self.page_count(screen)
-        top = self.draw_header(canvas, screen["title"], screen.get("page", 0), pages)
-        top = self.draw_intro(canvas, screen.get("intro") or "", top)
-        nav_y = self.draw_nav(canvas, self.nav_specs(screen))
-        area = nav_y - 4 - top
-        per = MENU_PER
-        btn_h = (area - GAP * (per - 1)) // per
         page = min(screen.get("page", 0), pages - 1)
         screen["page"] = page
+        top = self.draw_header(canvas, screen["title"], page, pages)
+        top = self.draw_intro(canvas, screen.get("intro") or "", top)
+        nav_y = self.draw_nav(canvas, self.nav_specs(screen))
+        self._band = pygame.Rect(0, top, WIDTH, max(1, nav_y - top))
+        area = nav_y - 4 - top
+        per = MENU_PER
+        btn_h = max(1, (area - GAP * (per - 1)) // per)
         start = page * per
         for offset, item in enumerate(screen["items"][start : start + per]):
             rect = pygame.Rect(MARGIN, top + offset * (btn_h + GAP), self.content_width(), btn_h)
@@ -1222,7 +1347,8 @@ class App:
         screen["page"] = page
         top = self.draw_header(canvas, screen.get("title") or "SHEET", page, pages)
         self.draw_nav(canvas, self.nav_specs(screen, with_search="search_book" in screen))
-        canvas.set_clip(pygame.Rect(0, top, WIDTH, max(1, nav_y - top)))
+        self._band = pygame.Rect(0, top, WIDTH, max(1, nav_y - top))
+        canvas.set_clip(self._band)
         shown = lines[page * slots : (page + 1) * slots]
         y = top
         line_h = self.font_body.get_linesize()
@@ -1238,39 +1364,57 @@ class App:
 
     def draw_search(self, canvas):
         screen = self.current()
-        y = self.draw_header(canvas, screen.get("title") or "SEARCH")
-        y = self.draw_query(canvas, screen.get("query") or "", y)
-        status_h = self.font_small.get_linesize() * 2 + 2
+        rows = number_rows() if screen.get("num_mode") else letter_rows(bool(screen.get("shift")))
+        block = KEY_H * len(rows) + GAP * (len(rows) - 1)
+        key_top = HEIGHT - block
+        field_top = TAB_H
+        field_h = 30
+        status_top = field_top + field_h
+        status_h = max(1, key_top - status_top)
+        self.draw_query(canvas, screen.get("query") or "", field_top, field_h)
         status = screen.get("status") or ""
         color = GREEN if screen.get("status_bad") or status.startswith("Searching") else DIM
-        self.draw_wrapped(canvas, status, color, y, status_h)
-        area_top = y + status_h
-        area = pygame.Rect(MARGIN, area_top, self.content_width(), HEIGHT - MARGIN - area_top)
-        rows = number_rows() if screen.get("num_mode") else letter_rows()
+        self.draw_wrapped(canvas, status, color, status_top, status_h)
+        area = pygame.Rect(MARGIN, key_top, self.content_width(), block)
+        latched = bool(screen.get("shift")) and not screen.get("num_mode")
         for rect, token in layout_keys(rows, area):
-            self.add_button(canvas, rect, key_label(token), "key:" + token)
+            self.add_button(
+                canvas,
+                rect,
+                key_label(token),
+                "key:" + token,
+                latched=latched and token == "SHIFT",
+            )
 
-    def draw_query(self, canvas, query, y):
-        rect = pygame.Rect(MARGIN, y, self.content_width(), 28)
+    def draw_query(self, canvas, query, y, height=34):
+        rect = pygame.Rect(MARGIN, y, self.content_width(), height)
         pygame.draw.rect(canvas, BLACK, rect)
         pygame.draw.rect(canvas, GREEN, rect, 2)
         font = self.font_body
-        limit = rect.width - 16
+        pad = 8
+        caret_w = 2
+        limit = rect.width - pad * 2 - caret_w - 8
         if query:
             shown = query
-            while shown and font.size(shown)[0] > limit - 12:
+            while shown and font.size(shown)[0] > limit:
                 shown = shown[1:]
-            color = GREEN
+            img = font.render(shown, True, GREEN)
+            text_x = rect.x + pad
         else:
-            shown = "type a word"
-            color = DIM
-        img = font.render(shown, True, color)
+            shown = ""
+            img = font.render("type a word", True, DIM)
+            text_x = rect.x + pad + caret_w + 4
         text_y = rect.y + (rect.height - img.get_height()) // 2
-        canvas.blit(img, (rect.x + 6, text_y))
+        canvas.blit(img, (text_x, text_y))
         if query:
-            cursor_x = min(rect.right - 12, rect.x + 8 + img.get_width())
-            pygame.draw.rect(canvas, GREEN, (cursor_x, rect.y + 6, 8, rect.height - 12))
-        return rect.bottom + 4
+            caret_x = rect.x + pad + font.size(shown)[0] + 2
+        else:
+            caret_x = rect.x + pad
+        caret_x = min(caret_x, rect.right - pad - caret_w)
+        caret_h = max(8, font.get_height() - 2)
+        caret_y = rect.y + (rect.height - caret_h) // 2
+        pygame.draw.rect(canvas, GREEN, (caret_x, caret_y, caret_w, caret_h))
+        return rect.bottom
 
     def draw_wrapped(self, canvas, text, color, y, height):
         if not text:
@@ -1309,6 +1453,7 @@ class App:
         intro = screen.get("status") or screen.get("intro") or ""
         top = self.draw_intro(canvas, intro, top)
         nav_y = self.draw_nav(canvas, self.nav_specs(screen))
+        self._band = pygame.Rect(0, top, WIDTH, max(1, nav_y - top))
         area = nav_y - 4 - top
         per = RESULT_PER
         btn_h = (area - GAP * (per - 1)) // per
@@ -1355,32 +1500,37 @@ class App:
 
 
 def layout_keys(rows, area):
+    wide = {"SHIFT": 76, "BKSP": 72, "ENTER": 96, "123": 64, "ABC": 64, "NUM": 64, "SEARCH": 96, "BACK": 72, "DEL": 72}
     count = len(rows)
-    key_h = (area.height - GAP * (count - 1)) // count
+    key_h = (area.height - GAP * (count - 1)) // count if count else area.height
+    if key_h < 1:
+        key_h = 1
     rects = []
     y = area.y
-    for index, row in enumerate(rows):
-        if index == count - 1 and row and row[1:2] == ["SPACE"]:
-            widths = {"NUM": 72, "ABC": 72, "SEARCH": 118, "BACK": 78}
-            fixed = 0
-            for token in row:
-                if token != "SPACE":
-                    fixed += widths.get(token, 72)
-            space_w = area.width - fixed - GAP * (len(row) - 1)
-            x = area.x
-            for token in row:
-                width = space_w if token == "SPACE" else widths.get(token, 72)
-                rects.append((pygame.Rect(x, y, width, key_h), token))
-                x += width + GAP
-        else:
-            cols = len(row)
-            key_w = (area.width - GAP * (cols - 1)) // cols
-            extra = area.width - (key_w * cols + GAP * (cols - 1))
-            x = area.x
-            for col, token in enumerate(row):
-                grow = 1 if col < extra else 0
-                rects.append((pygame.Rect(x, y, key_w + grow, key_h), token))
-                x += key_w + grow + GAP
+    for row in rows:
+        flex = []
+        fixed = 0
+        for token in row:
+            if token == "SPACE" or token not in wide:
+                flex.append(token)
+            else:
+                fixed += wide[token]
+        gaps = GAP * max(0, len(row) - 1)
+        remain = area.width - fixed - gaps
+        share = max(1, remain // len(flex)) if flex else 0
+        extra = remain - share * len(flex) if flex else 0
+        x = area.x
+        flex_i = 0
+        for token in row:
+            if token in wide and token != "SPACE":
+                width = wide[token]
+            else:
+                width = share + (1 if flex_i < extra else 0)
+                flex_i += 1
+            if width < 1:
+                width = 1
+            rects.append((pygame.Rect(x, y, width, key_h), token))
+            x += width + GAP
         y += key_h + GAP
     return rects
 
@@ -1391,6 +1541,69 @@ def boot_pygame():
         pygame.init()
     if not pygame.display.get_init():
         pygame.display.init()
+
+
+def present_frame(app, display, force=False):
+    if force:
+        display.force_next()
+    app.draw(display.canvas)
+    display.present(display.canvas)
+
+
+def play_slide(app, display, old_page, new_page):
+    """Slide the page body in a handful of frames. Chrome stays put.
+
+    Returns how many frames were presented. Middle frames write only the
+    rows that moved.
+    """
+    screen = app.current()
+    canvas = display.canvas
+    delta = 1 if new_page > old_page else -1
+    screen["page"] = old_page
+    app.draw(canvas, scan=False)
+    old_band = None if app._band is None else app._band.copy()
+    old = None
+    if old_band is not None and old_band.height >= 8:
+        old = canvas.subsurface(old_band).copy()
+    screen["page"] = new_page
+    app.draw(canvas, scan=False)
+    band = None if app._band is None else app._band.copy()
+    if old is None or band is None or old_band.size != band.size:
+        canvas.blit(app.scanlines, (0, 0))
+        display.present(canvas)
+        return 1
+    fresh = canvas.subsurface(band).copy()
+    base = canvas.copy()
+    for step in range(1, SLIDE_FRAMES + 1):
+        shift = band.height * step // SLIDE_FRAMES
+        canvas.blit(base, (0, 0))
+        canvas.set_clip(band)
+        if delta > 0:
+            canvas.blit(old, (band.x, band.y - shift))
+            canvas.blit(fresh, (band.x, band.y + band.height - shift))
+        else:
+            canvas.blit(old, (band.x, band.y + shift))
+            canvas.blit(fresh, (band.x, band.y - band.height + shift))
+        canvas.set_clip(None)
+        canvas.blit(app.scanlines, (0, 0))
+        # First frame also refreshes the page indicator and Prev/Next.
+        rows = None if step in (1, SLIDE_FRAMES) else (band.top, band.bottom)
+        display.present(canvas, rows=rows)
+        if step != SLIDE_FRAMES:
+            pygame.time.wait(SLIDE_FRAME_MS)
+    return SLIDE_FRAMES
+
+
+def flash_tab(app, display):
+    name = app.tab_flash
+    app.tab_flash = None
+    if not name:
+        return
+    app.tab_pressed = name
+    app.draw(display.canvas)
+    display.present(display.canvas)
+    pygame.time.wait(80)
+    app.tab_pressed = None
 
 
 def run():
@@ -1409,6 +1622,12 @@ def run():
         touch.open()
         if mode == "fb" and touch.dev is None:
             sys.stderr.write("field_touch: ADS7846 touchscreen was not found.\n")
+        # Paint immediately, then once more after the console has had a chance
+        # to stamp leftover text onto /dev/fb0. The second write ignores the
+        # unchanged-frame skip so it covers that text.
+        present_frame(app, display)
+        time.sleep(0.5)
+        present_frame(app, display, force=True)
         loop(app, display, touch)
         if display.mode == "fb" and display.canvas is not None:
             app.draw_goodbye(display.canvas)
@@ -1453,14 +1672,42 @@ def idle_wait(touch):
 def loop(app, display, touch):
     while not app.quit_requested:
         changed = False
-        for event in collect_events(display, touch):
+        events = collect_events(display, touch)
+        for index, event in enumerate(events):
             kind = event[0]
             if kind == "quit":
                 app.quit_requested = True
             elif kind == "key":
                 changed = app.on_key(event[1]) or changed
+            elif kind == "down":
+                changed = app.pointer("down", event[1], event[2]) or changed
+                # A tap that arrives as down+up in one read still gets a visible press.
+                nxt = events[index + 1] if index + 1 < len(events) else None
+                if app.pressed and nxt is not None and nxt[0] == "up":
+                    app.draw(display.canvas)
+                    display.present(display.canvas)
+                    pygame.time.wait(50)
             else:
                 changed = app.pointer(kind, event[1], event[2]) or changed
+        if app.quit_requested:
+            break
+        if app.tab_flash:
+            flash_tab(app, display)
+            changed = True
+        if app.slide_from is not None:
+            old = app.slide_from
+            app.slide_from = None
+            new = app.current().get("page", old)
+            kind = app.current()["kind"]
+            if (
+                display.canvas is not None
+                and kind in ("menu", "reader", "results")
+                and old != new
+            ):
+                play_slide(app, display, old, new)
+                changed = False
+            else:
+                changed = True
         if app.pending:
             app.draw(display.canvas)
             display.present(display.canvas)
@@ -1491,6 +1738,29 @@ def check(condition, message, failures):
 
 def self_test(screenshot_dir=None):
     failures = []
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.warn(
+            "Your system is neon capable but pygame was not built with support for it. PYGAME_DETECT_AVX2",
+            RuntimeWarning,
+        )
+    check(not caught, "neon RuntimeWarning silenced", failures)
+    check(
+        any(
+            action == "ignore"
+            and category is RuntimeWarning
+            and module is not None
+            and module.match("pygame.base")
+            for action, _message, category, module, _lineno in warnings.filters
+        ),
+        "pygame RuntimeWarning filter installed",
+        failures,
+    )
+    check(os.environ.get("PYGAME_HIDE_SUPPORT_PROMPT") == "1", "pygame support prompt hidden", failures)
+    cached = Display("fb")
+    cached.fb = type("CachedFrame", (), {"last": b"stale"})()
+    cached.force_next()
+    check(cached.fb.last is None, "forced redraw drops the cached frame", failures)
+
     calib = {"cx": [2.0, 3.0, 4.0], "cy": [5.0, 6.0, 7.0]}
     check(map_touch(1, 1, calib) == (9, 18), "affine calibration", failures)
     check(map_touch(1, 1, calib, mirror=True) == (9, 18), "mirror ignored when calibrated", failures)
@@ -1554,8 +1824,27 @@ def self_test(screenshot_dir=None):
     cave_app = App(show_cave=True)
     cave_app.draw(canvas)
     cave_labels = [widget["label"] for widget in cave_app.widgets]
-    check(cave_labels[-2:] == ["Cave Mapper", "Exit"], "cave mapper button", failures)
-    check(all(widget["rect"].height >= 60 for widget in cave_app.widgets), "cave button height", failures)
+    check("Exit" in cave_labels and "Cave Mapper" not in cave_labels, "scan tab replaces the cave button", failures)
+    check(all(widget["rect"].height >= 60 for widget in cave_app.widgets), "cave home button height", failures)
+    scan = next(hit for hit in cave_app.tab_hits if hit["name"] == "SCAN")
+    radio = next(hit for hit in cave_app.tab_hits if hit["name"] == "RADIO")
+    guide = next(hit for hit in cave_app.tab_hits if hit["name"] == "GUIDE")
+    check(scan["enabled"] and not radio["enabled"] and guide["enabled"], "scan on, radio placeholder", failures)
+    check(guide["rect"].height == 36 and scan["rect"].width == radio["rect"].width == guide["rect"].width, "equal 36px tabs", failures)
+    check(guide["rect"].width * 3 == WIDTH, "tabs fill the width", failures)
+    # y=2 misses the scanline; the active GUIDE fill is the main green.
+    check(tuple(canvas.get_at((8, 2))[:3]) == GREEN, "active tab is filled green", failures)
+    cave_app.tab_pressed = "GUIDE"
+    cave_app.draw(canvas)
+    check(tuple(canvas.get_at((8, 2))[:3]) == BLACK, "tab flash inverts the active fill", failures)
+    cave_app.tab_pressed = None
+    cave_app.pointer("down", *scan["rect"].center)
+    cave_app.pointer("up", *scan["rect"].center)
+    check(cave_app.pending == "cave", "scan tab launches cavemap", failures)
+    dark = App(show_cave=False)
+    dark.draw(canvas)
+    dark_scan = next(hit for hit in dark.tab_hits if hit["name"] == "SCAN")
+    check(not dark_scan["enabled"], "scan disabled without cavemap", failures)
 
     app.pointer("down", *app.widgets[0]["rect"].center)
     app.pointer("up", *app.widgets[0]["rect"].center)
@@ -1578,6 +1867,26 @@ def self_test(screenshot_dir=None):
     app.pointer("move", 240, 80)
     app.pointer("up", 240, 80)
     check(app.current()["page"] == before + 1, "swipe up pages forward", failures)
+    check(app.slide_from == before, "swipe arms a slide from the old page", failures)
+    app.slide_from = None
+    app.draw(canvas)
+    indicator = f"{app.current()['page'] + 1}/{app.page_count(app.current())}"
+    check("/" in indicator and indicator != "1/1", f"page indicator {indicator}", failures)
+
+    fake = type("FakeDisplay", (), {})()
+    fake.canvas = canvas
+    fake.presents = []
+
+    def _present(surface, rows=None):
+        fake.presents.append(rows)
+
+    fake.present = _present
+    app.slide_from = None
+    frames = play_slide(app, fake, before, before + 1)
+    check(frames == SLIDE_FRAMES, f"slide uses {frames} frames", failures)
+    check(len(fake.presents) == SLIDE_FRAMES, "slide presents once per frame", failures)
+    check(any(item is not None for item in fake.presents), "middle slide frames are dirty rows", failures)
+    check(app.current()["page"] == before + 1, "slide lands on the new page", failures)
 
     app.stack = [{"kind": "home"}]
     app.activate("home:1")
@@ -1593,8 +1902,29 @@ def self_test(screenshot_dir=None):
     app.current()["num_mode"] = True
     app.draw(canvas)
     key_labels = [widget["label"] for widget in app.widgets if widget["id"].startswith("key:")]
-    check("1" in key_labels and "ABC" in key_labels and "SEARCH" in key_labels, "number keyboard", failures)
-    check(all(widget["rect"].height >= 44 for widget in app.widgets if widget["id"].startswith("key:")), "key height", failures)
+    check("1" in key_labels and "ABC" in key_labels and "ENTER" in key_labels, "number keyboard", failures)
+    check(all(widget["rect"].height >= KEY_H for widget in app.widgets if widget["id"].startswith("key:")), "key height", failures)
+    app.current()["num_mode"] = False
+    app.current()["shift"] = True
+    app.draw(canvas)
+    letter_labels = [widget["label"] for widget in app.widgets if widget["id"].startswith("key:")]
+    check(
+        {"SHIFT", "BKSP", "SPACE", "ENTER", "Q"} <= set(letter_labels),
+        f"letter keyboard {letter_labels}",
+        failures,
+    )
+    space = next(widget for widget in app.widgets if widget["id"] == "key:SPACE")
+    app.current()["query"] = ""
+    app.current()["shift"] = False
+    app.pointer("down", *space["rect"].center)
+    app.pointer("up", *space["rect"].center)
+    app.pointer("down", *space["rect"].center)
+    app.pointer("up", *space["rect"].center)
+    check(app.current()["query"] == " ", "debounced tap inserts one space", failures)
+    app.last_fire = ("key:SPACE", time.monotonic() - 5)
+    app.pointer("down", *space["rect"].center)
+    app.pointer("up", *space["rect"].center)
+    check(app.current()["query"] == "  ", "tap works again after the debounce", failures)
 
     food = App(show_cave=False)
     food.activate("home:5")
@@ -1635,10 +1965,16 @@ def self_test(screenshot_dir=None):
     chip.fill(GREEN)
     packed = pack_rgb565(chip, 4)
     check(packed[:4] == bytes.fromhex("f01ff01f"), f"rgb565 {packed[:4].hex()}", failures)
+    band = pygame.Surface((4, 3))
+    band.fill(GREEN)
+    pygame.draw.rect(band, DIM, (0, 1, 4, 1))
+    full = pack_rgb565(band, 8)
+    part = pack_rgb565_rows(band, 8, 1, 2)
+    check(part == full[8:16], "dirty rows match the full frame", failures)
 
     if screenshot_dir:
         os.makedirs(screenshot_dir, exist_ok=True)
-        home = App(show_cave=shutil.which("cavemap") is not None)
+        home = App(show_cave=True)
         home.draw(canvas)
         pygame.image.save(canvas, os.path.join(screenshot_dir, "home.png"))
         section = App(show_cave=False)
@@ -1646,9 +1982,18 @@ def self_test(screenshot_dir=None):
         section.activate("menu:0")
         section.draw(canvas)
         pygame.image.save(canvas, os.path.join(screenshot_dir, "section.png"))
+        reader = App(show_cave=False)
+        reader.activate("home:0")
+        reader.activate("menu:0")
+        reader.page_delta(1)
+        reader.slide_from = None
+        reader.draw(canvas)
+        pygame.image.save(canvas, os.path.join(screenshot_dir, "reader.png"))
         search = App(show_cave=False)
         search.activate("home:1")
-        search.current()["query"] = "hypothermia"
+        search.current()["query"] = "burn"
+        search.draw(canvas)
+        pygame.image.save(canvas, os.path.join(screenshot_dir, "keyboard.png"))
         field.HOST = "http://127.0.0.1:9"
         try:
             search.run_search()
