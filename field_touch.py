@@ -1087,7 +1087,9 @@ class App:
             message = "Cave Mapper is not installed."
         else:
             try:
-                code = subprocess.call([exe])
+                env = os.environ.copy()
+                env["CAVEMAP_FROM_GUIDE"] = "1"
+                code = subprocess.call([exe], env=env)
                 if code != 0:
                     message = "Cave Mapper closed with an error."
             except OSError as error:
