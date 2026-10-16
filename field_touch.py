@@ -22,9 +22,15 @@ import select
 import shutil
 import subprocess
 import sys
+import time
 import traceback
+import warnings
 
-os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+# tty1 and /dev/fb0 are the same pixels. pygame's import-time RuntimeWarning
+# ("neon capable ... PYGAME_DETECT_AVX2") is drawn on top of this UI.
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="pygame")
+warnings.filterwarnings("ignore", message=".*neon capable.*")
 
 try:
     import pygame
@@ -450,6 +456,11 @@ class Display:
             frame = canvas if self.scale == 1 else pygame.transform.scale(canvas, self.window.get_size())
             self.window.blit(frame, (0, 0))
             pygame.display.flip()
+
+    def force_next(self):
+        """Write every pixel on the next present, even if the picture matches."""
+        if self.fb is not None:
+            self.fb.last = None
 
     def canvas_xy(self, x, y):
         if self.scale <= 1:
@@ -1393,6 +1404,13 @@ def boot_pygame():
         pygame.display.init()
 
 
+def present_frame(app, display, force=False):
+    if force:
+        display.force_next()
+    app.draw(display.canvas)
+    display.present(display.canvas)
+
+
 def run():
     os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
     mode = choose_mode()
@@ -1409,6 +1427,12 @@ def run():
         touch.open()
         if mode == "fb" and touch.dev is None:
             sys.stderr.write("field_touch: ADS7846 touchscreen was not found.\n")
+        # Paint immediately, then once more after the console has had a chance
+        # to stamp leftover text onto /dev/fb0. The second write ignores the
+        # unchanged-frame skip so it covers that text.
+        present_frame(app, display)
+        time.sleep(0.5)
+        present_frame(app, display, force=True)
         loop(app, display, touch)
         if display.mode == "fb" and display.canvas is not None:
             app.draw_goodbye(display.canvas)
@@ -1491,6 +1515,29 @@ def check(condition, message, failures):
 
 def self_test(screenshot_dir=None):
     failures = []
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.warn(
+            "Your system is neon capable but pygame was not built with support for it. PYGAME_DETECT_AVX2",
+            RuntimeWarning,
+        )
+    check(not caught, "neon RuntimeWarning silenced", failures)
+    check(
+        any(
+            action == "ignore"
+            and category is RuntimeWarning
+            and module is not None
+            and module.match("pygame.base")
+            for action, _message, category, module, _lineno in warnings.filters
+        ),
+        "pygame RuntimeWarning filter installed",
+        failures,
+    )
+    check(os.environ.get("PYGAME_HIDE_SUPPORT_PROMPT") == "1", "pygame support prompt hidden", failures)
+    cached = Display("fb")
+    cached.fb = type("CachedFrame", (), {"last": b"stale"})()
+    cached.force_next()
+    check(cached.fb.last is None, "forced redraw drops the cached frame", failures)
+
     calib = {"cx": [2.0, 3.0, 4.0], "cy": [5.0, 6.0, 7.0]}
     check(map_touch(1, 1, calib) == (9, 18), "affine calibration", failures)
     check(map_touch(1, 1, calib, mirror=True) == (9, 18), "mirror ignored when calibrated", failures)

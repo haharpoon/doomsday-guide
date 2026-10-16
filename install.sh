@@ -76,7 +76,10 @@ if [ -t 0 ]; then
 fi
 
 if [ "$CHOICE" = "1" ]; then
-  LAUNCH='/usr/local/bin/field_touch || /usr/local/bin/field || true'
+  # tty text is drawn onto /dev/fb0. Hide the cursor, keep the panel awake,
+  # and send the touch UI's output to a log. The keyboard fallback stays
+  # on the console, and the cursor comes back when the GUI exits.
+  LAUNCH='setterm --cursor off --blank 0; /usr/local/bin/field_touch >> ~/.doomsday.log 2>&1 || { setterm --cursor on || true; /usr/local/bin/field || true; }; setterm --cursor on || true'
 else
   LAUNCH='/usr/local/bin/field || true'
 fi
