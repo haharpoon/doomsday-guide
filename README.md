@@ -33,7 +33,7 @@ On the Pi:
 cavemap
 ```
 
-That needs `/dev/fb0` and `/dev/input`. Use sudo, or the groups above. `q`, Esc, or the on-screen BACK button leaves the scanner and restores the console. Keys `1`–`4` select room scan, depth, cave log, and the perimeter tripwire. Drag the room, or use the arrow keys, to turn it.
+That needs `/dev/fb0` and `/dev/input`. Use sudo, or the groups above. The top bar is the shared GUIDE, SCAN, RADIO strip. SCAN is this screen. RADIO is off. GUIDE, or the HOME button under the bar, leaves the scanner and returns to the touch guide. Keys `1`–`4` select room scan, depth, cave log, and the perimeter tripwire. Drag the room, or use the arrow keys, to turn it. `q`, Esc, or `h` does the same as HOME. The status line shows DEMO DATA or LIVE LINK, the time, and the frame rate.
 
 Nothing is wired to a sensor yet, so the picture is labelled DEMO DATA. A desktop window, for trying it off the Pi:
 
