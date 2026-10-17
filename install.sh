@@ -14,11 +14,12 @@ fi
 BASE="https://raw.githubusercontent.com/haharpoon/doomsday-guide/main"
 curl -fsSL "$BASE/field.py" -o /usr/local/bin/field
 curl -fsSL "$BASE/field_touch.py" -o /usr/local/bin/field_touch
+curl -fsSL "$BASE/tabbar.py" -o /usr/local/bin/tabbar.py
 curl -fsSL "$BASE/cavemap.py" -o /usr/local/bin/cavemap
 curl -fsSL "$BASE/content.py" -o /usr/local/bin/content.py
-chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap
+chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/tabbar.py
 chmod 644 /usr/local/bin/content.py
-python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/content.py
+python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/tabbar.py /usr/local/bin/content.py
 
 # Sheets are Markdown. Writers edit those files; the guides only read them.
 install_content() {
@@ -160,7 +161,10 @@ if [ -t 0 ]; then
 fi
 
 if [ "$CHOICE" = "1" ]; then
-  LAUNCH='/usr/local/bin/field_touch || /usr/local/bin/field || true'
+  # tty text is drawn onto /dev/fb0. Hide the cursor, keep the panel awake,
+  # and send the touch UI's output to a log. The keyboard fallback stays
+  # on the console, and the cursor comes back when the GUI exits.
+  LAUNCH='setterm --cursor off --blank 0; /usr/local/bin/field_touch >> ~/.doomsday.log 2>&1 || { setterm --cursor on || true; /usr/local/bin/field || true; }; setterm --cursor on || true'
 else
   LAUNCH='/usr/local/bin/field || true'
 fi
@@ -227,7 +231,8 @@ This screen is the guide.
 ON THIS SCREEN
   Log in with your username and password.
   The guide opens after you log in.
-  Touchscreen: tap a section. Swipe, or tap Prev and Next, to turn pages.
+  Touchscreen: GUIDE, SCAN, and RADIO are the top bar. Tap a section.
+  Swipe, or tap Prev and Next, to turn pages.
   Keyboard: type a number, then Enter. Enter continues a page. q goes back.
   Page Up and Page Down are not used.
   Touch guide:  field_touch

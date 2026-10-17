@@ -483,7 +483,11 @@ def run_cavemap():
         pause()
         return
     try:
-        subprocess.call([exe])
+        import os
+
+        env = os.environ.copy()
+        env["CAVEMAP_FROM_GUIDE"] = "1"
+        subprocess.call([exe], env=env)
     except Exception as error:
         print(green(f"Cave Mapper could not start ({error})."))
         pause()
