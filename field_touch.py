@@ -39,6 +39,11 @@ except ImportError:
     evdev = None
     ecodes = None
 
+try:
+    import content
+except ImportError:
+    content = None
+
 
 def load_field():
     """Load field.py, including the extensionless copy install.sh places on PATH.
@@ -174,6 +179,95 @@ def wrap_body(text, font, small, width):
             continue
         lines.extend(wrap_words(font, paragraph.strip(), width))
     return lines or ["(empty)"]
+
+
+def tint_surface(surface):
+    """Map brightness onto the guide green. Falls back to the original picture."""
+    try:
+        gray = pygame.transform.grayscale(surface.convert())
+        colored = pygame.Surface(gray.get_size())
+        colored.fill(GREEN)
+        gray.blit(colored, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        return gray
+    except (pygame.error, TypeError, ValueError):
+        return surface
+
+
+def fit_surface(surface, max_w, max_h):
+    width, height = surface.get_size()
+    if width <= 0 or height <= 0 or max_w <= 0 or max_h <= 0:
+        return surface
+    scale = min(max_w / width, max_h / height, 1)
+    if scale >= 1:
+        return surface
+    target = (max(1, int(round(width * scale))), max(1, int(round(height * scale))))
+    try:
+        return pygame.transform.smoothscale(surface, target)
+    except pygame.error:
+        return pygame.transform.scale(surface, target)
+
+
+def load_card_image(relpath, max_w, max_h, directory, tint):
+    """Load a content image scaled to the reader area. None when it cannot be shown."""
+    if content is None or not relpath:
+        return None
+    path = content.resolve_image(directory, relpath)
+    if path is None:
+        return None
+    try:
+        image = pygame.image.load(str(path))
+    except (pygame.error, OSError, FileNotFoundError):
+        return None
+    if pygame.display.get_init():
+        try:
+            image = image.convert()
+        except pygame.error:
+            pass
+    image = fit_surface(image, max_w, max_h)
+    if tint:
+        image = tint_surface(image)
+    return image
+
+
+def layout_pages(text, font, small, width, page_px, directory, tint):
+    """Paginate card text and pictures. A picture moves to the next page when it does not fit."""
+    line_h = max(1, font.get_linesize())
+    page_px = max(line_h, page_px)
+    blocks = []
+    if content is None:
+        parts = [("text", text or "")]
+    else:
+        parts = content.split_parts(text or "")
+    for kind, *rest in parts:
+        if kind == "text":
+            for line in wrap_body(rest[0], font, small, width):
+                blocks.append({"kind": "text", "text": line, "px": line_h})
+            continue
+        alt, relpath = rest
+        # 480x284 is the artboard. The live box is the reader pane under the title.
+        image = load_card_image(relpath, min(width, 480), min(page_px, 284), directory, tint)
+        if image is None:
+            label = f"[diagram: {alt}]" if alt else "[diagram]"
+            for line in wrap_body(label, font, small, width):
+                blocks.append({"kind": "text", "text": line, "px": line_h})
+            continue
+        blocks.append({"kind": "image", "image": image, "alt": alt, "px": image.get_height()})
+    if not blocks:
+        blocks = [{"kind": "text", "text": "(empty)", "px": line_h}]
+    pages = []
+    current = []
+    used = 0
+    for block in blocks:
+        height = block["px"]
+        if current and used + height > page_px:
+            pages.append(current)
+            current = []
+            used = 0
+        current.append(block)
+        used += height
+    if current:
+        pages.append(current)
+    return pages or [[{"kind": "text", "text": "(empty)", "px": line_h}]]
 
 
 def button_lines(font, label, width):
@@ -571,8 +665,8 @@ class TouchInput:
             out.append(("up", x, y))
 
 
-def sheet(label, body, search_book=_MISSING):
-    item = {"label": label, "action": "sheet", "title": label.upper(), "body": body}
+def sheet(label, body, search_book=_MISSING, tint=True):
+    item = {"label": label, "action": "sheet", "title": label.upper(), "body": body, "tint": tint}
     if search_book is not _MISSING:
         item["search_book"] = search_book
     return item
@@ -586,69 +680,59 @@ def menu(label, title, intro, items):
     return {"label": label, "action": "menu", "title": title, "intro": intro, "items": items}
 
 
+def topic_to_item(topic):
+    """Turn one content file into a touch menu entry, sheet, or search."""
+    view = field.GUIDE.present(topic.slug)
+    if view is None:
+        return sheet(topic.title, "(empty)")
+    cards = view["cards"]
+    children = view["children"]
+    book = view["book"]
+    tint = topic.tint
+    if view["kind"] == "search":
+        return search_action(
+            topic.title,
+            book if book is not None else "",
+            topic.title.upper(),
+            topic.hint or search_hint(book),
+        )
+    if view["kind"] == "sheet":
+        body = cards[0][1] if cards else "(empty)"
+        if book is not None:
+            return sheet(topic.title, body, book, tint=tint)
+        return sheet(topic.title, body, tint=tint)
+    items = [sheet(name, body, tint=tint) for name, body in cards]
+    for child in children:
+        items.append(topic_to_item(child))
+    if topic.slug == "more":
+        items.append(search_action("Places", field.VOY, "PLACES", "Type a town, region, river, or country."))
+        items.append(search_action("Search all archives", "", "SEARCH", "Search both archives on this Pi."))
+    if book is not None and (cards or children):
+        items.append(
+            search_action(
+                "Search the archive",
+                book,
+                topic.title.upper(),
+                topic.hint or search_hint(book),
+            )
+        )
+    intro = " ".join((topic.intro or "").split())
+    return menu(topic.title, topic.title.upper(), intro, items)
+
+
 def home_items():
-    return [
-        menu(
-            "Shelter",
-            "SHELTER",
-            "Build small, get off the ground, stay out of the wind.",
-            [sheet(name, body) for name, body in field.SHELTER],
-        ),
-        search_action(
-            "Medicine",
-            field.MED,
-            "MEDICINE",
-            "Medical encyclopedia on this Pi. No drug doses.",
-        ),
-        menu(
-            "Water",
-            "WATER",
-            "Settle, then boil when you can.",
-            [sheet(name, body) for name, body in field.WATER]
-            + [
-                search_action(
-                    "Search the archive",
-                    field.MED,
-                    "WATER",
-                    "Search the medical encyclopedia on this Pi.",
-                )
-            ],
-        ),
-        menu(
-            "Fire",
-            "FIRE",
-            "Small fire, bare soil, cold ashes before you leave.",
-            [sheet(name, body) for name, body in field.FIRE],
-        ),
-        menu(
-            "Knots",
-            "KNOTS",
-            "Dress every knot. Leave a tail a hand long.",
-            [sheet(name, body) for name, body in field.KNOTS_MAIN]
-            + [
-                menu(
-                    "More knots",
-                    "MORE KNOTS",
-                    "Joins, mid-rope loops, and hitches that grip.",
-                    [sheet(name, body) for name, body in field.KNOTS_MORE],
-                )
-            ],
-        ),
-        sheet("Food", field.FOOD, field.MED),
-        sheet("Sanitation", field.SANITATION, field.MED),
-        sheet("Navigation", field.NAVIGATION),
-        menu(
-            "More",
-            "MORE",
-            "Signaling, clothing, places, and the full search.",
-            [
-                sheet("Signaling", field.SIGNALING),
-                sheet("Clothing and weather", field.CLOTHING),
-                search_action("Places", field.VOY, "PLACES", "Type a town, region, river, or country."),
-                search_action("Search all archives", "", "SEARCH", "Search both archives on this Pi."),
-            ],
-        ),
-    ]
+    topics = field.GUIDE.home_topics()
+    if not topics:
+        return [
+            search_action(
+                "Medicine",
+                field.MED,
+                "MEDICINE",
+                "Medical encyclopedia on this Pi. No drug doses.",
+            ),
+            search_action("Search all archives", "", "SEARCH", "Search both archives on this Pi."),
+        ]
+    return [topic_to_item(topic) for topic in topics]
 
 
 def search_hint(book):
@@ -712,6 +796,7 @@ class App:
             self.font_small = load_font(13)
             for screen in self.stack:
                 screen.pop("_lines", None)
+                screen.pop("_pages", None)
         if self.scanlines is None:
             self.scanlines = make_scanlines()
 
@@ -768,25 +853,35 @@ class App:
     def content_width(self):
         return WIDTH - 2 * MARGIN
 
-    def reader_lines(self, screen):
-        cached = screen.get("_lines")
-        if cached is None:
-            cached = wrap_body(screen.get("body") or "", self.font_body, self.font_small, self.content_width())
-            screen["_lines"] = cached
-        return cached
+    def reader_page_px(self):
+        line_h = max(1, self.font_body.get_linesize())
+        nav_y = HEIGHT - MARGIN - NAV_H
+        area = max(line_h, nav_y - self.header_bottom())
+        slots = max(1, area // line_h)
+        return slots * line_h
 
-    def reader_slots(self, top, nav_y):
-        area = max(1, nav_y - top)
-        return max(1, area // self.font_body.get_linesize())
+    def reader_pages(self, screen):
+        cached = screen.get("_pages")
+        if cached is None:
+            directory = screen.get("_image_dir", getattr(field.GUIDE, "directory", None))
+            cached = layout_pages(
+                screen.get("body") or "",
+                self.font_body,
+                self.font_small,
+                self.content_width(),
+                self.reader_page_px(),
+                directory,
+                screen.get("tint", True),
+            )
+            screen["_pages"] = cached
+        return cached
 
     def page_count(self, screen):
         kind = screen["kind"]
         if kind == "menu":
             return max(1, (len(screen["items"]) + MENU_PER - 1) // MENU_PER)
         if kind == "reader":
-            nav_y = HEIGHT - MARGIN - NAV_H
-            slots = self.reader_slots(self.header_bottom(), nav_y)
-            return max(1, (len(self.reader_lines(screen)) + slots - 1) // slots)
+            return max(1, len(self.reader_pages(screen)))
         if kind == "results":
             return max(1, (len(screen["results"]) + RESULT_PER - 1) // RESULT_PER)
         return 1
@@ -831,6 +926,7 @@ class App:
                 "title": item["title"],
                 "body": item.get("body") or "(empty)",
                 "page": 0,
+                "tint": item.get("tint", True),
             }
             if "search_book" in item:
                 screen["search_book"] = item["search_book"]
@@ -866,6 +962,12 @@ class App:
         screen = self.current()
         if wid == "exit":
             self.quit_requested = True
+            return
+        if wid == "home-prev":
+            screen["home_page"] = max(0, screen.get("home_page", 0) - 1)
+            return
+        if wid == "home-next":
+            screen["home_page"] = screen.get("home_page", 0) + 1
             return
         if wid == "cave":
             self.pending = "cave"
@@ -1188,13 +1290,38 @@ class App:
         y += 5
         rects, _btn_h = self.home_grid(y, cave)
         items = home_items()
-        for index, item in enumerate(items):
-            self.add_button(canvas, rects[index], item["label"], f"home:{index}")
-        if cave:
-            self.add_button(canvas, rects[9], "Cave Mapper", "cave")
-            self.add_button(canvas, rects[10], "Exit", "exit")
+        page = 0
+        pages = 1
+        if len(items) > 9:
+            pages = (len(items) + 8) // 9
+            page = min(max(0, self.current().get("home_page", 0)), pages - 1)
+            self.current()["home_page"] = page
+        start = page * 9
+        for offset, item in enumerate(items[start : start + 9]):
+            self.add_button(canvas, rects[offset], item["label"], f"home:{start + offset}")
+        if pages == 1:
+            if cave:
+                self.add_button(canvas, rects[9], "Cave Mapper", "cave")
+                self.add_button(canvas, rects[10], "Exit", "exit")
+            else:
+                self.add_button(canvas, rects[9], "Exit", "exit")
         else:
-            self.add_button(canvas, rects[9], "Exit", "exit")
+            action = rects[9]
+            row = [("Prev", "home-prev", page > 0)]
+            if cave:
+                row.append(("Cave Mapper", "cave", True))
+            row.append(("Exit", "exit", True))
+            row.append(("Next", "home-next", page + 1 < pages))
+            avail_w = WIDTH - 2 * MARGIN
+            count = len(row)
+            btn_w = (avail_w - GAP * (count - 1)) // count
+            extra = avail_w - (btn_w * count + GAP * (count - 1))
+            x = MARGIN
+            for index, (label, wid, enabled) in enumerate(row):
+                grow = 1 if index < extra else 0
+                rect = pygame.Rect(x, action.y, btn_w + grow, action.height)
+                self.add_button(canvas, rect, label, wid, enabled)
+                x += btn_w + grow + GAP
 
     def draw_menu(self, canvas):
         screen = self.current()
@@ -1215,25 +1342,27 @@ class App:
     def draw_reader(self, canvas):
         screen = self.current()
         nav_y = HEIGHT - MARGIN - NAV_H
-        slots = self.reader_slots(self.header_bottom(), nav_y)
-        lines = self.reader_lines(screen)
-        pages = max(1, (len(lines) + slots - 1) // slots)
-        page = min(screen.get("page", 0), pages - 1)
+        pages = self.reader_pages(screen)
+        count = max(1, len(pages))
+        page = min(screen.get("page", 0), count - 1)
         screen["page"] = page
-        top = self.draw_header(canvas, screen.get("title") or "SHEET", page, pages)
+        top = self.draw_header(canvas, screen.get("title") or "SHEET", page, count)
         self.draw_nav(canvas, self.nav_specs(screen, with_search="search_book" in screen))
         canvas.set_clip(pygame.Rect(0, top, WIDTH, max(1, nav_y - top)))
-        shown = lines[page * slots : (page + 1) * slots]
         y = top
-        line_h = self.font_body.get_linesize()
-        for line in shown:
-            if line:
+        for block in pages[page]:
+            if block["kind"] == "image":
+                image = block["image"]
+                x = MARGIN + max(0, (self.content_width() - image.get_width()) // 2)
+                canvas.blit(image, (x, y))
+            elif block.get("text"):
+                line = block["text"]
                 use = self.font_body
                 if use.size(line)[0] > self.content_width() and self.font_small.size(line)[0] <= self.content_width():
                     use = self.font_small
                 img = use.render(line, True, GREEN)
                 canvas.blit(img, (MARGIN, y))
-            y += line_h
+            y += block["px"]
         canvas.set_clip(None)
 
     def draw_search(self, canvas):
@@ -1568,7 +1697,7 @@ def self_test(screenshot_dir=None):
     # The second hit uses widgets from the menu draw. After the first pointer the
     # widgets still describe the menu, so the second lookup is valid.
     check(app.current()["kind"] == "reader", "opened a sheet", failures)
-    check("Look up before you look down" in app.current()["body"], "sheet text comes from field.py", failures)
+    check("Look up before you look down" in app.current()["body"], "sheet text comes from the guide", failures)
     app.draw(canvas)
     nav = {widget["id"]: widget for widget in app.widgets}
     check(set(["prev", "back", "next"]).issubset(nav), "reader nav", failures)
@@ -1600,6 +1729,124 @@ def self_test(screenshot_dir=None):
     food.activate("home:5")
     food.draw(canvas)
     check("search" in [widget["id"] for widget in food.widgets], "food sheet can search", failures)
+    check(food.current()["kind"] == "reader" and food.current()["body"].startswith("Cook meat, fish,"), "food opens the sheet", failures)
+
+    check(content is not None, "content loader imports", failures)
+    home_titles = [topic.title for topic in field.GUIDE.home_topics()]
+    check(
+        home_titles == ["Shelter", "Medicine", "Water", "Fire", "Knots", "Food", "Sanitation", "Navigation", "More"],
+        f"home menu order {home_titles}",
+        failures,
+    )
+    check(len(field.SHELTER) == 5 and len(field.WATER) == 2 and len(field.FIRE) == 3, "sheet counts", failures)
+    check(len(field.KNOTS_MAIN) == 8 and field.KNOTS_MAIN[0][0] == "Which knot", "main knots", failures)
+    check(field.KNOT_WHICH == field.KNOTS_MAIN[0][1], "which knot text", failures)
+    check(len(field.KNOTS_MORE) == 7, "more knots", failures)
+    check("standing     standing" in field.KNOTS_MAIN[1][1], "square knot diagram text", failures)
+    check(
+        content.console_body("See ![ridge pole](img/ridge.png) here.") == "See [diagram: ridge pole] here.",
+        "console diagram placeholder",
+        failures,
+    )
+    check(content.console_body(field.SHELTER[0][1]) == field.SHELTER[0][1], "plain sheet is unchanged", failures)
+    knots = App(show_cave=False)
+    knots.activate("home:4")
+    knot_labels = [item["label"] for item in knots.current()["items"]]
+    check(
+        knot_labels[0] == "Which knot" and knot_labels[-1] == "More knots" and len(knot_labels) == 9,
+        f"knots menu {knot_labels}",
+        failures,
+    )
+    more = App(show_cave=False)
+    more.activate("home:8")
+    more_labels = [item["label"] for item in more.current()["items"]]
+    check(
+        more_labels == ["Signaling", "Clothing and weather", "Places", "Search all archives"],
+        f"more menu {more_labels}",
+        failures,
+    )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        img_dir = os.path.join(tmp, "img")
+        os.makedirs(img_dir)
+        picture = pygame.Surface((80, 40))
+        picture.fill((255, 255, 255))
+        pygame.image.save(picture, os.path.join(img_dir, "ridge.png"))
+        pages = layout_pages(
+            "Before the picture.\n\n![ridge pole](img/ridge.png)\n\nAfter it.",
+            app.font_body,
+            app.font_small,
+            app.content_width(),
+            app.reader_page_px(),
+            tmp,
+            True,
+        )
+        images = [block for page in pages for block in page if block["kind"] == "image"]
+        check(len(images) == 1, "image lays out on a card", failures)
+        if images:
+            pixel = images[0]["image"].get_at((4, 4))
+            check(pixel.g > pixel.r and pixel.g > 100, f"image is green tinted {tuple(pixel)}", failures)
+            shown = App(show_cave=False)
+            shown.stack.append(
+                {
+                    "kind": "reader",
+                    "title": "RIDGE",
+                    "body": "![ridge pole](img/ridge.png)",
+                    "page": 0,
+                    "tint": True,
+                    "_image_dir": tmp,
+                }
+            )
+            shown.draw(canvas)
+            hits = 0
+            for sample_y in range(36, 140):
+                pixel = canvas.get_at((WIDTH // 2, sample_y))
+                if pixel.g > 150:
+                    hits += 1
+            check(hits > 15, f"image is drawn on the card ({hits} green rows)", failures)
+        missing_pages = layout_pages(
+            "![ridge pole](img/missing.png)",
+            app.font_body,
+            app.font_small,
+            app.content_width(),
+            app.reader_page_px(),
+            tmp,
+            True,
+        )
+        check(missing_pages[0][0]["text"] == "[diagram: ridge pole]", "missing image uses the placeholder", failures)
+        check(content.resolve_image(tmp, "../secret.png") is None, "image path stays in content", failures)
+        with open(os.path.join(tmp, "medicine.md"), "w", encoding="utf-8") as handle:
+            handle.write(
+                "---\ntitle: Medicine\norder: 1\nbook: "
+                + field.MED
+                + "\n---\n\n## Bleeding\n\nPress on it.\n\n## Burn\n\nCool it.\n"
+            )
+        loaded = content.load_guide(tmp)
+        saved_guide = field.GUIDE
+        field.GUIDE = loaded
+        try:
+            item = topic_to_item(loaded.home_topics()[0])
+            labels = [entry["label"] for entry in item["items"]]
+            check(
+                item["action"] == "menu" and labels == ["Bleeding", "Burn", "Search the archive"],
+                f"medicine cards plus search {labels}",
+                failures,
+            )
+            check(item["items"][-1].get("book") == field.MED, "medicine search archive", failures)
+        finally:
+            field.GUIDE = saved_guide
+        empty = content.load_guide(os.path.join(tmp, "absent"))
+        check(empty.home_topics() == [] and empty.directory is None, "missing content dir", failures)
+        field.GUIDE = empty
+        try:
+            labels = [item["label"] for item in home_items()]
+            check(labels == ["Medicine", "Search all archives"], f"fallback home {labels}", failures)
+            fallback = App(show_cave=False)
+            fallback.draw(canvas)
+            drawn = [widget["label"] for widget in fallback.widgets]
+            check(drawn[0] == "Medicine" and "Exit" in drawn, f"fallback screen {drawn}", failures)
+        finally:
+            field.GUIDE = saved_guide
 
     listed = App(show_cave=False)
     listed.stack.append(

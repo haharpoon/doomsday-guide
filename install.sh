@@ -15,8 +15,92 @@ BASE="https://raw.githubusercontent.com/haharpoon/doomsday-guide/main"
 curl -fsSL "$BASE/field.py" -o /usr/local/bin/field
 curl -fsSL "$BASE/field_touch.py" -o /usr/local/bin/field_touch
 curl -fsSL "$BASE/cavemap.py" -o /usr/local/bin/cavemap
+curl -fsSL "$BASE/content.py" -o /usr/local/bin/content.py
 chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap
-python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap
+chmod 644 /usr/local/bin/content.py
+python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/content.py
+
+# Sheets are Markdown. Writers edit those files; the guides only read them.
+install_content() {
+  dest="/usr/local/share/doomsday/content"
+  rm -rf "$dest"
+  mkdir -p "$dest"
+  script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+  if [ -d "$script_dir/content" ]; then
+    cp -a "$script_dir/content"/. "$dest"/
+    chmod -R a+rX "$dest"
+    echo "Guide sheets installed to $dest"
+    return 0
+  fi
+  if python3 - "$dest" "$BASE" << 'PY'
+import json, os, sys, urllib.request
+dest, base = sys.argv[1], sys.argv[2]
+api = "https://api.github.com/repos/haharpoon/doomsday-guide/contents/content?ref=main"
+headers = {"User-Agent": "doomsday-install", "Accept": "application/vnd.github+json"}
+
+def download(url, path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    request = urllib.request.Request(url, headers={"User-Agent": "doomsday-install"})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        data = response.read()
+    with open(path, "wb") as handle:
+        handle.write(data)
+
+def fetch_api(url, rel):
+    request = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(request, timeout=60) as response:
+        items = json.load(response)
+    if not isinstance(items, list):
+        raise RuntimeError("unexpected content listing")
+    for item in items:
+        name = item.get("name") or ""
+        kind = item.get("type")
+        target = os.path.join(dest, rel, name) if rel else os.path.join(dest, name)
+        if kind == "dir":
+            os.makedirs(target, exist_ok=True)
+            fetch_api(item["url"], os.path.join(rel, name) if rel else name)
+        elif kind == "file" and item.get("download_url"):
+            download(item["download_url"], target)
+
+try:
+    fetch_api(api, "")
+except Exception as error:
+    sys.stderr.write(f"directory listing failed ({error}). Fetching known sheets.\n")
+    names = [
+        "README.md",
+        "shelter.md",
+        "medicine.md",
+        "water.md",
+        "fire.md",
+        "knot_which.md",
+        "knots_main.md",
+        "knots_more.md",
+        "food.md",
+        "sanitation.md",
+        "navigation.md",
+        "more.md",
+        "signaling.md",
+        "clothing.md",
+    ]
+    ok = False
+    for name in names:
+        try:
+            download(base + "/content/" + name, os.path.join(dest, name))
+            ok = True
+        except Exception as item_error:
+            sys.stderr.write(f"missing {name} ({item_error})\n")
+    if not ok:
+        sys.exit(1)
+os.makedirs(os.path.join(dest, "img"), exist_ok=True)
+PY
+  then
+    chmod -R a+rX "$dest"
+    echo "Guide sheets installed to $dest"
+  else
+    echo "Could not install guide sheets. The menu still opens, and search still works." >&2
+  fi
+}
+install_content
 
 TARGET="${SUDO_USER:-}"
 if [ -z "$TARGET" ] || [ "$TARGET" = "root" ]; then
@@ -163,6 +247,7 @@ fi
 
 echo
 echo "INSTALLED"
+echo "Guide sheets: /usr/local/share/doomsday/content"
 if [ "$CHOICE" = "1" ]; then
   echo "After login on this screen, the touch guide opens."
   echo "Keyboard guide: type field"
