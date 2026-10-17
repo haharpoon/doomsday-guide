@@ -30,6 +30,8 @@ Names: each loose end is a working end. The rest of that rope is its standing pa
 
 5. Pull both standing parts and both ends to set it. Leave ends at least a hand long.
 
+![square knot: right over left, then left over right](img/knot_square.png)
+
 ## Sheet bend
 
 Use: join two ropes, including ropes of different thickness. The thicker rope makes the bight.
@@ -55,6 +57,8 @@ Do not use: as a loop around a person. For slippery line, or a large difference 
 6. Double sheet bend: at step 3, wrap the thin rope around the bight twice, then tuck under itself as in step 4. Use this for wet line, smooth line, or a thin cord on a thick rope.
 
 7. Set it with a hard pull. Leave a hand of tail on both ropes.
+
+![sheet bend: thin end through a bight of the thick rope](img/knot_sheet_bend.png)
 
 ## Bowline
 
@@ -86,6 +90,8 @@ The story that matches the steps: the standing part is the tree. A small loop in
 
 Tail: at least a hand long. Longer if the rope is stiff.
 
+![bowline: end up through loop, round standing part, back down](img/knot_bowline.png)
+
 ## Figure-eight loop
 
 Use: a loop at the end of a rope that must not slip and must be easy to check by eye. A ridge line you will load. A haul loop. Prefer this over a bowline when you cannot stand there and watch the knot.
@@ -106,6 +112,8 @@ You are tying a figure-eight, passing the end around the anchor, then tracing th
 6. Dress it. Work the slack out from the anchor toward the tail until the two strands sit parallel and the knot is a compact stack of turns. Pull it hard.
 
 7. The tail should be at least a hand long. This knot is hard to untie after a heavy load. That is the point.
+
+![figure-eight loop tied in a bight](img/knot_fig8_loop.png)
 
 ## Clove hitch
 
@@ -130,6 +138,8 @@ Do not use: as the only hitch for a load that will jerk, or on a smooth pole. It
 
 6. If you can roll the hitch around the post with your thumb, it is not safe for that load. Add a half hitch around the standing part, or retie as a round turn and two half hitches.
 
+![clove hitch: two crossing wraps on a post](img/knot_clove.png)
+
 ## Round turn and two half hitches
 
 Use: tie a rope to a post, ring, tree, or pack frame when the load actually matters. The round turn does the holding. The hitches only keep the turn from unwinding.
@@ -145,6 +155,8 @@ Use: tie a rope to a post, ring, tree, or pack frame when the load actually matt
 You should be able to let go of the working end after the round turn, before the hitches, and the load should already be mostly held. If it is not, add nothing magical. Take another turn around the anchor, then put the two half hitches on.
 
 Tail: a hand long. This knot is easier to untie than a figure-eight after a heavy pull.
+
+![round turn then two half hitches](img/knot_round_turn.png)
 
 ## Taut-line hitch
 
@@ -163,3 +175,5 @@ The hitch slides when you push it and holds when the guy line pulls it.
 5. Test it. Pull the guy as the wind will pull it. The hitch should jam and hold. If it slips under that pull, you wrapped away from the load instead of toward it. Untie and wrap the other direction.
 
 Retie it if the rope dries or stretches a lot. A taut-line on stiff cold rope can creep. Check guy lines before sleep.
+
+![taut-line hitch: two turns inside, one outside](img/knot_taut_line.png)
