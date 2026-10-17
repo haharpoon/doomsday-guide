@@ -2093,7 +2093,7 @@ def self_test(screenshot_dir=None):
     more.activate("home:8")
     more_labels = [item["label"] for item in more.current()["items"]]
     check(
-        more_labels == ["Signaling", "Clothing and weather", "Places", "Search all archives"],
+        more_labels == ["Signals & Radio", "Clothing and weather", "Places", "Search all archives"],
         f"more menu {more_labels}",
         failures,
     )

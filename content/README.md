@@ -53,7 +53,7 @@ A `book` value with nothing after the colon searches both archives.
 - **Several cards** open as a menu. Each `##` heading is one button.
 - **One card** opens straight onto that sheet. The sheet title is the file's `title`.
 - **No cards, with `book` set** opens search. That is how Medicine works today. One card opens as a sheet and still offers search, the way Food does. Several cards are listed, and Search stays on that menu.
-- **`parent`** nests the file under another topic. `signaling.md` and `clothing.md` sit under `more.md`. `knots_more.md` sits under Knots.
+- **`parent`** nests the file under another topic. `signals.md` and `clothing.md` sit under `more.md`. `knots_more.md` sits under Knots.
 - **`merge: cards`** is for a card that lives in its own file but should appear inside the parent. `knot_which.md` is the first Knots card ("Which knot").
 
 `more.md` is the More button. The program adds Places, Search all archives, and (on the keyboard) Cave Mapper after the sheets you list under it. Those three are the library and the scanner, not sheets.
