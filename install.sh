@@ -76,12 +76,16 @@ except Exception as error:
         "knot_which.md",
         "knots_main.md",
         "knots_more.md",
+        "knots_lashing.md",
+        "firstaid.md",
+        "tools.md",
         "food.md",
         "sanitation.md",
         "navigation.md",
         "more.md",
         "signals.md",
         "clothing.md",
+        "weather.md",
     ]
     ok = False
     for name in names:

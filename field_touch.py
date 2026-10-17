@@ -1923,6 +1923,7 @@ def self_test(screenshot_dir=None):
         check(loaded == {"cx": [1.0, 0.0, 2.0], "cy": [0.0, 1.0, 3.0]}, "string coefficients", failures)
 
     import inspect
+    import re
 
     signature = inspect.signature(field.search)
     check(signature.parameters["timeout"].default == 60, "keyboard search timeout unchanged", failures)
@@ -2106,10 +2107,48 @@ def self_test(screenshot_dir=None):
     more.activate("home:10")
     more_labels = [item["label"] for item in more.current()["items"]]
     check(
-        more_labels == ["Signals & Radio", "Clothing and weather", "Places", "Search all archives"],
+        more_labels == ["Signals & Radio", "Clothing", "Weather", "Places", "Search all archives"],
         f"more menu {more_labels}",
         failures,
     )
+    weather_item = more.current()["items"][2]
+    weather_labels = [item["label"] for item in weather_item.get("items", [])]
+    check(
+        weather_item.get("action") == "menu" and len(weather_labels) == 12 and weather_labels[0] == "Read the sky",
+        f"weather menu {weather_labels}",
+        failures,
+    )
+    clothing_labels = [item["label"] for item in more.current()["items"][1].get("items", [])]
+    check(len(clothing_labels) == 11 and clothing_labels[0] == "Layers", f"clothing menu {clothing_labels}", failures)
+    sanitation = App(show_cave=False)
+    sanitation.activate("home:8")
+    san_items = sanitation.current().get("items", [])
+    check(
+        sanitation.current()["kind"] == "menu"
+        and len(san_items) == 14
+        and san_items[1]["label"] == "Cat hole"
+        and san_items[-1].get("action") == "search",
+        f"sanitation menu keeps search {[item.get('label') for item in san_items]}",
+        failures,
+    )
+    navigation = App(show_cave=False)
+    navigation.activate("home:9")
+    nav_labels = [item["label"] for item in navigation.current().get("items", [])]
+    check(
+        len(nav_labels) == 17 and nav_labels[0] == "Lost? STOP" and nav_labels[-1] == "Navigation sources",
+        f"navigation menu {nav_labels}",
+        failures,
+    )
+    content_dir = field.GUIDE.directory
+    pictures = []
+    for slug in ("navigation", "sanitation", "clothing", "weather"):
+        for _name, body in field.GUIDE.cards(slug):
+            pictures.extend(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body))
+    check(len(pictures) == 16, f"new topic diagrams {len(pictures)}", failures)
+    missing = [rel for rel in pictures if content.resolve_image(content_dir, rel) is None]
+    check(not missing, f"new topic diagrams exist {missing}", failures)
+    sizes = {pygame.image.load(str(content.resolve_image(content_dir, rel))).get_size() for rel in pictures if rel not in missing}
+    check(sizes <= {(480, 284)}, f"new topic diagrams are 480x284 {sizes}", failures)
 
     with tempfile.TemporaryDirectory() as tmp:
         img_dir = os.path.join(tmp, "img")
