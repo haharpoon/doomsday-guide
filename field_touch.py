@@ -280,22 +280,47 @@ def load_card_image(relpath, max_w, max_h, directory, tint, enlarge=False):
     return image
 
 
-def stamp_enlarge_hint(image, font):
-    """Paint a dim 'tap to enlarge' on an inline diagram. Done once, at layout."""
-    width, height = image.get_size()
-    if font is None or width < 24 or height < 12:
-        return
-    label = "tap to enlarge"
-    if font.size(label)[0] > width - 4:
-        label = ellipsize(font, label, max(0, width - 4))
-    if not label:
-        return
-    hint = font.render(label, True, DIM)
-    shadow = font.render(label, True, BLACK)
-    x = max(0, width - hint.get_width() - 3)
-    y = max(0, height - hint.get_height() - 2)
-    image.blit(shadow, (min(width - shadow.get_width(), x + 1), min(height - shadow.get_height(), y + 1)))
-    image.blit(hint, (x, y))
+ENLARGE_MARK = "[+]"
+
+
+def enlarge_badge_size(font):
+    """Pixel size of the black [+] box, including its padding. (0, 0) with no font."""
+    if font is None:
+        return 0, 0
+    text_w, text_h = font.size(ENLARGE_MARK)
+    if text_w <= 0 or text_h <= 0:
+        return 0, 0
+    return text_w + 6, text_h + 4
+
+
+def draw_enlarge_badge(canvas, font, image_rect, strip_h):
+    """Green [+] on a black box, in the strip above the picture's top-right.
+
+    The box is outside image_rect, so it never paints over the diagram or its caption.
+    """
+    if font is None or strip_h <= 0 or image_rect.width < 8 or image_rect.height < 8:
+        return None
+    label = font.render(ENLARGE_MARK, True, GREEN)
+    box_w = label.get_width() + 6
+    box_h = label.get_height() + 4
+    if box_w <= 0 or box_h <= 0 or box_h > strip_h:
+        return None
+    x = image_rect.right - box_w
+    x = max(0, min(x, WIDTH - box_w))
+    y = image_rect.top - box_h
+    if y < 0:
+        return None
+    box = pygame.Rect(x, y, box_w, box_h)
+    pygame.draw.rect(canvas, BLACK, box)
+    pygame.draw.rect(canvas, GREEN, box, 1)
+    canvas.blit(
+        label,
+        (
+            box.x + (box_w - label.get_width()) // 2,
+            box.y + (box_h - label.get_height()) // 2,
+        ),
+    )
+    return box
 
 
 def layout_pages(text, font, small, width, page_px, directory, tint):
@@ -314,20 +339,25 @@ def layout_pages(text, font, small, width, page_px, directory, tint):
             continue
         alt, relpath = rest
         # 480x284 is the artboard. The live box is the reader pane under the title.
-        image = load_card_image(relpath, min(width, 480), min(page_px, 284), directory, tint)
+        # A strip above the picture holds the enlarge badge so the caption stays clear.
+        badge_h = enlarge_badge_size(small)[1]
+        max_h = min(page_px, 284)
+        if badge_h >= max_h:
+            badge_h = 0
+        image = load_card_image(relpath, min(width, 480), max(1, max_h - badge_h), directory, tint)
         if image is None:
             label = f"[diagram: {alt}]" if alt else "[diagram]"
             for line in wrap_body(label, font, small, width):
                 blocks.append({"kind": "text", "text": line, "px": line_h})
             continue
-        stamp_enlarge_hint(image, small)
         blocks.append(
             {
                 "kind": "image",
                 "image": image,
                 "alt": alt,
                 "relpath": relpath,
-                "px": image.get_height(),
+                "px": image.get_height() + badge_h,
+                "badge_h": badge_h,
             }
         )
     zoom = 0
@@ -1645,11 +1675,15 @@ class App:
         for block in pages[page]:
             if block["kind"] == "image":
                 image = block["image"]
+                badge_h = block.get("badge_h", 0)
                 x = MARGIN + max(0, (self.content_width() - image.get_width()) // 2)
-                canvas.blit(image, (x, y))
+                rect = pygame.Rect(x, y + badge_h, image.get_width(), image.get_height())
+                canvas.blit(image, rect.topleft)
+                draw_enlarge_badge(canvas, self.font_small, rect, badge_h)
+                # The whole picture is the tap target. The badge sits in the strip above it.
                 self.widgets.append(
                     {
-                        "rect": pygame.Rect(x, y, image.get_width(), image.get_height()),
+                        "rect": rect,
                         "id": f"zoom:{block.get('zoom', 0)}",
                         "enabled": True,
                         "label": "diagram",
@@ -2426,14 +2460,34 @@ def self_test(screenshot_dir=None):
             check(hits > 15, f"image is drawn on the card ({hits} green rows)", failures)
             hint_image = images[0]["image"]
             center = hint_image.get_at((4, 4))
-            dark = 0
-            for py in range(max(0, hint_image.get_height() - 14), hint_image.get_height()):
-                for px in range(max(0, hint_image.get_width() - 70), hint_image.get_width()):
-                    if hint_image.get_at((px, py)).g + 30 < center.g:
-                        dark += 1
-            check(dark > 8, f"tap to enlarge hint ({dark} px)", failures)
+            corner = hint_image.get_at((hint_image.get_width() - 2, hint_image.get_height() - 2))
+            check(
+                abs(corner.g - center.g) < 20 and abs(corner.r - center.r) < 20,
+                f"hint is not painted on the picture {tuple(corner)} vs {tuple(center)}",
+                failures,
+            )
             zoom_widgets = [widget for widget in shown.widgets if widget["id"].startswith("zoom:")]
             check(len(zoom_widgets) == 1 and zoom_widgets[0]["id"] == "zoom:0", "inline image is tappable", failures)
+            rect = zoom_widgets[0]["rect"]
+            check(
+                (rect.width, rect.height) == hint_image.get_size(),
+                f"tap target is the whole image {rect.size}",
+                failures,
+            )
+            picture_corner = canvas.get_at((rect.right - 2, rect.top + 1))
+            check(picture_corner.g > 150, f"badge stays off the picture {tuple(picture_corner)}", failures)
+            badge_w, badge_h = enlarge_badge_size(shown.font_small)
+            badge_box = pygame.Rect(rect.right - badge_w, rect.top - badge_h, badge_w, badge_h)
+            check(badge_h > 0 and not badge_box.colliderect(rect), "badge strip is outside the picture", failures)
+            badge_green = 0
+            for py in range(badge_box.top, badge_box.bottom):
+                for px in range(badge_box.left, badge_box.right):
+                    pixel = canvas.get_at((px, py))
+                    if pixel.g > 140 and pixel.g > pixel.r + 40:
+                        badge_green += 1
+            check(badge_green > 8, f"enlarge badge ({badge_green} px)", failures)
+            check(shown.hit(rect.right - 2, rect.top + 2) == "zoom:0", "top-right of the picture is tappable", failures)
+            check(shown.hit(rect.left + 1, rect.bottom - 2) == "zoom:0", "bottom of the picture is tappable", failures)
             page_at = shown.current().get("page", 0)
             title_at = shown.current().get("title")
             depth = len(shown.stack)
