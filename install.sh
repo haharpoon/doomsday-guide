@@ -80,7 +80,7 @@ except Exception as error:
         "sanitation.md",
         "navigation.md",
         "more.md",
-        "signaling.md",
+        "signals.md",
         "clothing.md",
     ]
     ok = False

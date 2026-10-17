@@ -1,6 +1,6 @@
 # Doomsday Guide
 
-Offline field guide for a Raspberry Pi. Shelter, water, fire, knots, food, sanitation, navigation, signaling, and clothing are stored on the Pi. Medicine and places search the Kiwix archives already on the device.
+Offline field guide for a Raspberry Pi. Shelter, water, fire, knots, food, sanitation, navigation, signals and radio, and clothing are stored on the Pi. Medicine and places search the Kiwix archives already on the device.
 
 On the Pi, install it with:
 

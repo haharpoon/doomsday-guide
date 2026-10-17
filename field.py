@@ -100,7 +100,7 @@ KNOT_WHICH = _WHICH[0][1] if _WHICH else ""
 FOOD = GUIDE.plain("food")
 SANITATION = GUIDE.plain("sanitation")
 NAVIGATION = GUIDE.plain("navigation")
-SIGNALING = GUIDE.plain("signaling")
+SIGNALS = GUIDE.plain("signals")
 CLOTHING = GUIDE.plain("clothing")
 
 
