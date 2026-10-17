@@ -25,6 +25,8 @@ Do not stand inside the V of rope while you haul. If the anchor or the loop fail
 
 To release: untie the two half hitches while keeping your weight out of the V, then let the end slip back through the loop.
 
+![trucker's hitch: loop, anchor, pull, lock](img/knot_truckers.png)
+
 ## Alpine butterfly
 
 Use: a loop in the middle of a rope when you need both ends free. A middle attachment on a ridge line. An anchor point that can be pulled in any of the three directions.
@@ -43,6 +45,8 @@ Pull each standing part, then pull the loop. It should not collapse. If it colla
 
 This loop is strong enough to be the pulley loop in a trucker's hitch.
 
+![alpine butterfly: mid-rope loop](img/knot_alpine_butterfly.png)
+
 ## Rolling hitch
 
 Use: pull along a spar, or attach a small cord to a larger rope that is already tight, when the pull is almost parallel to that rope or spar.
@@ -56,6 +60,8 @@ Use: pull along a spar, or attach a small cord to a larger rope that is already 
 4. Pull the standing part. The hitch should grip and not walk along the spar. Push the wraps the other way and it should slide so you can reset it.
 
 If it slips toward the load, the second turn is on the wrong side. The extra turn belongs on the side the pull comes from.
+
+![rolling hitch: two wraps then hitch](img/knot_rolling.png)
 
 ## Timber hitch
 
@@ -73,6 +79,8 @@ Use: drag a log, start a lashing around a pole, or tow a bundle when the pull wi
 
 A timber hitch with no load will fall off. That is normal. Put the load on it before you trust it, and look at it when the pull changes direction.
 
+![timber hitch: end twisted round itself on a log](img/knot_timber.png)
+
 ## Double fisherman's knot
 
 Use: join two ropes of similar size when the join must not slip and you can accept a knot that is miserable to untie. Also the knot that closes a prusik loop.
@@ -89,6 +97,8 @@ Use: join two ropes of similar size when the join must not slip and you can acce
 
 Do not use this where you must untie in a hurry. Cut it if you have to.
 
+![double fisherman's: two double overhands](img/knot_double_fisherman.png)
+
 ## Water knot
 
 Use: join two pieces of flat webbing or a seatbelt strap.
@@ -103,6 +113,8 @@ Do not use: on round rope. Use a sheet bend or a double fisherman's knot for rop
 4. Tails at least three fingers long. Webbing is slippery when wet. Short tails pull through.
 
 5. Look at both faces. If one strap skipped a bend, the knot is only an overhand with a strap lying next to it. It will pull out. Retie it.
+
+![water knot: overhand followed back in webbing](img/knot_water.png)
 
 ## Prusik
 
@@ -121,3 +133,22 @@ Use: a cord that grips a thicker rope when loaded and slides when you hold the l
 6. Do not shock-load it. Sit your weight on slowly the first time. If it slips, add a wrap or use a thinner cord. If the cord is as thick as the rope, no number of wraps will save it.
 
 This hitch holds a load on a rope. It is not a substitute for a belay you do not know how to build. Use it for camp loads you can afford to have drop a short distance while you test it.
+
+![prusik: cord loop wrapped three times](img/knot_prusik.png)
+
+## Sheepshank
+
+Use: shorten a rope without cutting it, or take the strain off a worn section.
+Do not use: on anything you cannot watch. It falls apart when the load goes slack.
+
+1. Fold the slack into an S shape so there are three parallel lines. Put the worn part in the middle line.
+
+2. Make a small half hitch in the standing part near one end. Drop it over the bend at that end.
+
+3. Do the same at the other end.
+
+4. Pull both ends slowly so the hitches bite.
+
+5. For more safety, push a stick through each end bend, or tie each bend to the standing part with cord.
+
+![sheepshank: S-fold with a half hitch over each bend](img/knot_sheepshank.png)

@@ -791,7 +791,7 @@ def home_items():
                 "Medicine",
                 field.MED,
                 "MEDICINE",
-                "Medical encyclopedia on this Pi. No drug doses.",
+                "Medical encyclopedia on this Pi. Doses: see First aid.",
             ),
             search_action("Search all archives", "", "SEARCH", "Search both archives on this Pi."),
         ]
@@ -1945,7 +1945,14 @@ def self_test(screenshot_dir=None):
     canvas = pygame.Surface((WIDTH, HEIGHT))
     app.draw(canvas)
     labels = [widget["label"] for widget in app.widgets]
-    check(labels[:9] == [item["label"] for item in home_items()], "home labels", failures)
+    check(labels[:9] == [item["label"] for item in home_items()][:9], "home labels", failures)
+    check({"home-prev", "home-next"} <= {widget["id"] for widget in app.widgets}, "home has a second page", failures)
+    paged = App(show_cave=False)
+    paged.draw(canvas)
+    paged.activate("home-next")
+    paged.draw(canvas)
+    page_two = [widget["label"] for widget in paged.widgets if widget["id"].startswith("home:")]
+    check(page_two == ["Navigation", "More"], f"home page two {page_two}", failures)
     check("Exit" in labels and "Cave Mapper" not in labels, "exit without cavemap", failures)
     heights = [widget["rect"].height for widget in app.widgets]
     check(all(height >= 60 for height in heights), f"home button height {heights}", failures)
@@ -2058,7 +2065,7 @@ def self_test(screenshot_dir=None):
     check(app.current()["query"] == "  ", "tap works again after the debounce", failures)
 
     food = App(show_cave=False)
-    food.activate("home:5")
+    food.activate("home:6")
     food.draw(canvas)
     check("search" in [widget["id"] for widget in food.widgets], "food sheet can search", failures)
     check(food.current()["kind"] == "reader" and food.current()["body"].startswith("Cook meat, fish,"), "food opens the sheet", failures)
@@ -2066,14 +2073,15 @@ def self_test(screenshot_dir=None):
     check(content is not None, "content loader imports", failures)
     home_titles = [topic.title for topic in field.GUIDE.home_topics()]
     check(
-        home_titles == ["Shelter", "Medicine", "Water", "Fire", "Knots", "Food", "Sanitation", "Navigation", "More"],
+        home_titles
+        == ["Shelter", "Medicine", "First aid", "Water", "Fire", "Knots", "Food", "Tools and wildlife", "Sanitation", "Navigation", "More"],
         f"home menu order {home_titles}",
         failures,
     )
-    check(len(field.SHELTER) == 5 and len(field.WATER) == 2 and len(field.FIRE) == 3, "sheet counts", failures)
+    check(len(field.SHELTER) == 5 and len(field.WATER) == 11 and len(field.FIRE) == 3, "sheet counts", failures)
     check(len(field.KNOTS_MAIN) == 8 and field.KNOTS_MAIN[0][0] == "Which knot", "main knots", failures)
     check(field.KNOT_WHICH == field.KNOTS_MAIN[0][1], "which knot text", failures)
-    check(len(field.KNOTS_MORE) == 7, "more knots", failures)
+    check(len(field.KNOTS_MORE) == 8, "more knots", failures)
     check("standing     standing" in field.KNOTS_MAIN[1][1], "square knot diagram text", failures)
     check(
         content.console_body("See ![ridge pole](img/ridge.png) here.") == "See [diagram: ridge pole] here.",
@@ -2082,15 +2090,15 @@ def self_test(screenshot_dir=None):
     )
     check(content.console_body(field.SHELTER[0][1]) == field.SHELTER[0][1], "plain sheet is unchanged", failures)
     knots = App(show_cave=False)
-    knots.activate("home:4")
+    knots.activate("home:5")
     knot_labels = [item["label"] for item in knots.current()["items"]]
     check(
-        knot_labels[0] == "Which knot" and knot_labels[-1] == "More knots" and len(knot_labels) == 9,
+        knot_labels[0] == "Which knot" and knot_labels[-2:] == ["More knots", "Lashings"] and len(knot_labels) == 10,
         f"knots menu {knot_labels}",
         failures,
     )
     more = App(show_cave=False)
-    more.activate("home:8")
+    more.activate("home:10")
     more_labels = [item["label"] for item in more.current()["items"]]
     check(
         more_labels == ["Signals & Radio", "Clothing and weather", "Places", "Search all archives"],
