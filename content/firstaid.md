@@ -80,7 +80,9 @@ Adult or child over 1 year:
 
 3. Still blocked: stand behind, fist just above the belly button, other hand over it. Pull sharply in and up. Up to 5 times.
 
-4. Repeat 5 back blows, 5 thrusts.
+4. Still blocked: call 999 (or send someone) and keep alternating 5 back blows and 5 thrusts.
+
+No blind finger sweeps in the mouth. Pregnant or too big to reach round: put your hands higher, on the lower breastbone, and give chest thrusts.
 
 Baby under 1: lay face down along your forearm, head low, 5 back blows. Then turn face up, 2 fingers on the breastbone, 5 chest thrusts. Never belly thrusts on a baby.
 
@@ -106,7 +108,7 @@ Arm or leg bleeding that will not stop with pressure: tourniquet, next card.
 
 Only for life-threatening limb bleeding that pressure cannot stop.
 
-1. Place it 5 to 7 cm above the wound, between wound and body. Not on a joint. If unsure, go high on the limb.
+1. Place it 5 to 8 cm (2 to 3 inches) above the wound, between wound and body. Never over a joint (elbow, knee, wrist, ankle). Wound near or below a joint: go above the joint. If you cannot see where it bleeds from, go high on the limb.
 
 2. Use a strip at least 4 cm wide. Thin cord cuts skin.
 
@@ -402,7 +404,7 @@ Do not give ibuprofen to anyone with asthma made worse by it, stomach ulcers, ki
 
 ## Dose: paracetamol
 
-Adults and 16+: 500 mg to 1 g (1 or 2 x 500 mg tablets). Wait 4 hours between doses. No more than 4 doses (4 g) in 24 hours. Under 50 kg: use the lower dose.
+Adults and 16+: 500 mg to 1 g (1 or 2 x 500 mg tablets). Wait at least 4 hours between doses. No more than 8 x 500 mg tablets (4 g) in 24 hours. Under 50 kg: you may need a lower dose. No more than 3 days without advice.
 
 Infant liquid 120 mg in 5 ml:
 
@@ -424,7 +426,9 @@ Six plus liquid 250 mg in 5 ml:
 
 12 to 15 years: 10 to 15 ml
 
-Children: up to 4 doses in 24 hours, at least 4 hours apart. Under 3 months: get advice. Overdose can harm the liver even if they seem fine: get help.
+16 to 17 years: 10 to 20 ml
+
+Children 3 months+: up to 4 doses in 24 hours, at least 4 hours apart. Babies 2 to 3 months, over 4 kg and born after 37 weeks: 2.5 ml infant liquid, up to 2 doses a day, 4 hours apart. Under 2 months: get medical advice. No more than 3 days without advice. Overdose can harm the liver even if they seem fine: get help.
 
 ## Dose: ibuprofen
 
@@ -458,13 +462,13 @@ Adults and 12+: 10 mg once a day.
 
 2 to 5 years: 2.5 mg twice a day.
 
-Under 2: get advice.
+Under 2: get advice. A doctor works out the dose by weight.
 
-Loperamide (2 mg capsules), for diarrhoea, adults 18+ only:
+Loperamide (2 mg capsules), for short-term diarrhoea, adults and children 12+:
 
-2 capsules at first, then 1 after each loose stool. Maximum 6 capsules in 24 hours. Stop when stools firm up. Max 48 hours.
+2 capsules at first, then 1 after each loose stool. Maximum 6 capsules in 24 hours (bought over the counter). Stop when stools firm up. No more than 48 hours without a doctor.
 
-Not for children under 12. Not if blood in poo or fever. Too much can cause heart rhythm problems.
+Not for children under 12 unless a doctor prescribes it. Not if blood in poo or fever. Too much can cause heart rhythm problems.
 
 ORS: no maximum. Drink to replace losses.
 
@@ -516,17 +520,17 @@ Written in our own words from public guidance:
 
 NHS medicines: nhs.uk/medicines/paracetamol-for-adults, nhs.uk/medicines/paracetamol-for-children, nhs.uk/medicines/ibuprofen-for-adults, nhs.uk/medicines/ibuprofen-for-children, nhs.uk/medicines/cetirizine, nhs.uk/medicines/loperamide
 
-NHS first aid: nhs.uk/conditions/first-aid, nhs.uk/conditions/burns-and-scalds, nhs.uk/conditions/choking
+NHS: nhs.uk/conditions/burns-and-scalds. NHS 111 Wales choking: 111.wales.nhs.uk/encyclopaedia/ch/article/choking. British Red Cross first aid: redcross.org.uk/first-aid
 
-Resuscitation Council UK: resus.org.uk/library/2021-resuscitation-guidelines/adult-basic-life-support-guidelines and resus.org.uk/library/2021-resuscitation-guidelines/paediatric-basic-life-support-guidelines
+Resuscitation Council UK 2025 guidelines: resus.org.uk/professional-library/2025-resuscitation-guidelines/adult-basic-life-support-guidelines, resus.org.uk/professional-library/2025-resuscitation-guidelines/paediatric-basic-life-support-guidelines, resus.org.uk/professional-library/2025-resuscitation-guidelines/first-aid-guidelines (choking)
 
-WHO ORS and diarrhoea: who.int/news-room/fact-sheets/detail/diarrhoeal-disease
+WHO ORS and diarrhoea: who.int/news-room/fact-sheets/detail/diarrhoeal-disease and who.int/news-room/questions-and-answers/item/cholera-outbreaks (home ORS recipe)
 
-Tourniquet: stopthebleed.org (American College of Surgeons).
+Tourniquet: stopthebleed.org (American College of Surgeons) and the Stop the Bleed tourniquet sheet at dhs.gov/sites/default/files/publications/STB_Applying_Tourniquet_08-06-2018_0.pdf
 
 British Red Cross and American Red Cross first aid guidance.
 
-CDC: wound care, heat illness, tick removal, snakebite.
+CDC: wound care, heat illness, tick removal, snakebite (cdc.gov).
 
 US Army FM 21-76 / ATP 3-50.21 Survival (public domain).
 

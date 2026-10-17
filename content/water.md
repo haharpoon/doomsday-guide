@@ -83,11 +83,13 @@ Use plain, unscented household bleach with no added cleaners. Check the strength
 
 3. Bleach 8.25%: 2 drops per litre, or 6 drops per gallon.
 
-4. Cloudy or very cold water: double the dose.
+4. Bleach 1% (some thin bleaches): 10 drops per litre.
 
-5. Stir and wait 30 minutes.
+5. Cloudy, coloured or very cold water: double the dose.
 
-6. It should smell faintly of chlorine. No smell: add the same dose again and wait 15 more minutes.
+6. Stir and wait 30 minutes.
+
+7. It should smell faintly of chlorine. No smell: add the same dose again and wait 15 more minutes.
 
 Tablets (chlorine dioxide, iodine): follow the packet exactly, including the wait time. Iodine is not for pregnant women or people with thyroid problems. Chemicals work poorly on some parasites; boiling is better.
 
@@ -95,19 +97,19 @@ Tablets (chlorine dioxide, iodine): follow the packet exactly, including the wai
 
 Works on germs in clear water, if you have sun and clear bottles.
 
-1. Use a clear plastic PET bottle, 2 litres or less, with no scratches or labels.
+1. Use a clean, clear, colourless PET bottle, 3 litres or less, not badly scratched. Take the label off.
 
 2. Filter the water until it is clear. If you can read big print through a full bottle, it is clear enough.
 
-3. Fill three quarters, shake for 20 seconds to add air, then fill to the top.
+3. Fill it to the top and cap it.
 
 4. Lay it on its side in full sun, on a dark roof or metal sheet if you have one.
 
-5. 6 hours in full sun. 2 days if more than half cloudy.
+5. 6 hours if less than half the sky is cloudy. Two days in a row if more than half is cloudy.
 
 6. Drink straight from the bottle.
 
-Does not work in rain, on cloudy water, or with glass that blocks UV.
+Does not work well in long spells of rain (collect rainwater instead), on cloudy water, or in coloured bottles.
 
 ![bottle on its side in sun: 6 hours sunny, 2 days cloudy](img/sodis.png)
 
@@ -169,11 +171,11 @@ Plan at least 3 litres per person a day for drinking. More in heat or hard work,
 
 Written in our own words from:
 
-CDC: cdc.gov/water-emergency/about/ (boiling, 3 minutes above 6,500 ft, bleach doses). US EPA: epa.gov/ground-water-and-drinking-water/emergency-disinfection-drinking-water
+CDC: cdc.gov/water-emergency/about/index.html (boiling, 3 minutes above 6,500 ft, bleach doses). US EPA: epa.gov/ground-water-and-drinking-water/emergency-disinfection-drinking-water
 
 WHO: Guidelines for drinking-water quality; household water treatment.
 
-SODIS / Eawag: sodis.ch
+SODIS / Eawag: sodis.ch/methode/anwendung/index_EN.html
 
 US Army FM 21-76 / ATP 3-50.21 Survival (public domain, armypubs.army.mil): finding water, solar still.
 

@@ -2067,8 +2067,13 @@ def self_test(screenshot_dir=None):
     food = App(show_cave=False)
     food.activate("home:6")
     food.draw(canvas)
-    check("search" in [widget["id"] for widget in food.widgets], "food sheet can search", failures)
-    check(food.current()["kind"] == "reader" and food.current()["body"].startswith("Cook meat, fish,"), "food opens the sheet", failures)
+    food_items = food.current().get("items", [])
+    check(
+        food.current()["kind"] == "menu" and len(food_items) == 15 and food_items[-1].get("action") == "search",
+        f"food menu keeps search {[item.get('label') for item in food_items]}",
+        failures,
+    )
+    check(food_items and food_items[0]["label"] == "Food" and food_items[0]["body"].startswith("Cook meat, fish,"), "food first card", failures)
 
     check(content is not None, "content loader imports", failures)
     home_titles = [topic.title for topic in field.GUIDE.home_topics()]
@@ -2078,7 +2083,7 @@ def self_test(screenshot_dir=None):
         f"home menu order {home_titles}",
         failures,
     )
-    check(len(field.SHELTER) == 5 and len(field.WATER) == 11 and len(field.FIRE) == 3, "sheet counts", failures)
+    check(len(field.SHELTER) == 11 and len(field.WATER) == 11 and len(field.FIRE) == 12, "sheet counts", failures)
     check(len(field.KNOTS_MAIN) == 8 and field.KNOTS_MAIN[0][0] == "Which knot", "main knots", failures)
     check(field.KNOT_WHICH == field.KNOTS_MAIN[0][1], "which knot text", failures)
     check(len(field.KNOTS_MORE) == 8, "more knots", failures)

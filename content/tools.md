@@ -228,13 +228,13 @@ Test on paper. Cut away from your body.
 
 Avoid: make noise on trails, store food away from camp, never approach cubs.
 
-Encounter: stay calm, do not run, talk in a low voice, make yourself big, back away slowly sideways.
+Encounter: stay calm, do not run, talk in a low voice, make yourself big, back away slowly sideways. Pick up small children. Keep your pack on. Do not climb a tree: both kinds climb.
 
 Black bear attacks: fight back hard. Aim for the face and nose.
 
 Brown or grizzly bear attacks: play dead. Lie on your stomach, hands behind your neck, legs spread. Stay still until it leaves.
 
-Any bear attacks at night, stalks you, or keeps going after you play dead: it sees you as food. Fight back with anything.
+Any bear attacks you in your tent, stalks you first, or keeps going after you play dead: it sees you as food. Fight back with anything.
 
 Bear spray works best: spray when it is close.
 
@@ -314,6 +314,6 @@ UK Government (gov.uk) and Defra guidance on traps and snares; Scottish and Wels
 
 NHS: adder bites and animal bites.
 
-Environment Agency: gov.uk/fishing-licences and gov.uk/guidance/fishing-with-nets-and-other-instruments
+Environment Agency: gov.uk/fishing-licences and gov.uk/guidance/apply-to-use-fishing-instruments-other-than-rod-and-line-in-england
 
 Countryside Code: gov.uk/government/publications/the-countryside-code. Ramblers: ramblers.org.uk (cattle advice).
