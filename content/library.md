@@ -37,7 +37,7 @@ Wikipedia with pictures (maxi) is 127 GB and does not fit a 128 GB card. A 256 G
 
 ## PDF manuals
 
-Free manuals, saved as PDF in library/pdf:
+Free manuals, saved as PDF in /var/lib/kiwix/pdf on the Pi:
 
 - ATP 3-50.21 Survival (US Army, 2018). Water, food, fire, shelter, navigation, knots.
 - TC 4-02.1 First Aid (US Army, 2016 with changes to 2018). Replaced FM 4-25.11.
@@ -53,11 +53,13 @@ Open PDFs on the Pi with the desktop's PDF viewer, or from another device over W
 
 ## Download
 
-On a computer or Pi with internet, from the guide folder:
+On the Pi, with internet, from the guide folder:
 
-sh scripts/fetch_library.sh /media/usb/library
+sh scripts/fetch_library.sh
 
-It prints the size first and asks before starting. Downloads resume: if the connection drops, run it again and it carries on with wget -c. The big Wikipedia file takes many hours.
+ZIMs go to /var/lib/kiwix/zim and PDFs to /var/lib/kiwix/pdf. It prints the size first and asks before starting. It asks for your password (sudo) to make the folders. Downloads resume: if the connection drops, run it again and it carries on with wget -c. The big Wikipedia file takes many hours.
+
+When the downloads finish, it adds every ZIM to the Kiwix library list and restarts Kiwix. The new books show in Search all archives.
 
 Kiwix renames files when it publishes a new month. If a link fails, find the new name at library.kiwix.org and edit the date in the script.
 
@@ -65,15 +67,27 @@ Check the card has room: about 89 GB for the full set.
 
 ## Add to the Pi
 
-Copy the zim folder to wherever kiwix-serve keeps its archives on your Pi (the Kiwix files live under /var/lib/kiwix on this build). Use a fast USB drive if the SD card is full.
+All ZIMs live in /var/lib/kiwix/zim. Kiwix reads the list of books from /var/lib/kiwix/library.xml.
 
-Add each file to the Kiwix library list that kiwix-serve reads:
+Run this once, even with only the two ZIMs the guide came with:
 
-kiwix-manage library.xml add zim/*.zim
+sh scripts/kiwix_refresh.sh
 
-Restart kiwix-serve, or reboot the Pi. The new books show in Search all archives.
+It adds every ZIM in /var/lib/kiwix/zim to library.xml, and sets Kiwix to read that list and watch it for changes. It keeps a copy of the old Kiwix settings in /var/lib/kiwix/backup. It is safe to run again.
+
+To add one ZIM by hand, copy it in and add it to the list:
+
+sudo cp wikibooks_en_all_maxi_2026-04.zim /var/lib/kiwix/zim/
+
+sudo kiwix-manage /var/lib/kiwix/library.xml add /var/lib/kiwix/zim/wikibooks_en_all_maxi_2026-04.zim
+
+Kiwix notices the change in a few seconds. No restart needed. Running sh scripts/kiwix_refresh.sh does the same for every new file.
+
+To remove a ZIM, delete the file and run sh scripts/kiwix_refresh.sh. If the old book still shows, run: sudo kiwix-manage /var/lib/kiwix/library.xml remove followed by its ID from kiwix-manage /var/lib/kiwix/library.xml show.
 
 To make one ZIM a section's search, set book in that topic's front matter to the ZIM's book name (the file name without .zim). See content/README.md.
+
+If Kiwix will not start: journalctl -u kiwix -n 50. To go back to the old settings: sudo rm /etc/systemd/system/kiwix.service.d/library.conf, then sudo systemctl daemon-reload and sudo systemctl restart kiwix.
 
 ## Use it well
 
