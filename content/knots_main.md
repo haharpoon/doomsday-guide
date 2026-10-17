@@ -67,7 +67,7 @@ Limit: if the loop flaps with no load, a bowline can work loose. Leave a long ta
 
 The story that matches the steps: the standing part is the tree. A small loop in it is the hole. The working end is the rabbit.
 
-1. Form a small loop in the standing part, a short distance from the end. The working end comes up out of this hole. Lay the loop so the working end is under the standing part as it enters the hole. If you make this loop backward you will finish with a slip knot.
+1. Form a small loop in the standing part, leaving enough rope below it for the big loop you want. This small loop is the hole. Twist it so the side that leads on to the working end lies ON TOP of the standing part where they cross. If that side is underneath, the finished knot will not hold its shape: shake it out and twist the loop the other way.
 
 2. Pass the working end up through the hole. The rabbit comes out of the hole.
 
@@ -90,7 +90,9 @@ The story that matches the steps: the standing part is the tree. A small loop in
 
 Tail: at least a hand long. Longer if the rope is stiff.
 
-![bowline: end up through loop, round standing part, back down](img/knot_bowline.png)
+![bowline steps 1-2: small loop with the end side on top, then the end up through it from below](img/knot_bowline.png)
+
+![bowline steps 3-4: end round behind the standing part, then back down the loop](img/knot_bowline_2.png)
 
 ## Figure-eight loop
 
