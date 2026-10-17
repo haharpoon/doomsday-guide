@@ -1,15 +1,24 @@
 #!/bin/sh
 # Download the offline library: Kiwix ZIM archives and public-domain PDFs.
 #
-#   sh scripts/fetch_library.sh [library-dir]
+#   sh scripts/fetch_library.sh
 #
-# Default folder: ./library. Downloads resume (wget -c), so run it again
+# Run it on the Pi. ZIMs go to /var/lib/kiwix/zim, PDFs to
+# /var/lib/kiwix/pdf. Afterwards it runs scripts/kiwix_refresh.sh, which adds
+# every ZIM to /var/lib/kiwix/library.xml and points kiwix.service at it.
+# Downloads resume (wget -c), so run it again
 # after a dropped connection. Sizes are from HTTP HEAD on 2026-10-17.
 # Kiwix replaces old dated files; if a URL 404s, look up the newer name at
 # https://library.kiwix.org and change the date below.
 set -eu
 
-DEST=${1:-./library}
+KIWIX_DIR=${KIWIX_DIR:-/var/lib/kiwix}
+ZIM_DIR=$KIWIX_DIR/zim
+PDF_DIR=$KIWIX_DIR/pdf
+HERE=$(cd "$(dirname "$0")" && pwd)
+if [ -z "${SUDO+x}" ]; then
+    if [ "$(id -u)" = 0 ]; then SUDO=; else SUDO=sudo; fi
+fi
 K=https://download.kiwix.org/zim
 
 # bytes  url
@@ -51,14 +60,16 @@ WTND_PARTS="fm toc int 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 
 
 total=$(printf '%s\n%s\n' "$ZIMS" "$PDFS" | awk -v w="$WTND_BYTES" 'NF {s += $1} END {printf "%.0f", s + w}')
 gb=$(awk -v b="$total" 'BEGIN {printf "%.1f", b / 1e9}')
-echo "Offline library: about $gb GB into $DEST"
+echo "Offline library: about $gb GB into $ZIM_DIR and $PDF_DIR"
 printf '%s\n' "$ZIMS" | awk 'NF {n = split($2, p, "/"); printf "  %7.2f GB  %s\n", $1 / 1e9, p[n]}'
 printf '%s\n' "$PDFS" | awk 'NF {printf "  %7.2f MB  %s\n", $1 / 1e6, $2}'
 printf '  %7.2f MB  Where There Is No Doctor (32 PDFs)\n' "$(awk -v b="$WTND_BYTES" 'BEGIN {print b / 1e6}')"
 
-mkdir -p "$DEST/zim" "$DEST/pdf/where-there-is-no-doctor"
-free=$(df -Pk "$DEST" | awk 'NR == 2 {print $4 * 1024}')
-have=$(du -sk "$DEST" | awk '{print $1 * 1024}')
+# Make the folders and let this user write to them, so wget runs without sudo.
+$SUDO mkdir -p "$ZIM_DIR" "$PDF_DIR/where-there-is-no-doctor"
+$SUDO chown "$(id -un)" "$ZIM_DIR" "$PDF_DIR" "$PDF_DIR/where-there-is-no-doctor"
+free=$(df -Pk "$ZIM_DIR" | awk 'NR == 2 {print $4 * 1024}')
+have=$(du -sk "$ZIM_DIR" "$PDF_DIR" | awk '{s += $1 * 1024} END {print s}')
 if [ "$(awk -v f="$free" -v h="$have" -v t="$total" 'BEGIN {print (f + h < t) ? 1 : 0}')" = 1 ]; then
     echo "Not enough free space: need about $gb GB, have $(awk -v f="$free" 'BEGIN {printf "%.1f", f / 1e9}') GB free." >&2
     exit 1
@@ -74,18 +85,18 @@ WGET="wget -c --tries=20 --waitretry=10 --timeout=60 --progress=dot:giga"
 
 printf '%s\n' "$ZIMS" | while read -r _bytes url; do
     [ -n "$url" ] || continue
-    $WGET -P "$DEST/zim" "$url"
+    $WGET -P "$ZIM_DIR" "$url"
 done
 
 printf '%s\n' "$PDFS" | while read -r _bytes name url; do
     [ -n "$url" ] || continue
-    [ -f "$DEST/pdf/$name" ] && continue
-    $WGET -O "$DEST/pdf/$name.part" "$url" && mv "$DEST/pdf/$name.part" "$DEST/pdf/$name"
+    [ -f "$PDF_DIR/$name" ] && continue
+    $WGET -O "$PDF_DIR/$name.part" "$url" && mv "$PDF_DIR/$name.part" "$PDF_DIR/$name"
 done
 
 for part in $WTND_PARTS; do
-    $WGET -P "$DEST/pdf/where-there-is-no-doctor" "$WTND_BASE/en_wtnd_2025_$part.pdf"
+    $WGET -P "$PDF_DIR/where-there-is-no-doctor" "$WTND_BASE/en_wtnd_2025_$part.pdf"
 done
 
-echo "Done. Add the ZIMs to Kiwix with:"
-echo "  kiwix-manage $DEST/library.xml add $DEST/zim/*.zim"
+echo "Downloads done. Updating the Kiwix library."
+KIWIX_DIR=$KIWIX_DIR SUDO=$SUDO sh "$HERE/kiwix_refresh.sh"
