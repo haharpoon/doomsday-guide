@@ -14,6 +14,11 @@ is {"cx": [a, b, c], "cy": [d, e, f]}:
 
 A missing or unreadable file falls back to the device's raw axis range.
 FIELD_TOUCH_MIRROR_X=1 mirrors X only in that fallback.
+
+Tap an inline diagram to open it on the full 480x320 panel, keeping its
+shape and the card's green tint. There is no tab bar. Tap, or the X, closes
+it on the same card and page. A card with several pictures steps through
+them with a sideways swipe or the arrows.
 """
 
 import importlib.util
@@ -128,11 +133,37 @@ def first_font(paths):
     return None
 
 
+# pygame can open these. Terminus on the Pi console is a .psf bitmap; handing
+# that path to Font() is not a usable face and must not be tried.
+FONT_SUFFIXES = (".ttf", ".otf", ".ttc")
+
+
 def load_font(size, bold=False):
-    path = first_font(FONT_BOLD if bold else FONT_REGULAR)
-    if path:
-        return pygame.font.Font(path, size)
-    return pygame.font.Font(None, size)
+    """Load a UI face. A missing file or a console bitmap falls back to pygame's default."""
+    if not pygame.font.get_init():
+        pygame.font.init()
+    size = max(1, int(size))
+    paths = list(FONT_BOLD if bold else FONT_REGULAR)
+    paths.extend(FONT_REGULAR if bold else ())
+    seen = set()
+    for path in paths:
+        if not path or path in seen:
+            continue
+        seen.add(path)
+        if not str(path).lower().endswith(FONT_SUFFIXES):
+            continue
+        if not os.path.isfile(path):
+            continue
+        try:
+            font = pygame.font.Font(path, size)
+            font.render(" ", True, BLACK)
+            return font
+        except (pygame.error, OSError, FileNotFoundError, TypeError, ValueError):
+            continue
+    try:
+        return pygame.font.Font(None, size)
+    except (pygame.error, OSError, FileNotFoundError, TypeError, ValueError):
+        return pygame.font.SysFont(None, size, bold=bool(bold))
 
 
 def ellipsize(font, text, width):
@@ -209,22 +240,26 @@ def tint_surface(surface):
         return surface
 
 
-def fit_surface(surface, max_w, max_h):
+def fit_surface(surface, max_w, max_h, enlarge=False):
     width, height = surface.get_size()
     if width <= 0 or height <= 0 or max_w <= 0 or max_h <= 0:
         return surface
-    scale = min(max_w / width, max_h / height, 1)
-    if scale >= 1:
+    scale = min(max_w / width, max_h / height)
+    if not enlarge:
+        scale = min(scale, 1)
+    if scale == 1:
         return surface
     target = (max(1, int(round(width * scale))), max(1, int(round(height * scale))))
+    if target == (width, height):
+        return surface
     try:
         return pygame.transform.smoothscale(surface, target)
     except pygame.error:
         return pygame.transform.scale(surface, target)
 
 
-def load_card_image(relpath, max_w, max_h, directory, tint):
-    """Load a content image scaled to the reader area. None when it cannot be shown."""
+def load_card_image(relpath, max_w, max_h, directory, tint, enlarge=False):
+    """Load a content image fitted to a box. None when it cannot be shown."""
     if content is None or not relpath:
         return None
     path = content.resolve_image(directory, relpath)
@@ -239,10 +274,28 @@ def load_card_image(relpath, max_w, max_h, directory, tint):
             image = image.convert()
         except pygame.error:
             pass
-    image = fit_surface(image, max_w, max_h)
+    image = fit_surface(image, max_w, max_h, enlarge=enlarge)
     if tint:
         image = tint_surface(image)
     return image
+
+
+def stamp_enlarge_hint(image, font):
+    """Paint a dim 'tap to enlarge' on an inline diagram. Done once, at layout."""
+    width, height = image.get_size()
+    if font is None or width < 24 or height < 12:
+        return
+    label = "tap to enlarge"
+    if font.size(label)[0] > width - 4:
+        label = ellipsize(font, label, max(0, width - 4))
+    if not label:
+        return
+    hint = font.render(label, True, DIM)
+    shadow = font.render(label, True, BLACK)
+    x = max(0, width - hint.get_width() - 3)
+    y = max(0, height - hint.get_height() - 2)
+    image.blit(shadow, (min(width - shadow.get_width(), x + 1), min(height - shadow.get_height(), y + 1)))
+    image.blit(hint, (x, y))
 
 
 def layout_pages(text, font, small, width, page_px, directory, tint):
@@ -267,7 +320,21 @@ def layout_pages(text, font, small, width, page_px, directory, tint):
             for line in wrap_body(label, font, small, width):
                 blocks.append({"kind": "text", "text": line, "px": line_h})
             continue
-        blocks.append({"kind": "image", "image": image, "alt": alt, "px": image.get_height()})
+        stamp_enlarge_hint(image, small)
+        blocks.append(
+            {
+                "kind": "image",
+                "image": image,
+                "alt": alt,
+                "relpath": relpath,
+                "px": image.get_height(),
+            }
+        )
+    zoom = 0
+    for block in blocks:
+        if block["kind"] == "image":
+            block["zoom"] = zoom
+            zoom += 1
     if not blocks:
         blocks = [{"kind": "text", "text": "(empty)", "px": line_h}]
     pages = []
@@ -921,6 +988,9 @@ class App:
         return slots * line_h
 
     def reader_pages(self, screen):
+        # page_delta asks for the page count before the first draw. Fonts have
+        # to exist first, or font_body is still None.
+        self.ensure_fonts()
         cached = screen.get("_pages")
         if cached is None:
             directory = screen.get("_image_dir", getattr(field.GUIDE, "directory", None))
@@ -1085,6 +1155,22 @@ class App:
         if wid.startswith("result:"):
             index = int(wid.split(":", 1)[1])
             self.open_result(index)
+            return
+        if wid == "diagram-close":
+            self.back()
+            return
+        if wid == "diagram-prev":
+            self.diagram_delta(-1)
+            return
+        if wid == "diagram-next":
+            self.diagram_delta(1)
+            return
+        if wid.startswith("zoom:"):
+            try:
+                index = int(wid.split(":", 1)[1])
+            except ValueError:
+                return
+            self.open_diagram(index)
 
     def on_token(self, token):
         screen = self.current()
@@ -1205,6 +1291,47 @@ class App:
         self.ensure_fonts()
         self.notice = message
 
+    def open_diagram(self, index):
+        """Open one inline picture fitted to the panel. Frames are built once."""
+        screen = self.current()
+        if screen.get("kind") != "reader":
+            return
+        shots = []
+        for page in self.reader_pages(screen):
+            for block in page:
+                if block.get("kind") == "image":
+                    shots.append(block)
+        if not shots or not (0 <= index < len(shots)):
+            return
+        directory = screen.get("_image_dir", getattr(field.GUIDE, "directory", None))
+        tint = bool(screen.get("tint", True))
+        frames = []
+        for block in shots:
+            frame = load_card_image(
+                block.get("relpath") or "",
+                WIDTH,
+                HEIGHT,
+                directory,
+                tint,
+                enlarge=True,
+            )
+            if frame is None:
+                frame = fit_surface(block["image"], WIDTH, HEIGHT, enlarge=True)
+            frames.append(frame)
+        self.slide_from = None
+        self.stack.append({"kind": "diagram", "frames": frames, "index": index})
+
+    def diagram_delta(self, delta):
+        screen = self.current()
+        if screen.get("kind") != "diagram":
+            return False
+        frames = screen.get("frames") or []
+        index = screen.get("index", 0) + delta
+        if index < 0 or index >= len(frames):
+            return False
+        screen["index"] = index
+        return True
+
     def pointer(self, kind, x, y):
         if kind == "down":
             hit = self.hit(x, y)
@@ -1230,6 +1357,17 @@ class App:
                 return False
             if self.pressed and self.pressed.startswith("tab:"):
                 if self.hit(x, y) != self.pressed:
+                    self.pressed = None
+                    return True
+                return False
+            if self.current().get("kind") == "diagram":
+                dx = x - self.origin[0]
+                dy = y - self.origin[1]
+                if not self.swiping and max(abs(dx), abs(dy)) >= SWIPE:
+                    self.swiping = True
+                    self.pressed = None
+                    return True
+                if self.pressed and self.hit(x, y) != self.pressed:
                     self.pressed = None
                     return True
                 return False
@@ -1260,6 +1398,19 @@ class App:
                 return True
             dx = x - origin[0]
             dy = y - origin[1]
+            if self.current().get("kind") == "diagram":
+                frames = self.current().get("frames") or []
+                if len(frames) > 1 and abs(dx) >= SWIPE and abs(dx) > abs(dy):
+                    self.diagram_delta(-1 if dx > 0 else 1)
+                    return True
+                if swiping or abs(dx) >= SWIPE or abs(dy) >= SWIPE:
+                    return True
+                if pressed in ("diagram-prev", "diagram-next") and self.hit(x, y) == pressed:
+                    self.last_fire = (pressed, time.monotonic())
+                    self.activate(pressed)
+                    return True
+                self.back()
+                return True
             on_tab = bool(pressed) and pressed.startswith("tab:")
             if (not on_tab) and (swiping or (abs(dy) >= SWIPE and abs(dy) > abs(dx))):
                 if self.current()["kind"] in ("reader", "menu", "results"):
@@ -1292,6 +1443,13 @@ class App:
                     screen["query"] += text
                 return True
             return False
+        if screen["kind"] == "diagram":
+            if event.key in (pygame.K_LEFT, pygame.K_UP, pygame.K_PAGEUP):
+                self.diagram_delta(-1)
+                return True
+            if event.key in (pygame.K_RIGHT, pygame.K_DOWN, pygame.K_PAGEDOWN):
+                self.diagram_delta(1)
+                return True
         if event.key in (pygame.K_UP, pygame.K_PAGEUP, pygame.K_LEFT):
             self.page_delta(-1)
             return True
@@ -1383,6 +1541,12 @@ class App:
         self._band = None
         canvas.fill(BLACK)
         kind = self.current()["kind"]
+        if kind == "diagram":
+            self.tab_hits = []
+            self.draw_diagram(canvas)
+            if scan:
+                canvas.blit(self.scanlines, (0, 0))
+            return
         self.tab_hits = tabbar.draw_tabbar(
             canvas,
             self.font_tab,
@@ -1483,6 +1647,14 @@ class App:
                 image = block["image"]
                 x = MARGIN + max(0, (self.content_width() - image.get_width()) // 2)
                 canvas.blit(image, (x, y))
+                self.widgets.append(
+                    {
+                        "rect": pygame.Rect(x, y, image.get_width(), image.get_height()),
+                        "id": f"zoom:{block.get('zoom', 0)}",
+                        "enabled": True,
+                        "label": "diagram",
+                    }
+                )
             elif block.get("text"):
                 line = block["text"]
                 use = self.font_body
@@ -1492,6 +1664,57 @@ class App:
                 canvas.blit(img, (MARGIN, y))
             y += block["px"]
         canvas.set_clip(None)
+
+    def draw_diagram(self, canvas):
+        screen = self.current()
+        frames = screen.get("frames") or []
+        index = screen.get("index", 0)
+        if frames:
+            index = max(0, min(index, len(frames) - 1))
+            screen["index"] = index
+            image = frames[index]
+            canvas.blit(image, ((WIDTH - image.get_width()) // 2, (HEIGHT - image.get_height()) // 2))
+        close = pygame.Rect(WIDTH - 32, 4, 28, 28)
+        self._diagram_close(canvas, close, self.pressed == "diagram-close")
+        self.widgets.append({"rect": close, "id": "diagram-close", "enabled": True, "label": "X"})
+        count = len(frames)
+        if count > 1:
+            prev = pygame.Rect(4, HEIGHT - 44, 48, 40)
+            nxt = pygame.Rect(WIDTH - 52, HEIGHT - 44, 48, 40)
+            self._diagram_arrow(canvas, prev, -1, self.pressed == "diagram-prev")
+            self._diagram_arrow(canvas, nxt, 1, self.pressed == "diagram-next")
+            self.widgets.append({"rect": prev, "id": "diagram-prev", "enabled": True, "label": "Prev"})
+            self.widgets.append({"rect": nxt, "id": "diagram-next", "enabled": True, "label": "Next"})
+            marker = self.font_small.render(f"{index + 1}/{count}", True, GREEN)
+            canvas.blit(marker, ((WIDTH - marker.get_width()) // 2, HEIGHT - marker.get_height() - 14))
+
+    def _diagram_close(self, canvas, rect, pressed):
+        color = BLACK if pressed else GREEN
+        if pressed:
+            pygame.draw.rect(canvas, GREEN, rect)
+        else:
+            pygame.draw.rect(canvas, BLACK, rect)
+            pygame.draw.rect(canvas, GREEN, rect, 1)
+        pad = 7
+        start = (rect.left + pad, rect.top + pad)
+        end = (rect.right - pad - 1, rect.bottom - pad - 1)
+        pygame.draw.line(canvas, color, start, end, 2)
+        pygame.draw.line(canvas, color, (end[0], start[1]), (start[0], end[1]), 2)
+
+    def _diagram_arrow(self, canvas, rect, direction, pressed):
+        color = BLACK if pressed else GREEN
+        if pressed:
+            pygame.draw.rect(canvas, GREEN, rect)
+        else:
+            pygame.draw.rect(canvas, BLACK, rect)
+            pygame.draw.rect(canvas, GREEN, rect, 2)
+        cx, cy = rect.center
+        span = 8
+        if direction < 0:
+            points = [(cx + span, cy - span), (cx - span, cy), (cx + span, cy + span)]
+        else:
+            points = [(cx - span, cy - span), (cx + span, cy), (cx - span, cy + span)]
+        pygame.draw.polygon(canvas, color, points)
 
     def draw_search(self, canvas):
         screen = self.current()
@@ -1868,6 +2091,7 @@ def check(condition, message, failures):
 
 
 def self_test(screenshot_dir=None):
+    global FONT_REGULAR, FONT_BOLD
     failures = []
     with warnings.catch_warnings(record=True) as caught:
         warnings.warn(
@@ -1942,6 +2166,18 @@ def self_test(screenshot_dir=None):
     os.environ["SDL_AUDIODRIVER"] = "dummy"
     boot_pygame()
     pygame.display.set_mode((WIDTH, HEIGHT))
+    saved_regular, saved_bold = FONT_REGULAR, FONT_BOLD
+    try:
+        bogus = os.path.join(tempfile.gettempdir(), "Terminus.psf")
+        with open(bogus, "wb") as handle:
+            handle.write(b"\x36\x04not-a-font")
+        FONT_REGULAR = (bogus, "/no/such/DejaVuSansMono.ttf")
+        FONT_BOLD = (bogus,)
+        fallback = load_font(16, bold=True)
+        swatch = fallback.render("Pi", True, GREEN)
+        check(swatch.get_width() > 0 and swatch.get_height() > 0, "default font fallback", failures)
+    finally:
+        FONT_REGULAR, FONT_BOLD = saved_regular, saved_bold
     app = App(show_cave=False)
     canvas = pygame.Surface((WIDTH, HEIGHT))
     app.draw(canvas)
@@ -2188,6 +2424,133 @@ def self_test(screenshot_dir=None):
                 if pixel.g > 150:
                     hits += 1
             check(hits > 15, f"image is drawn on the card ({hits} green rows)", failures)
+            hint_image = images[0]["image"]
+            center = hint_image.get_at((4, 4))
+            dark = 0
+            for py in range(max(0, hint_image.get_height() - 14), hint_image.get_height()):
+                for px in range(max(0, hint_image.get_width() - 70), hint_image.get_width()):
+                    if hint_image.get_at((px, py)).g + 30 < center.g:
+                        dark += 1
+            check(dark > 8, f"tap to enlarge hint ({dark} px)", failures)
+            zoom_widgets = [widget for widget in shown.widgets if widget["id"].startswith("zoom:")]
+            check(len(zoom_widgets) == 1 and zoom_widgets[0]["id"] == "zoom:0", "inline image is tappable", failures)
+            page_at = shown.current().get("page", 0)
+            title_at = shown.current().get("title")
+            depth = len(shown.stack)
+            shown.pointer("down", *zoom_widgets[0]["rect"].center)
+            shown.pointer("up", *zoom_widgets[0]["rect"].center)
+            check(shown.current()["kind"] == "diagram", "tap opens the diagram", failures)
+            check(len(shown.stack) == depth + 1, "diagram stays on this card", failures)
+            shown.draw(canvas)
+            check(shown.tab_hits == [], "diagram hides the tab bar", failures)
+            check(tuple(canvas.get_at((8, 2))[:3]) == BLACK, "diagram does not fill the tab", failures)
+            frame = shown.current()["frames"][0]
+            check(
+                frame.get_width() <= WIDTH and frame.get_height() <= HEIGHT,
+                f"diagram fits {frame.get_size()}",
+                failures,
+            )
+            check(
+                frame.get_width() == WIDTH or frame.get_height() == HEIGHT,
+                f"diagram uses the panel {frame.get_size()}",
+                failures,
+            )
+            full = frame.get_at((frame.get_width() // 2, frame.get_height() // 2))
+            check(full.g > full.r and full.g > 100, f"full screen stays green {tuple(full)}", failures)
+            check(
+                not any(widget["id"] in ("diagram-prev", "diagram-next") for widget in shown.widgets),
+                "one picture has no arrows",
+                failures,
+            )
+            closer = next(widget for widget in shown.widgets if widget["id"] == "diagram-close")
+            shown.pointer("down", *closer["rect"].center)
+            shown.pointer("up", *closer["rect"].center)
+            check(shown.current()["kind"] == "reader" and shown.current().get("title") == title_at, "X closes to the card", failures)
+            check(shown.current().get("page") == page_at, "close keeps the page", failures)
+            shown.draw(canvas)
+            again = next(widget for widget in shown.widgets if widget["id"] == "zoom:0")
+            shown.pointer("down", *again["rect"].center)
+            shown.pointer("up", *again["rect"].center)
+            shown.pointer("down", WIDTH // 2, HEIGHT // 2)
+            shown.pointer("up", WIDTH // 2, HEIGHT // 2)
+            check(shown.current()["kind"] == "reader", "tap anywhere closes the diagram", failures)
+
+            one = pygame.Surface((40, 20))
+            one.fill((255, 255, 255))
+            pygame.image.save(one, os.path.join(img_dir, "one.png"))
+            two = pygame.Surface((80, 80))
+            two.fill((255, 255, 255))
+            pygame.draw.rect(two, (0, 0, 0), (0, 0, 80, 20))
+            pygame.image.save(two, os.path.join(img_dir, "two.png"))
+            multi = App(show_cave=False)
+            multi.stack.append(
+                {
+                    "kind": "reader",
+                    "title": "TWO",
+                    "body": "![first](img/one.png)\n\n![second](img/two.png)",
+                    "page": 0,
+                    "tint": True,
+                    "_image_dir": tmp,
+                }
+            )
+            multi.draw(canvas)
+            first = next(widget for widget in multi.widgets if widget["id"] == "zoom:0")
+            multi.pointer("down", *first["rect"].center)
+            multi.pointer("up", *first["rect"].center)
+            check(multi.current()["kind"] == "diagram" and multi.current()["index"] == 0, "opens the first of two", failures)
+            check(len(multi.current()["frames"]) == 2, "both pictures are in the diagram", failures)
+            multi.draw(canvas)
+            check(
+                {"diagram-prev", "diagram-next", "diagram-close"} <= {widget["id"] for widget in multi.widgets},
+                "arrows and close on a multi-picture card",
+                failures,
+            )
+            marks = 0
+            for py in range(HEIGHT - 30, HEIGHT - 6):
+                for px in range(WIDTH // 2 - 24, WIDTH // 2 + 24):
+                    if canvas.get_at((px, py)).g > 120:
+                        marks += 1
+            check(marks > 4, f"n/m indicator ({marks} px)", failures)
+            multi.activate("diagram-next")
+            check(multi.current()["index"] == 1, "next arrow steps", failures)
+            multi.activate("diagram-next")
+            check(multi.current()["index"] == 1, "next stops on the last picture", failures)
+            multi.pointer("down", 80, 150)
+            multi.pointer("move", 360, 150)
+            multi.pointer("up", 360, 150)
+            check(multi.current()["index"] == 0, "swipe right steps back", failures)
+            multi.pointer("down", 360, 150)
+            multi.pointer("move", 80, 155)
+            multi.pointer("up", 80, 155)
+            check(multi.current()["index"] == 1, "swipe left steps forward", failures)
+            multi_page = multi.stack[-2].get("page", 0)
+            multi.pointer("down", *next(widget["rect"].center for widget in multi.widgets if widget["id"] == "diagram-close"))
+            # widgets were from the last draw, which is still the diagram
+            multi.pointer("up", *next(widget["rect"].center for widget in multi.widgets if widget["id"] == "diagram-close"))
+            check(multi.current()["kind"] == "reader" and multi.current().get("page") == multi_page, "close keeps the multi card", failures)
+
+            red = pygame.Surface((40, 40))
+            red.fill((200, 0, 0))
+            pygame.image.save(red, os.path.join(img_dir, "red.png"))
+            plain = App(show_cave=False)
+            plain.stack.append(
+                {
+                    "kind": "reader",
+                    "title": "PLAIN",
+                    "body": "![red swatch](img/red.png)",
+                    "page": 0,
+                    "tint": False,
+                    "_image_dir": tmp,
+                }
+            )
+            plain.draw(canvas)
+            plain.pointer("down", *next(widget["rect"].center for widget in plain.widgets if widget["id"] == "zoom:0"))
+            plain.pointer("up", *next(widget["rect"].center for widget in plain.widgets if widget["id"] == "zoom:0"))
+            bare = plain.current()["frames"][0]
+            sample = bare.get_at((bare.get_width() // 2, bare.get_height() // 2))
+            check(sample.r > 150 and sample.r > sample.g, f"tint false keeps the picture colors {tuple(sample)}", failures)
+            plain.back()
+            check(plain.current()["kind"] == "reader", "back leaves the untinted card", failures)
         missing_pages = layout_pages(
             "![ridge pole](img/missing.png)",
             app.font_body,
@@ -2302,6 +2665,47 @@ def self_test(screenshot_dir=None):
             field.HOST = saved_host
         search.draw(canvas)
         pygame.image.save(canvas, os.path.join(screenshot_dir, "search_kiwix_down.png"))
+        picked = None
+        for topic in field.GUIDE.home_topics():
+            view = field.GUIDE.present(topic.slug)
+            if not view:
+                continue
+            for name, body in view["cards"]:
+                count = body.count("![")
+                if count <= 0:
+                    continue
+                choice = (topic, name, body, count)
+                if picked is None or (count >= 2 and picked[3] < 2):
+                    picked = choice
+                if count >= 2:
+                    break
+            if picked and picked[3] >= 2:
+                break
+        if picked:
+            topic, name, body, _count = picked
+            shot = App(show_cave=False)
+            shot.stack.append(
+                {
+                    "kind": "reader",
+                    "title": name.upper(),
+                    "body": body,
+                    "page": 0,
+                    "tint": topic.tint,
+                }
+            )
+            pages = shot.reader_pages(shot.current())
+            for number, blocks in enumerate(pages):
+                if any(block.get("kind") == "image" for block in blocks):
+                    shot.current()["page"] = number
+                    break
+            shot.draw(canvas)
+            pygame.image.save(canvas, os.path.join(screenshot_dir, "diagram_card.png"))
+            opener = next(widget for widget in shot.widgets if str(widget["id"]).startswith("zoom:"))
+            shot.pointer("down", *opener["rect"].center)
+            shot.pointer("up", *opener["rect"].center)
+            shot.draw(canvas)
+            pygame.image.save(canvas, os.path.join(screenshot_dir, "diagram.png"))
+            check(shot.current()["kind"] == "diagram", "screenshot opened a real diagram", failures)
 
     if failures:
         for message in failures:
