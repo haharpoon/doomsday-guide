@@ -2343,7 +2343,8 @@ def self_test(screenshot_dir=None):
     more.activate("home:10")
     more_labels = [item["label"] for item in more.current()["items"]]
     check(
-        more_labels == ["Signals & Radio", "Clothing", "Weather", "Places", "Search all archives"],
+        more_labels
+        == ["Signals & Radio", "Clothing", "Weather", "Power", "Emergency plan", "Offline library", "Places", "Search all archives"],
         f"more menu {more_labels}",
         failures,
     )
@@ -2375,6 +2376,35 @@ def self_test(screenshot_dir=None):
         f"navigation menu {nav_labels}",
         failures,
     )
+    new_menus = {}
+    for index, (label, count, first, last) in enumerate(
+        (
+            ("Power", 12, "Volts, amps, watts", "Power sources"),
+            ("Emergency plan", 10, "Make a plan", "Emergency sources"),
+            ("Offline library", 7, "What Kiwix is", "Library sources"),
+        )
+    ):
+        item = more.current()["items"][3 + index]
+        labels = [entry["label"] for entry in item.get("items", [])]
+        new_menus[label] = item
+        check(
+            item.get("action") == "menu" and len(labels) == count and labels[0] == first and labels[-1] == last,
+            f"{label} menu {labels}",
+            failures,
+        )
+    guide4_pictures = []
+    for slug in ("power", "emergency", "library"):
+        for _name, body in field.GUIDE.cards(slug):
+            guide4_pictures.extend(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body))
+    check(len(guide4_pictures) == 8, f"power and emergency diagrams {len(guide4_pictures)}", failures)
+    guide4_missing = [rel for rel in guide4_pictures if content.resolve_image(field.GUIDE.directory, rel) is None]
+    check(not guide4_missing, f"power and emergency diagrams exist {guide4_missing}", failures)
+    guide4_sizes = {
+        pygame.image.load(str(content.resolve_image(field.GUIDE.directory, rel))).get_size()
+        for rel in guide4_pictures
+        if rel not in guide4_missing
+    }
+    check(guide4_sizes <= {(480, 284)}, f"power and emergency diagrams are 480x284 {guide4_sizes}", failures)
     content_dir = field.GUIDE.directory
     pictures = []
     for slug in ("navigation", "sanitation", "clothing", "weather"):
@@ -2706,6 +2736,22 @@ def self_test(screenshot_dir=None):
             shot.draw(canvas)
             pygame.image.save(canvas, os.path.join(screenshot_dir, "diagram.png"))
             check(shot.current()["kind"] == "diagram", "screenshot opened a real diagram", failures)
+
+        for slug, card_name, file_name in (
+            ("power", "Carbon monoxide", "power_co_card"),
+            ("emergency", "Utilities shutoff", "emergency_utilities_card"),
+            ("library", "What to get", "library_card"),
+        ):
+            body = dict(field.GUIDE.cards(slug)).get(card_name, "")
+            check(bool(body), f"screenshot card {slug}/{card_name}", failures)
+            card = App(show_cave=False)
+            card.stack.append({"kind": "reader", "title": card_name.upper(), "body": body, "page": 0, "tint": True})
+            for number, blocks in enumerate(card.reader_pages(card.current())):
+                if any(block.get("kind") == "image" for block in blocks):
+                    card.current()["page"] = number
+                    break
+            card.draw(canvas)
+            pygame.image.save(canvas, os.path.join(screenshot_dir, file_name + ".png"))
 
     if failures:
         for message in failures:

@@ -86,6 +86,9 @@ except Exception as error:
         "signals.md",
         "clothing.md",
         "weather.md",
+        "power.md",
+        "emergency.md",
+        "library.md",
     ]
     ok = False
     for name in names:
