@@ -168,6 +168,104 @@ Rest in shade in the hottest part of the day. Work early and late.
 
 Heat exhaustion: headache, dizziness, heavy sweating, cramps, thirst. Get into shade, take off spare clothing, drink, and cool the skin with water and fanning. Hot skin that has stopped sweating, confusion or a fit is heatstroke: an emergency. See First aid.
 
+## Mittens and socks from a blanket
+
+Use: cold hands or feet and spare wool cloth (a blanket, jumper or coat lining).
+
+1. Draw round your hand with fingers together and thumb out, 3 cm wider all round. Mittens are warmer than gloves because fingers share heat.
+
+2. Cut two pieces per mitten. Sew round the edge with a whip stitch or backstitch, leaving the wrist open. Turn it inside out.
+
+3. Socks: draw round your foot 3 cm wider, plus a leg 15 cm high. Two pieces per sock, sewn round. Or wrap a square of cloth round the foot like a parcel (a foot wrap).
+
+4. Make a wrist loop of cord joining both mittens, through your sleeves, so you cannot lose one.
+
+5. In wet weather, a plastic bag over a wool mitten keeps it dry.
+
+![blanket mitten: hand traced with a 3 cm margin, two pieces sewn round, thumb out, cord joining the pair](img/cloth_mitten.png)
+
+Mistakes: making them tight. Air trapped inside is what keeps you warm, and tight cloth cuts blood flow.
+
+Check: you can wiggle all your fingers or toes inside.
+
+## Stuff clothes for warmth
+
+Use: you are cold, with too few layers, and dry plant material around.
+
+1. Find dry, fluffy stuff: dead grass, dry bracken, dry leaves, cattail or thistle fluff, crumpled paper, foam or bubble wrap.
+
+2. Wear two layers, such as a shirt under a jacket. Tuck the inner layer in and tie the cuffs and ankles closed with cord.
+
+3. Fill the gap between the layers loosely, 2 to 5 cm thick, all round the body. Do the same in trousers.
+
+4. Fluff it up every few hours. Throw it out and refill when it gets damp or flat.
+
+![stuffing: dry leaves and grass packed loosely between two layers of shirt and jacket, cuffs tied](img/cloth_stuffing.png)
+
+Check plant matter for ticks and insects first. Avoid nettles, brambles and anything you cannot name.
+
+Mistakes: packing it tight; using damp material, which chills you faster.
+
+Check: you can feel the warmth within 10 minutes. If you start sweating, open a layer.
+
+## Mend or make footwear
+
+Use: a boot or shoe is failing, or you have none.
+
+1. Loose sole: dry and clean it, glue with contact glue or shoe glue, clamp overnight. In the field, wrap duct tape, cord or a strip of inner tube right round the boot.
+
+2. Split upper: stitch with waxed thread through holes made with an awl, then seal with glue or wax.
+
+3. Broken lace: a strip of cord, paracord inner or a strip of cloth. Carry a spare.
+
+4. Tyre sandal: cut a sole from car or bike tyre tread, traced round your foot. Make three holes: one between the first two toes, two beside the heel. Thread cord through and tie round the ankle.
+
+5. Foot wrap: a square of thick cloth or blanket round the foot, then an outer layer of canvas, leather or bark, tied on.
+
+![footwear: tape or inner tube round a loose sole; tyre sandal with three cord holes](img/cloth_footwear.png)
+
+Mistakes: drying leather boots right next to a fire. They shrink and crack. Dry them slowly, stuffed with paper or grass.
+
+Check: walk 100 m and look for rubbing. Fix a hot spot before it becomes a blister.
+
+## Waterproof clothing
+
+Use: your coat or cotton canvas lets rain in.
+
+1. Wax cotton: rub a block of beeswax or wax bar firmly into dry cotton canvas until the fabric is coated.
+
+2. Warm it with a hair dryer or by holding it near (not over) a fire so the wax melts into the weave. Let it cool. Repeat on seams.
+
+3. Breathable coats: wash with a non-detergent tech wash, then reproof with a wash-in or spray proofer. Gentle heat (tumble low or iron cool through a cloth) wakes up the water repellent finish.
+
+4. Seams: dab seam sealer or wax along stitched seams and round the hood.
+
+5. Leather boots: clean, then work in wax or dubbin, especially into seams and the welt.
+
+![wax cotton: rub wax block into canvas, warm it in, water beads on the treated cloth](img/cloth_wax.png)
+
+Mistakes: waxing breathable fabric, which stops it breathing; using too much heat near a fire. Wax burns.
+
+Check: splash water on it. It should bead and roll off, not soak in.
+
+## Gaiters and puttees
+
+Use: wet grass, snow, mud or tick country.
+
+1. Puttees: cut two strips of cloth about 10 cm wide and 1.5 to 2 m long. Old blanket or wool works best.
+
+2. Start at the ankle over the top of the boot. Wrap upwards in a spiral, each turn overlapping the last by half.
+
+3. Stop below the knee. Tuck in the end and tie it with cord or tape. Not tight.
+
+4. Quick gaiter: tuck trousers into socks, then wrap a plastic bag or a strip of tarp round the lower leg and tie it above and below.
+
+![puttee: cloth strip wrapped in an upward spiral from the boot to below the knee, tied off](img/cloth_puttee.png)
+
+Ticks climb from grass. Tucked-in trousers and pale cloth make them easy to see and remove. Check your skin every evening.
+
+Check: you can still bend your knee and ankle easily, and toes stay warm.
+
 ## Clothing sources
 
 Written in our own words from public guidance:
@@ -179,3 +277,7 @@ CDC, preventing trench foot: cdc.gov/natural-disasters/psa-toolkit/preventing-tr
 NHS: nhs.uk/conditions/blisters, nhs.uk/live-well/seasonal-health/sunscreen-and-sun-safety, nhs.uk/conditions/heat-exhaustion-heatstroke, nhs.uk/conditions/hypothermia
 
 Look up hypothermia, frostbite, trench foot and heatstroke in Medicine for the full signs.
+
+US Army FM 21-76 / ATP 3-50.21 (public domain): improvised footwear and mittens, puttees and leg wraps, stuffing clothing with dry insulation.
+
+Leather and outdoor gear care guidance from boot and fabric makers (wax, dubbin, reproofing). NHS: Lyme disease and tick checks, nhs.uk/conditions/lyme-disease

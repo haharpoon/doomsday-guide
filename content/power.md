@@ -179,6 +179,66 @@ Symptoms: headache, dizziness, sickness, tiredness, confusion, breathlessness. O
 
 If you suspect CO: get everyone out into fresh air now, turn off the source if it is safe, and call 999. For a gas leak call 0800 111 999.
 
+## Bike generator: safe setup
+
+Use: you have a bike, a turbo trainer stand and a made bike generator kit or a 12 V DC motor and charge controller.
+
+1. Mount the bike on a trainer stand so the back wheel spins freely. The generator roller presses on the tyre, or a belt runs from the wheel.
+
+2. Chain: generator, then a blocking diode (so the battery cannot spin the motor), then a charge controller rated for the generator's highest voltage, then the 12 V battery.
+
+3. Put a fuse on the battery positive, within 20 cm of the terminal. See Wiring and fuses.
+
+4. Power the Pi from the battery through a 12 V to 5 V USB converter, never from the generator directly.
+
+5. Pedal steadily, about 50 to 100 W for a fit adult. A voltmeter or the controller's display shows you are charging.
+
+![bike generator chain: wheel roller generator, diode, charge controller, fuse, 12 V battery, 5 V converter to the Pi](img/pw_bike.png)
+
+Mistakes: no controller (spikes kill batteries and the Pi); a fuse at the wrong end; pedalling in a cold, damp shed and getting chilled afterwards.
+
+Check: battery voltage rises while you pedal and stops below the controller's limit, about 14.4 V for lead-acid.
+
+## Small wind turbine
+
+Use: a windy, open site, often in winter when solar is weak.
+
+1. Wind is worth it only where the average is about 5 m/s (11 mph) or more. Hilltops, coasts and open fields, not gardens between houses.
+
+2. Mount it high and clear of turbulence: the blades well above anything within about 100 m, such as trees and roofs.
+
+3. Wire it to a wind charge controller with a dump load (a resistor or heater that takes the extra power). A turbine with nothing connected can overspeed and break up.
+
+4. Fit a stop switch that shorts the turbine to brake it, and use it before storms and while working on it.
+
+5. Guy the mast on at least three sides. Lower it to work on it; never climb a mast with blades turning.
+
+![small wind: turbine on a guyed mast clear of trees, wind controller with dump load, stop switch, battery](img/pw_wind.png)
+
+In the UK, planning rules apply to turbines on buildings and masts. Check with the council first.
+
+Check: in a gust, the controller holds the battery below its charge limit and the dump load warms.
+
+## Sun for heat (passive solar)
+
+Use: to warm a room or water with no power at all.
+
+1. Open curtains on sunny windows (south facing in the UK) by mid-morning. Close all curtains at dusk, before the room cools.
+
+2. Put dark containers of water or stones where the sun falls on them. They soak up heat in the day and give it back in the evening.
+
+3. Solar shower: a black bag or dark bottles of water in full sun for a few hours. Test the temperature with your hand before use.
+
+4. Keep heat in: close doors to unused rooms, fit thick curtains, block draughts at doors and floors, put rugs down.
+
+5. Hay box: bring a pot to the boil, then nest it in a box packed with hay, blankets or cushions. It keeps cooking for hours. See Cooking.
+
+![passive solar: winter sun through a south window onto dark water tanks, curtains closed at dusk, draught excluder](img/pw_solar_heat.png)
+
+Mistakes: leaving curtains open on cold nights; drying wet washing indoors without airing, which makes damp.
+
+Check: the room stays warmer into the evening than the ones without sun.
+
 ## Power sources
 
 Written in our own words from public guidance:
@@ -194,3 +254,7 @@ US CDC generator safety: cdc.gov/carbon-monoxide/about/generator-safety
 Raspberry Pi power supply documentation: raspberrypi.com/documentation/computers/raspberry-pi.html (power supply section)
 
 Battery voltage tables are typical values for flooded lead-acid at about 20 C. Check your battery maker's sheet.
+
+Energy Saving Trust: small wind turbines (sites need an average of about 5 m/s), planning rules. Centre for Alternative Technology (cat.org.uk): dump loads, braking switches, passive solar and heat retention.
+
+Bike generator wiring: maker instructions for pedal generators and solar charge controllers; blocking diode and fuse placement as in Wiring and fuses.

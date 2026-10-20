@@ -153,6 +153,150 @@ After:
 - Photograph damage for insurance
 - Look after each other. Talking helps.
 
+## Fire at home
+
+Use: smoke or flames in your home. Get out, stay out, call 999.
+
+1. Shout "Fire!" to wake everyone. Do not stop to look for the cause or to pick things up.
+
+2. Before you open a closed door, touch it with the back of your hand. If it is warm, do not open it. Use another way out.
+
+3. Smoke rises. Crawl low with your face near the floor, where the air is cleaner.
+
+4. Close doors behind you. A shut door holds back fire and smoke for minutes.
+
+5. Meet at your outside meeting place. Call 999 from outside. Never go back in for anything; tell the fire service if someone is missing.
+
+![fire escape: back of hand on the door, crawl under smoke, close doors, if trapped bedding at door gap and call from a window](img/em_fire.png)
+
+Trapped: get into a room with a window, close the door and push bedding or towels along the bottom gap. Open the window, shout "Help, fire" and call 999. If you must escape from a low first-floor window, drop bedding to land on, climb out feet first, lower yourself to arm's length, then drop.
+
+Clothes on fire: stop, drop and roll. Pan on fire: never use water. Turn off the heat if safe, leave the pan, close the door and get out.
+
+Check: test smoke alarms monthly, one on every floor.
+
+## Flood at home
+
+Use: a flood alert or warning for your area. Floodline 0345 988 1188.
+
+1. Alert (possible): move car, pets, papers, medicines and valuables upstairs or to high ground. Pack the grab bag.
+
+2. Warning (expected): fit flood boards or covers over doors and air bricks if you have them. Sandbags or bags of soil help a little.
+
+3. Turn off gas, electricity and water at the mains before water comes in, only if it is safe. Never touch switches standing in water.
+
+4. Fill containers with clean water. Put plugs in sinks and baths and weigh them down to slow sewage coming back up.
+
+5. Go upstairs or leave when told. Take a torch, phone, radio, water and warm clothes up with you.
+
+![flood at home: valuables upstairs, boards over door and air brick, power off at the consumer unit before water arrives, family upstairs with kit](img/em_flood.png)
+
+Afterwards: floodwater carries sewage. Wear gloves and boots, wash hands, throw out food it touched. Do not switch power back on until an electrician has checked it.
+
+Check: you know where your mains switches are and how to work them in the dark.
+
+## Power cut
+
+Use: the lights go out at home. Call 105, free, or check powercut105.com.
+
+1. Check if neighbours have power. If they do, check your own fuse box: a tripped switch may just need resetting.
+
+2. Turn off appliances that heat (cooker, iron, heaters) so they do not come on unattended. Leave one light on to show when power returns.
+
+3. Keep the fridge and freezer shut. A fridge stays cold for about 4 hours, a full freezer about 48 hours, a half-full one about 24.
+
+4. Use torches and LED lanterns, not candles if you can. If you use candles, keep them in holders away from curtains, and never leave them.
+
+5. Keep warm in one room. See Shelter, Buildings and cars, Warm one room.
+
+![power cut: call 105, one light left on, fridge 4 hours, full freezer 48, half freezer 24, torch not candle](img/em_power_cut.png)
+
+Never run a generator, barbecue or camping stove indoors or in a garage. Carbon monoxide kills. See Power, Carbon monoxide.
+
+Who needs extra help: anyone on home oxygen, dialysis or other powered medical kit. Register them on the Priority Services Register now.
+
+Check: food that has been above 4 °C for more than about 2 hours goes in the bin.
+
+## Earthquake
+
+Use: the ground shakes. Rare and small in the UK; important when travelling.
+
+1. Drop to your hands and knees where you are.
+
+2. Cover your head and neck under a sturdy table or desk. If none, crouch by an inside wall away from windows and cover your head with your arms.
+
+3. Hold on until the shaking stops. Be ready to move with the table.
+
+4. Do not run outside during the shaking. Most injuries come from falling glass and debris near doorways and walls.
+
+5. Outdoors: move away from buildings, trees and power lines, then drop. In a car, stop away from bridges and buildings and stay in it.
+
+![drop, cover, hold on: kneel, shelter under a sturdy table covering the head, hold the table leg](img/em_quake.png)
+
+After: expect aftershocks. Check for gas smells, fires and injuries. Use the stairs, not lifts. Near the coast, if the shaking was strong or long, go to high ground at once in case of a tsunami.
+
+Check: in bed, stay there and cover your head with a pillow.
+
+## Illness spreading (pandemic)
+
+Use: a serious infection is going round and health advice says to limit contact.
+
+1. Follow public health advice on the radio or Emergency Alerts. It changes as more is known.
+
+2. Wash hands with soap for 20 seconds, often. See Sanitation, Handwashing.
+
+3. Let fresh air through: open windows a little, especially when others visit.
+
+4. Stay at home when you are ill. Wear a well-fitting face mask around others if you must go out or care for someone.
+
+5. Keep two weeks of food, regular medicines, paracetamol, soap and cleaning supplies. Plan who will shop for you.
+
+6. Look after the sick in one room, with one carer. See Sanitation, Nursing someone infectious.
+
+Mistakes: giving up on routine. Get up, get dressed, keep in touch with people by phone. See Mental health.
+
+Check: know the warning signs that need 999: struggling to breathe, blue lips, confusion, or a child who is floppy or very hard to wake.
+
+## Radiation emergency
+
+Use: an official alert of a nuclear or radiation release, or you see a nuclear flash.
+
+1. Get inside a building at once, before any dust arrives. Brick or concrete is best. A car or tent gives too little protection.
+
+2. Go to the middle of the building or the basement, away from outside walls and the roof.
+
+3. If you were outside, take off your outer clothes and put them in a sealed bag away from people. This can remove up to 90% of the dust.
+
+4. Shower with soap and shampoo, no conditioner, or wipe skin and hair with a damp cloth. Put on clean clothes.
+
+5. Stay in for at least 24 hours unless told otherwise. Keep the radio on. Turn off fans that bring outside air in.
+
+![radiation: get inside the middle of a brick building, bag the outer clothes, wash, stay in 24 hours with the radio on](img/em_radiation.png)
+
+Eat and drink only packaged food and water stored inside. Do not take potassium iodide or iodate tablets unless public health officials tell you to.
+
+Check: you go out only when officials say it is safe, or to escape a greater danger such as fire.
+
+## Winter at home
+
+Use: before the cold months, and when cold weather is forecast.
+
+1. Keep at least one room you live in at 18 °C or more if you can, especially for babies, older people and the ill.
+
+2. Lag pipes and the water tank in lofts and outside walls. Know where your stopcock is. Leave the heating on low when away.
+
+3. Stop draughts: curtains closed at dusk, a draught excluder or rolled towel along doors, tape or foam on gaps. Keep vents for boilers and fires clear.
+
+4. Stock: blankets, hot water bottles, warm hats, a week of food and medicines, torches, grit or salt for paths.
+
+5. Have the boiler, chimney and gas fire checked once a year. Fit a carbon monoxide alarm.
+
+![winter home: lagged pipes, closed curtains, draught excluder at the door, one warm room at 18 degrees, CO alarm](img/em_winter.png)
+
+Check on older neighbours in a cold snap. Hypothermia can start indoors in a cold room. See Weather, Cold snap, and Repairs, Frozen and burst pipes.
+
+Check: a thermometer in the main room reads 18 °C or more.
+
 ## Emergency sources
 
 Written in our own words from public guidance:
@@ -172,3 +316,16 @@ Power cuts: powercut105.com
 emergencySMS: relayuk.bt.com/how-to-use-relay-uk/contact-999-using-relay-uk.html
 
 US Ready.gov 72-hour kit ideas: ready.gov/kit
+
+Fire services (London Fire Brigade, National Fire Chiefs Council): escape plan, door check, crawl low, trapped in a room, stop drop and roll.
+
+CDC power outages and food safety: fridge 4 hours, full freezer 48 hours, half full 24 hours.
+
+Ready.gov and the Earthquake Country Alliance: Drop, Cover and Hold On; tsunami after strong shaking.
+
+CDC radiation emergencies: get inside, remove outer clothing (up to 90%), shower without conditioner, stay in 24 hours. UKHSA: stable iodine only on official advice.
+
+NHS and UKHSA: infection control at home, keep warm (18 °C), cold weather health.
+
+Environment Agency: flood kit, flood boards and air brick covers, turn off mains supplies.
+

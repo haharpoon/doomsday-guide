@@ -1,7 +1,7 @@
 ---
 title: Shelter
 order: 1
-intro: Build small, get off the ground, stay out of the wind.
+intro: Build small, get off the ground, stay out of the wind. More shelters, snow, buildings and cars, and long-term building are at the end.
 ---
 
 ## Choose a site
@@ -17,6 +17,28 @@ In cold weather, take morning sun. In hot weather, take shade and any breeze tha
 Clear the ground you will lie on. A stick under your ribs will keep you awake, and awake costs heat. The earth under you is a heat sink. A bed of dry leaves, grass, or spruce tips as thick as your open hand matters more than a thin roof.
 
 Stay back from the water's edge. You want the walk for drinking water to be short, and you want the flood line and the insects to stay over there.
+
+## Wind and site hazards
+
+Use: checking a spot before you build. Two minutes of looking saves a night of trouble.
+
+1. Look up: dead branches, dead or leaning trees, trees hung up on others. Dead limbs fall without warning, most often in wind. Ash with dieback and old beech drop big limbs.
+
+2. Look uphill: loose rock, scree, cliffs, snow slopes that could slide.
+
+3. Look at the ground: dry stream beds, gullies, flat ground beside rivers, below dams. Flash floods come from rain you cannot see.
+
+4. Look for flood signs: lines of dead grass and twigs caught in bushes, mud on tree trunks, a strandline on a beach.
+
+5. Look for life: ant nests, wasp nests, animal paths, cow fields.
+
+6. Height: not on summits or ridges (wind, lightning), not in the very bottom of a hollow (cold air and frost pool there). Partway up a slope is warmest.
+
+Mistakes: camping under one big lone tree; trusting a dry river bed; pitching on a path.
+
+Check: nothing above you can fall, nothing below you can flood, and the wind hits the back of the shelter.
+
+![site hazards: dead limb overhead, dry stream bed, rockfall below a cliff, cold hollow; best spot partway up the slope](img/sh_hazards.png)
 
 ## Debris hut
 
@@ -60,34 +82,6 @@ Use a lean-to when you have a fire and a clear, wind-safe place to put it. The r
 
 Keep the fire small. A fire you can step over is easier to sit close to than a bonfire you have to flee.
 
-## Tarp or sheet
-
-A tarp is a roof, not a tent, until you close it. Pitch it so a gust cannot turn it into a sail. Tie the corners. Do not rely on the grommet alone if the cloth is old. Use a small stone in a fold, with the line around the neck of the fold, when a grommet is torn.
-
-Lean-to: ridge line about chest height, windward edge staked to the ground, open side away from the wind. Fast to pitch. Cold, because one side is open.
-
-A-frame: ridge lower, both long edges staked to the ground, a small opening at one end. Warmer. Pitch it so rain sheds off the sides and does not pool in the belly. If the belly holds water, lower the edges or raise the ridge.
-
-Plow point: tie one corner to a tree at about head height. Stake the opposite corner downhill. Stake the remaining two corners out to the sides. Use this when the wind has one obvious direction. The nose points into the wind.
-
-In every pitch, the line that takes the load should be adjustable. A taut-line hitch or a trucker's hitch lets you retighten after the cloth stretches. See Knots.
-
-Get the cloth off your face. Condensation will wet a tarp that touches your mouth and nose all night.
-
-## Cold ground and wet clothes
-
-Most of the heat you lose in a shelter goes into the ground and into wet cloth, not through a thin spot in the roof.
-
-Do not lie on bare earth, rock, or a wet log. Pile dry plants, a pack, a spare layer, or boughs under your torso and hips. If the pile is only under your shoulders, your hips still pour heat downward.
-
-Change out of wet clothes before you climb in if you have anything dry, including a dirty dry layer. Wet cotton against the skin is a cooling system. Hang the wet layer in the smoke only if you can do it without burning the shelter. Wring it first.
-
-Eat and drink before sleep if you have safe water and food. Shivering is a fire that burns your reserves. A full belly keeps it going longer.
-
-Vent a tight shelter a finger's width if your breath is soaking the inside. A soaked leaf pile stops insulating. A small vent and a dry plug for the door is the balance.
-
-If you are already shivering hard, slurring, or fumbling the knots, stop improving the camp and get inside the best shelter you have. Look up hypothermia in Medicine once you are out of the wind.
-
 ## A-frame shelter
 
 An A-frame is a debris hut with two high ends, or a lean-to with a second roof. It sheds rain on both sides and keeps wind off you from both sides.
@@ -108,6 +102,20 @@ Keep it small. Every bit of air inside is air you have to warm.
 
 ![A-frame: two A-shaped end frames, ridge pole, ribs on both sides](img/shelter_aframe.png)
 
+## Tarp or sheet
+
+A tarp is a roof, not a tent, until you close it. Pitch it so a gust cannot turn it into a sail. Tie the corners. Do not rely on the grommet alone if the cloth is old. Use a small stone in a fold, with the line around the neck of the fold, when a grommet is torn.
+
+Lean-to: ridge line about chest height, windward edge staked to the ground, open side away from the wind. Fast to pitch. Cold, because one side is open.
+
+A-frame: ridge lower, both long edges staked to the ground, a small opening at one end. Warmer. Pitch it so rain sheds off the sides and does not pool in the belly. If the belly holds water, lower the edges or raise the ridge.
+
+Plow point: tie one corner to a tree at about head height. Stake the opposite corner downhill. Stake the remaining two corners out to the sides. Use this when the wind has one obvious direction. The nose points into the wind.
+
+In every pitch, the line that takes the load should be adjustable. A taut-line hitch or a trucker's hitch lets you retighten after the cloth stretches. See Knots.
+
+Get the cloth off your face. Condensation will wet a tarp that touches your mouth and nose all night.
+
 ## Tarp pitches in detail
 
 Three pitches that work with one tarp about 3 m by 3 m, a ridge line and some pegs. Set the ridge line with a taut-line or trucker's hitch so you can tighten it when the cloth stretches.
@@ -122,35 +130,19 @@ All three: tie a short piece of string to the ridge line just outside the tarp a
 
 ![three tarp pitches seen from the side: A-frame, plow point, diamond](img/shelter_tarps.png)
 
-## Snow trench
+## Cold ground and wet clothes
 
-The quickest snow shelter. Use it when the snow is deep and firm and you have little time or energy.
+Most of the heat you lose in a shelter goes into the ground and into wet cloth, not through a thin spot in the roof.
 
-1. Mark out a trench a little longer than you are tall and about shoulder width.
+Do not lie on bare earth, rock, or a wet log. Pile dry plants, a pack, a spare layer, or boughs under your torso and hips. If the pile is only under your shoulders, your hips still pour heat downward.
 
-2. Dig it about 1 m deep. In crusty snow, cut blocks and stack them along the edges. In soft snow, pile the snow along the edges and pack it.
+Change out of wet clothes before you climb in if you have anything dry, including a dirty dry layer. Wet cotton against the skin is a cooling system. Hang the wet layer in the smoke only if you can do it without burning the shelter. Wring it first.
 
-3. Roof it: lay branches, skis or poles across, then a tarp or more branches, then 20 to 30 cm of snow on top. A pitched roof of snow blocks sheds drips better than a flat one.
+Eat and drink before sleep if you have safe water and food. Shivering is a fire that burns your reserves. A full belly keeps it going longer.
 
-4. Line the floor with boughs, a pack or anything that keeps your body off the snow. The floor matters more than the roof.
+Vent a tight shelter a finger's width if your breath is soaking the inside. A soaked leaf pile stops insulating. A small vent and a dry plug for the door is the balance.
 
-5. Block the door with your pack or a snow block. Keep a stick inside to poke a vent hole clear.
-
-Build slowly. Sweat freezes. Take off a layer while you dig and put it back on when you stop.
-
-## Quinzhee and snow cave
-
-Use these when you have hours and expect to stay. Snow insulates very well, and inside it can stay near freezing while the air outside is far colder.
-
-Snow cave: dig into a deep, firm drift, about 3 m deep. Keep the roof domed so melt water runs down the walls, not onto you. Make the sleeping bench higher than the door, because cold air sinks out of the low door. Walls and roof at least 30 cm thick.
-
-Quinzhee: when there is no drift, make one. Pile and mix snow into a dome about 1.5 to 2 m high and 2.5 to 3 m across: your height plus a metre or more. Leave it at least 2 hours to set (longer is better). Push sticks about 30 cm long into the mound all over. Then hollow it out from a low door. Stop digging at each stick end you meet: that is your wall thickness.
-
-Both: poke a vent hole through the roof, about 5 to 10 cm across (smaller in hard cold), and keep it clear. Never run a stove, candle or fire inside without a vent. Carbon monoxide has no smell and kills in your sleep. If you cannot see your breath inside, it is too warm and the roof will drip.
-
-Never dig a snow shelter where snow could slide onto it.
-
-![snow trench with a roof of branches and snow; quinzhee with depth sticks, bench above the door, roof vent](img/shelter_snow.png)
+If you are already shivering hard, slurring, or fumbling the knots, stop improving the camp and get inside the best shelter you have. Look up hypothermia in Medicine once you are out of the wind.
 
 ## Insulation and bedding
 
@@ -172,14 +164,112 @@ The ground pulls heat from you faster than still air does. Your bed is the most 
 
 Check bedding for ticks and ants. Shake it out each morning. Replace it when it goes flat.
 
-## Shelter sources
+## Raised bed
 
-Written in our own words from:
+Use: lift your body off cold, wet or bug-filled ground. Works inside any shelter.
 
-US Army ATP 3-50.21 Survival, chapter 6: shelter site, poncho lean-to and tent, field-expedient lean-to, debris hut, snow cave, tree-pit shelter, insulation and ventilation (public domain, armypubs.army.mil/epubs/DR_pubs/DR_a/pdf/web/ARN12086_ATP%203-50x21%20FINAL%20WEB%202.pdf).
+1. Lay two logs, about leg thick and as long as you are tall, side by side a shoulder-width apart.
 
-US Army FM 21-76 Survival (1992, public domain): shelters and cold weather.
+2. Or drive four forked sticks into the ground and lay two poles in the forks, 20 to 40 cm up.
 
-NHS hypothermia: nhs.uk/conditions/hypothermia
+3. Lay sticks across, close together, like a ladder with no gaps. Lash them if you can.
 
-Snow trench and quinzhee steps are standard winter-camping practice consistent with ATP 3-50.21 snow-cave guidance (wall thickness, raised bench, ventilation, carbon monoxide).
+4. Pile springy boughs or bracken on top, stems down and pointing the same way, the softest on top.
+
+5. Finish with dry grass or leaves at least a hand thick when you lie on it.
+
+Mistakes: a bed so high the wind gets under it in cold; too thin a top layer.
+
+Use dead wood if you can. In Britain, cutting living trees needs the landowner's permission.
+
+Check: lie on it. You should not feel a single stick or the cold.
+
+![raised bed: two side logs or forked stakes, cross sticks, boughs, then grass on top](img/sh_raised_bed.png)
+
+## Shelter in heavy rain
+
+Use: keeping you and your bed dry in a downpour.
+
+1. Pick slightly raised ground that slopes gently. Never a hollow.
+
+2. Make the roof steep. Steep sheds water; flat lets it pool and drip.
+
+3. Shingle the cover from the bottom up, so each layer overlaps the one below.
+
+4. Tie drip lines: a short string on each guy line and the ridge line, just outside the roof. Water runs off there.
+
+5. Groundsheet inside the roof edge, never sticking out to catch the run-off.
+
+6. If water flows toward you, scrape a shallow ditch along the uphill side to lead it round. Fill it back in when you leave.
+
+7. Kit off the ground, on a log or hung up.
+
+Mistakes: ditches that empty into the bed; a groundsheet that sticks out; touching the roof (it wicks water in).
+
+Check: in the rain, water runs off and away from every side, and the floor stays dry.
+
+![heavy rain: steep tarp, drip line on the ridge, groundsheet inside the edge, ditch on the uphill side leads water round](img/sh_rain.png)
+
+## Heat a shelter safely
+
+Use: getting warmer at night without fire risk or gas poisoning.
+
+1. Fire outside an open-fronted shelter, with a reflector wall behind the fire. See Fire.
+
+2. Hot rocks: heat fist-sized dry rocks (never from a stream; they can burst) by the fire. Wait, wrap in cloth, and put them at your feet.
+
+3. Hot-coal bed: on mineral soil only (never peat or roots), bury hot coals under 15 to 20 cm of soil where you will lie. Feel it first: warm, not hot.
+
+4. Hot water bottle: hot but not boiling water, in a bottle with a good seal, in a sock or cover. Do not lie on it.
+
+5. Your body: eat a fatty snack, pee before you sleep, and share warmth with others.
+
+Never put a stove, BBQ, candle, heater or fire inside a closed shelter, tent or car. Carbon monoxide kills in your sleep. A snow shelter with a candle needs a clear vent.
+
+Mistakes: a hot rock straight on skin or a sleeping bag; boiling water in a soft bottle.
+
+Check: you are warm, and there is no flame or glowing coal inside with you.
+
+## Group shelter
+
+Use: several people. Together you are warmer, safer and less work each.
+
+1. Pick a site that fits everyone with room to move.
+
+2. Two lean-tos facing each other with a long fire between them, or one long shelter with a long fire in front.
+
+3. Or a big A-frame or tarp where you sleep side by side, in a row.
+
+4. Share jobs: one builds, one gathers bedding, one wood, one water.
+
+5. Put the coldest or weakest in the middle. Check each other at night.
+
+6. Toilet area downhill and away from water. Wet kit area near the door.
+
+Mistakes: everyone doing the same job; nobody watching the fire.
+
+An emergency group shelter bag works fast: sit on your packs in a ring and pull it over your heads.
+
+Check: every person has a bed, a dry layer, and a job.
+
+## Low-profile camp
+
+Use: a quiet, tidy camp that blends in and leaves no trace.
+
+1. Earth-coloured cover: green, brown, grey. Bright colours stand out, so keep them for signalling.
+
+2. Below the skyline, among trees or folds in the ground, away from paths and houses.
+
+3. Small fire or none. A stove is quieter.
+
+4. Lights low and pointed down. Voices low.
+
+5. Arrive late, leave early, and take everything with you.
+
+6. Put back leaves, turf and stones. Fill ditches.
+
+The law in Britain: in most of England and Wales you need the landowner's permission to camp. Scotland allows responsible wild camping under the Scottish Outdoor Access Code.
+
+If you need rescue, do the opposite: be big, bright and loud. See Signals & Radio under More.
+
+Check: from 50 m away you can hardly see the camp.
