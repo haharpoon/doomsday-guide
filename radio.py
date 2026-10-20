@@ -8,7 +8,7 @@ RTL-SDR is plugged in:
 * a listening log in ``~/.doomsday/radio_log.json``
 * a Morse / SOS trainer at standard timing
 
-The Signals & Radio sheet (``content/signals.md``) keeps the long notes.
+The Signals & Radio sheets (``content/signals.md`` and the topics under it) keep the long notes.
 Cards only store the frequency and a one-line pointer.
 
 ESP32 + RDA5807 FM (not required)

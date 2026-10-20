@@ -2493,6 +2493,93 @@ def self_test(screenshot_dir=None):
         f"more menu {more_labels}",
         failures,
     )
+    signals_item = more.current()["items"][0]
+    signals_labels = [item["label"] for item in signals_item.get("items", [])]
+    signals_expected = [
+        "Rule of Three and SOS",
+        "UK Emergency Numbers",
+        "Sound",
+        "Light",
+        "Mirrors",
+        "Fire and smoke",
+        "Ground-to-air",
+        "Body signals",
+        "Flags and cloth",
+        "Trail markers",
+        "Codes",
+        "Radio procedure",
+        "PMR446",
+        "Comms plan",
+        "Antennas",
+        "Radio power",
+        "News and info",
+        "On this deck",
+        "Mesh text",
+        "Sources",
+    ]
+    check(
+        signals_item.get("action") == "menu" and signals_labels == signals_expected,
+        f"signals menu {signals_labels}",
+        failures,
+    )
+    check(signals_item["items"][-1].get("action") == "sheet", "sources opens as a sheet", failures)
+    signal_counts = {
+        "signals": 2,
+        "signals_sound": 6,
+        "signals_light": 4,
+        "signals_mirrors": 3,
+        "signals_fire": 5,
+        "signals_ground": 4,
+        "signals_body": 3,
+        "signals_flags": 4,
+        "signals_trail": 5,
+        "signals_codes": 6,
+        "signals_radio": 8,
+        "signals_pmr": 4,
+        "signals_plan": 5,
+        "signals_antennas": 5,
+        "signals_power": 3,
+        "signals_news": 4,
+        "signals_deck": 3,
+        "signals_mesh": 3,
+        "signals_sources": 1,
+    }
+    for slug, count in signal_counts.items():
+        got = len(field.GUIDE.cards(slug))
+        check(got == count, f"{slug} cards {got}", failures)
+    kept = {
+        "Rule of Three and SOS",
+        "Whistle and Torch Signals",
+        "Signal Mirror",
+        "Ground-to-Air Signals",
+        "Smoke and Fire Signals",
+        "Group Signal Plan",
+        "Morse Code Table",
+        "UK Emergency Numbers",
+        "Broadcast Radio for News",
+        "PMR446 Walkie-Talkies",
+        "Marine VHF Channel 16",
+        "Mayday and Pan-Pan",
+        "Amateur Radio Notes",
+        "RTL-SDR: What You Can Listen To",
+        "Sources",
+    }
+    found_heads = set()
+    signal_pics = []
+    for slug in signal_counts:
+        for name, body in field.GUIDE.cards(slug):
+            found_heads.add(name)
+            signal_pics.extend(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body))
+    check(kept <= found_heads, f"original signals cards missing {kept - found_heads}", failures)
+    check(len(signal_pics) == 36, f"signals diagrams {len(signal_pics)}", failures)
+    signal_missing = [rel for rel in signal_pics if content.resolve_image(field.GUIDE.directory, rel) is None]
+    check(not signal_missing, f"signals diagrams exist {signal_missing}", failures)
+    signal_sizes = {
+        pygame.image.load(str(content.resolve_image(field.GUIDE.directory, rel))).get_size()
+        for rel in signal_pics
+        if rel not in signal_missing
+    }
+    check(signal_sizes <= {(480, 284)}, f"signals diagrams are 480x284 {signal_sizes}", failures)
     weather_item = more.current()["items"][2]
     weather_labels = [item["label"] for item in weather_item.get("items", [])]
     check(
