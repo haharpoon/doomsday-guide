@@ -2845,6 +2845,93 @@ def self_test(screenshot_dir=None):
         f"more menu {more_labels}",
         failures,
     )
+    signals_item = more.current()["items"][0]
+    signals_labels = [item["label"] for item in signals_item.get("items", [])]
+    signals_expected = [
+        "Rule of Three and SOS",
+        "UK Emergency Numbers",
+        "Sound",
+        "Light",
+        "Mirrors",
+        "Fire and smoke",
+        "Ground-to-air",
+        "Body signals",
+        "Flags and cloth",
+        "Trail markers",
+        "Codes",
+        "Radio procedure",
+        "PMR446",
+        "Comms plan",
+        "Antennas",
+        "Radio power",
+        "News and info",
+        "On this deck",
+        "Mesh text",
+        "Sources",
+    ]
+    check(
+        signals_item.get("action") == "menu" and signals_labels == signals_expected,
+        f"signals menu {signals_labels}",
+        failures,
+    )
+    check(signals_item["items"][-1].get("action") == "sheet", "sources opens as a sheet", failures)
+    signal_counts = {
+        "signals": 2,
+        "signals_sound": 6,
+        "signals_light": 4,
+        "signals_mirrors": 3,
+        "signals_fire": 5,
+        "signals_ground": 4,
+        "signals_body": 3,
+        "signals_flags": 4,
+        "signals_trail": 5,
+        "signals_codes": 6,
+        "signals_radio": 8,
+        "signals_pmr": 4,
+        "signals_plan": 5,
+        "signals_antennas": 5,
+        "signals_power": 3,
+        "signals_news": 4,
+        "signals_deck": 3,
+        "signals_mesh": 3,
+        "signals_sources": 1,
+    }
+    for slug, count in signal_counts.items():
+        got = len(field.GUIDE.cards(slug))
+        check(got == count, f"{slug} cards {got}", failures)
+    kept = {
+        "Rule of Three and SOS",
+        "Whistle and Torch Signals",
+        "Signal Mirror",
+        "Ground-to-Air Signals",
+        "Smoke and Fire Signals",
+        "Group Signal Plan",
+        "Morse Code Table",
+        "UK Emergency Numbers",
+        "Broadcast Radio for News",
+        "PMR446 Walkie-Talkies",
+        "Marine VHF Channel 16",
+        "Mayday and Pan-Pan",
+        "Amateur Radio Notes",
+        "RTL-SDR: What You Can Listen To",
+        "Sources",
+    }
+    found_heads = set()
+    signal_pics = []
+    for slug in signal_counts:
+        for name, body in field.GUIDE.cards(slug):
+            found_heads.add(name)
+            signal_pics.extend(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body))
+    check(kept <= found_heads, f"original signals cards missing {kept - found_heads}", failures)
+    check(len(signal_pics) == 36, f"signals diagrams {len(signal_pics)}", failures)
+    signal_missing = [rel for rel in signal_pics if content.resolve_image(field.GUIDE.directory, rel) is None]
+    check(not signal_missing, f"signals diagrams exist {signal_missing}", failures)
+    signal_sizes = {
+        pygame.image.load(str(content.resolve_image(field.GUIDE.directory, rel))).get_size()
+        for rel in signal_pics
+        if rel not in signal_missing
+    }
+    check(signal_sizes <= {(480, 284)}, f"signals diagrams are 480x284 {signal_sizes}", failures)
     weather_item = more.current()["items"][2]
     weather_labels = [item["label"] for item in weather_item.get("items", [])]
     check(
@@ -3222,6 +3309,30 @@ def self_test(screenshot_dir=None):
             heat_order_ok = False
     check(heat and heat_order_ok and "heat" in heat[0].title_fold, "title matches come before body matches", failures)
     check(content.search_cards(index, "   ") == [], "blank query matches nothing", failures)
+    nested_slugs = {slug for slug in signal_counts if slug != "signals"}
+    nested_cards = [entry for entry in index if entry.topic_slug in nested_slugs]
+    check(
+        len(nested_cards) == sum(signal_counts[slug] for slug in nested_slugs),
+        f"nested signals cards are indexed {len(nested_cards)}",
+        failures,
+    )
+    whistle = next((entry for entry in index if entry.title == "Whistle and Torch Signals"), None)
+    check(
+        whistle is not None
+        and whistle.topic_slug == "signals_sound"
+        and whistle.topic_title == "Sound"
+        and "pea whistle" in whistle.body,
+        "whistle card is indexed under Sound",
+        failures,
+    )
+    whistle_hits = content.search_cards(index, "whistle")
+    check(
+        whistle_hits
+        and whistle_hits[0].title == "Whistle and Torch Signals"
+        and whistle_hits[0].topic_title == "Sound",
+        f"search finds the nested whistle card {[entry.title for entry in whistle_hits[:3]]}",
+        failures,
+    )
 
     with tempfile.TemporaryDirectory() as tmp:
         with open(os.path.join(tmp, "camp.md"), "w", encoding="utf-8") as handle:
@@ -3231,7 +3342,15 @@ def self_test(screenshot_dir=None):
                 "## Camp stove\n\nBoil water on the stove if you can.\n\n"
                 "## Shelter\n\nA boil is not a shelter.\n"
             )
+        with open(os.path.join(tmp, "stove.md"), "w", encoding="utf-8") as handle:
+            handle.write("---\ntitle: Stove\nparent: camp\n---\n\n## Wick\n\nTrim the wick.\n")
         sample = content.load_guide(tmp)
+        wick = [entry for entry in sample.index if entry.title == "Wick"]
+        check(
+            len(wick) == 1 and wick[0].topic_slug == "stove" and wick[0].topic_title == "Stove",
+            "nested topic cards stay in the index",
+            failures,
+        )
         ranked = content.search_cards(sample.index, "boil")
         check(
             [entry.title for entry in ranked] == ["Boil water", "Camp stove", "Shelter"],
@@ -3301,6 +3420,43 @@ def self_test(screenshot_dir=None):
     guide_home.on_find_token("SPACE")
     guide_home.on_find_token("a")
     check(guide_home.current()["query"] == " a", "space key inserts a space", failures)
+
+    nested = App(show_cave=False)
+    nested.activate("guide-search")
+    nested.current()["query"] = "whistle"
+    nested.draw(canvas)
+    whistle_row = next(widget for widget in nested.widgets if widget["label"] == "Whistle and Torch Signals")
+    nested.pointer("down", *whistle_row["rect"].center)
+    nested.pointer("up", *whistle_row["rect"].center)
+    check(
+        nested.current()["kind"] == "reader" and nested.current()["title"] == "WHISTLE AND TORCH SIGNALS",
+        "nested search result opens the card",
+        failures,
+    )
+    check("pea whistle" in nested.current()["body"] and "signals-whistle.png" in nested.current()["body"], "nested card keeps its text and diagram", failures)
+    nested_badge = False
+    for number in range(nested.page_count(nested.current())):
+        nested.current()["page"] = number
+        nested.slide_from = None
+        nested.draw(canvas)
+        if any(widget["id"].startswith("zoom:") for widget in nested.widgets):
+            nested_badge = True
+            break
+    check(nested_badge, "nested card still shows the enlarge badge", failures)
+    nested.activate("back")
+    check(nested.current()["kind"] == "find" and nested.current()["query"] == "whistle", "back returns to the nested search", failures)
+    whistle_at = next(i for i, entry in enumerate(card_index()) if entry.title == "Whistle and Torch Signals")
+    nested_index = App(show_cave=False)
+    nested_index.activate("guide-index")
+    nested_index.current()["page"] = whistle_at
+    nested_index.draw(canvas)
+    index_row = next(widget for widget in nested_index.widgets if widget["id"] == f"index:{whistle_at}")
+    check(index_row["label"] == "Whistle and Torch Signals", "A-Z lists the nested whistle card", failures)
+    nested_index.pointer("down", *index_row["rect"].center)
+    nested_index.pointer("up", *index_row["rect"].center)
+    check(nested_index.current()["kind"] == "reader" and "pea whistle" in nested_index.current()["body"], "A-Z opens the nested card", failures)
+    nested_index.activate("back")
+    check(nested_index.current()["kind"] == "index" and nested_index.current().get("page") == whistle_at, "back returns to that index row", failures)
 
     az = App(show_cave=False)
     az.activate("guide-index")

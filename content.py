@@ -169,7 +169,9 @@ def build_card_index(guide):
     """Every card, once, alphabetical.
 
     A ``merge: cards`` file is listed under its parent (that is where the menu
-    shows it), not as its own topic. Topics with no cards add nothing.
+    shows it), not as its own topic. A nested topic (``parent`` set, not merged)
+    keeps its own cards under its own title, so a Signals & Radio sub-topic is
+    searchable on its own. Topics with no cards add nothing.
     """
     topics = getattr(guide, "topics", None) or {}
     entries = []

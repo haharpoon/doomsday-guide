@@ -53,14 +53,14 @@ A `book` value with nothing after the colon searches both archives.
 - **Several cards** open as a menu. Each `##` heading is one button.
 - **One card** opens straight onto that sheet. The sheet title is the file's `title`.
 - **No cards, with `book` set** opens search. That is how Medicine works today. One card opens as a sheet and still offers search, the way Food does. Several cards are listed, and Search stays on that menu.
-- **`parent`** nests the file under another topic. `signals.md` and `clothing.md` sit under `more.md`. `knots_more.md` sits under Knots.
+- **`parent`** nests the file under another topic. `signals.md` and `clothing.md` sit under `more.md`. The `signals_*.md` files sit under Signals & Radio. `knots_more.md` sits under Knots.
 - **`merge: cards`** is for a card that lives in its own file but should appear inside the parent. `knot_which.md` is the first Knots card ("Which knot").
 
 `more.md` is the More button. The program adds Places, Search all archives, and (on the keyboard) Cave Mapper after the sheets you list under it. Those three are the library and the scanner, not sheets.
 
-The touch guide builds one index of every card when it loads. Search and A-Z on the GUIDE home screen use that index. A merged card is listed under the parent topic, which is where the menu shows it.
+The touch guide builds one index of every card when it loads, including cards in a nested topic. Search and A-Z on the GUIDE home screen use that index. A merged card is listed under the parent topic, which is where the menu shows it. A nested topic is listed under its own title.
 
-`radio_freqs.json` is not a sheet. The RADIO tab reads it for the UK frequency cards. `signals.md` still holds the long radio notes.
+`radio_freqs.json` is not a sheet. The RADIO tab reads it for the UK frequency cards. `signals.md` is the Signals & Radio menu. The long notes are the `signals_*.md` topics under it.
 
 A file with `order` and no `parent` is a home-menu button. The home menu is that list, sorted by `order`. Numbers in the keyboard menu follow that order.
 
