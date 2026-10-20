@@ -6,7 +6,9 @@ framebuffer, so this draws with the dummy SDL driver and writes a frame only
 when the picture changes. With no framebuffer, it opens a 480x320 window.
 
 Touch input is the ADS7846 device via evdev. The top bar is GUIDE | SCAN | RADIO
-(see tabbar.py, shared with Cave Mapper). RADIO is the frequency guide,
+(see tabbar.py, shared with Cave Mapper). GUIDE home has Search and A-Z. Search
+matches the card index built when the sheets load: titles first, then card
+text, updating as you type. A-Z lists every card. RADIO is the frequency guide,
 listening log, and Morse trainer in radio.py. Calibration in ~/.touchcal.json
 is {"cx": [a, b, c], "cy": [d, e, f]}:
 
@@ -102,6 +104,14 @@ GAP = 4
 NAV_H = 60
 MENU_PER = 2
 RESULT_PER = 2
+FIND_PER = 2
+INDEX_PER = 3
+# Guide search shares the 320px panel with a keyboard, so the keys stay
+# near the archive keyboard's 56px and the two result rows take what remains.
+FIND_KEY_H = 50
+FIND_QUERY_H = 40
+FIND_BACK_W = 80
+INDEX_LETTER_H = 36
 SWIPE = 36
 # Short enough that a Pi 3B can paint it, long enough to read as a slide.
 SLIDE_FRAMES = 4
@@ -936,6 +946,26 @@ def key_label(token):
     return token
 
 
+def guide_key_rows():
+    """Letter keyboard for card search: backspace, clear, and a wide space."""
+    return [
+        list("qwertyuiop"),
+        list("asdfghjkl") + ["BKSP"],
+        list("zxcvbnm") + ["CLEAR", "SPACE"],
+    ]
+
+
+def card_index():
+    """Card index built when the guide loaded. Missing guides yield nothing."""
+    guide = getattr(field, "GUIDE", None)
+    if guide is None:
+        return ()
+    found = getattr(guide, "index", None)
+    if found is None:
+        return ()
+    return found
+
+
 class App:
     def __init__(self, show_cave=None):
         self.show_cave = show_cave
@@ -1051,19 +1081,40 @@ class App:
             return max(1, len(self.reader_pages(screen)))
         if kind == "results":
             return max(1, (len(screen["results"]) + RESULT_PER - 1) // RESULT_PER)
+        if kind == "find":
+            return max(1, (len(self.find_hits(screen)) + FIND_PER - 1) // FIND_PER)
+        if kind == "index":
+            return max(1, (len(card_index()) + INDEX_PER - 1) // INDEX_PER)
         return 1
 
     def can_prev(self, screen):
         return screen.get("page", 0) > 0
 
     def can_next(self, screen):
+        if screen["kind"] == "index":
+            return screen.get("page", 0) + INDEX_PER < len(card_index())
         if screen["kind"] == "results" and len(screen["results"]) < screen.get("total", 0):
             return True
         return screen.get("page", 0) + 1 < self.page_count(screen)
 
     def page_delta(self, delta):
         screen = self.current()
-        if screen["kind"] not in ("menu", "reader", "results"):
+        if screen["kind"] == "index":
+            # `page` is the first visible card, so a letter jump can land
+            # mid-page and the next swipe still moves a full row of titles.
+            old = screen.get("page", 0)
+            total = len(card_index())
+            if delta < 0:
+                if old <= 0:
+                    return False
+                screen["page"] = max(0, old - INDEX_PER)
+            else:
+                if old + INDEX_PER >= total:
+                    return False
+                screen["page"] = old + INDEX_PER
+            self.slide_from = old
+            return True
+        if screen["kind"] not in ("menu", "reader", "results", "find"):
             return False
         old = screen.get("page", 0)
         moved = False
@@ -1212,6 +1263,24 @@ class App:
             book = screen.get("search_book", "")
             self.open_search_book(book)
             return
+        if wid == "guide-search":
+            self.open_find()
+            return
+        if wid == "guide-index":
+            self.open_index()
+            return
+        if wid in ("find-prev", "find-next"):
+            self.page_delta(-1 if wid == "find-prev" else 1)
+            return
+        if wid.startswith("hit:"):
+            self.open_find_hit(wid.split(":", 1)[1])
+            return
+        if wid.startswith("index:"):
+            self.open_index_hit(wid.split(":", 1)[1])
+            return
+        if wid.startswith("letter:"):
+            self.jump_letter(wid.split(":", 1)[1])
+            return
         if wid.startswith("home:"):
             index = int(wid.split(":", 1)[1])
             items = home_items()
@@ -1247,8 +1316,87 @@ class App:
                 return
             self.open_diagram(index)
 
+    def open_find(self):
+        self.notice = ""
+        self.slide_from = None
+        self.stack.append(
+            {
+                "kind": "find",
+                "query": "",
+                "page": 0,
+            }
+        )
+
+    def open_index(self):
+        self.notice = ""
+        self.slide_from = None
+        self.stack.append({"kind": "index", "page": 0})
+
+    def find_hits(self, screen):
+        query = screen.get("query") or ""
+        if screen.get("_find_query") != query or "_hits" not in screen:
+            screen["_find_query"] = query
+            if content is None:
+                screen["_hits"] = []
+            else:
+                screen["_hits"] = content.search_cards(card_index(), query)
+            pages = max(1, (len(screen["_hits"]) + FIND_PER - 1) // FIND_PER)
+            if screen.get("page", 0) >= pages:
+                screen["page"] = 0
+        return screen["_hits"]
+
+    def open_entry(self, entry):
+        if entry is None:
+            return
+        self.open_item(sheet(entry.title, entry.body, tint=entry.tint))
+
+    def open_find_hit(self, raw_index):
+        try:
+            index = int(raw_index)
+        except ValueError:
+            return
+        hits = self.find_hits(self.current())
+        if 0 <= index < len(hits):
+            self.open_entry(hits[index])
+
+    def open_index_hit(self, raw_index):
+        try:
+            index = int(raw_index)
+        except ValueError:
+            return
+        entries = card_index()
+        if 0 <= index < len(entries):
+            self.open_entry(entries[index])
+
+    def jump_letter(self, letter):
+        entries = card_index()
+        for index, entry in enumerate(entries):
+            if entry.letter == letter:
+                self.current()["page"] = index
+                return
+
+    def on_find_token(self, token):
+        screen = self.current()
+        if token in ("DEL", "BKSP"):
+            screen["query"] = (screen.get("query") or "")[:-1]
+        elif token == "CLEAR":
+            screen["query"] = ""
+        elif token == "SPACE":
+            if len(screen.get("query") or "") < 80:
+                screen["query"] = (screen.get("query") or "") + " "
+        elif len(token) == 1 and len(screen.get("query") or "") < 80:
+            screen["query"] = (screen.get("query") or "") + token
+        else:
+            return
+        screen["page"] = 0
+        screen.pop("_hits", None)
+        screen.pop("_find_query", None)
+
     def on_token(self, token):
         screen = self.current()
+        if screen["kind"] == "find":
+            self.on_find_token(token)
+            return
         if screen["kind"] != "search":
             return
         if token in ("BACK",):
@@ -1512,7 +1660,7 @@ class App:
                     return True
             on_tab = bool(pressed) and pressed.startswith("tab:")
             if (not on_tab) and (swiping or (abs(dy) >= SWIPE and abs(dy) > abs(dx))):
-                if self.current()["kind"] in ("reader", "menu", "results"):
+                if self.current()["kind"] in ("reader", "menu", "results", "find", "index"):
                     self.page_delta(-1 if dy > 0 else 1)
                 return True
             if pressed and self.hit(x, y) == pressed:
@@ -1542,6 +1690,17 @@ class App:
                     screen["query"] += text
                 return True
             return False
+        if screen["kind"] == "find":
+            if event.key == pygame.K_BACKSPACE:
+                self.on_find_token("BKSP")
+                return True
+            text = event.unicode or ""
+            if text == " ":
+                self.on_find_token("SPACE")
+                return True
+            if len(text) == 1 and text.isprintable() and text not in "\r\n\t":
+                self.on_find_token(text)
+                return True
         if screen["kind"] == "radio" and radio is not None:
             if event.key in (pygame.K_LEFT, pygame.K_UP, pygame.K_PAGEUP):
                 radio.swipe(screen, -1)
@@ -1671,6 +1830,10 @@ class App:
             self.draw_reader(canvas)
         elif kind == "search":
             self.draw_search(canvas)
+        elif kind == "find":
+            self.draw_find(canvas)
+        elif kind == "index":
+            self.draw_index(canvas)
         elif kind == "results":
             self.draw_results(canvas)
         elif kind == "radio" and radio is not None:
@@ -1704,25 +1867,22 @@ class App:
         start = page * 9
         for offset, item in enumerate(items[start : start + 9]):
             self.add_button(canvas, rects[offset], item["label"], f"home:{start + offset}")
+        action = rects[9]
         if pages == 1:
-            self.add_button(canvas, rects[9], "Exit", "exit")
+            row = [
+                ("Search", "guide-search", True),
+                ("A-Z", "guide-index", True),
+                ("Exit", "exit", True),
+            ]
         else:
-            action = rects[9]
             row = [
                 ("Prev", "home-prev", page > 0),
+                ("Search", "guide-search", True),
+                ("A-Z", "guide-index", True),
                 ("Exit", "exit", True),
                 ("Next", "home-next", page + 1 < pages),
             ]
-            avail_w = WIDTH - 2 * MARGIN
-            count = len(row)
-            btn_w = (avail_w - GAP * (count - 1)) // count
-            extra = avail_w - (btn_w * count + GAP * (count - 1))
-            x = MARGIN
-            for index, (label, wid, enabled) in enumerate(row):
-                grow = 1 if index < extra else 0
-                rect = pygame.Rect(x, action.y, btn_w + grow, action.height)
-                self.add_button(canvas, rect, label, wid, enabled)
-                x += btn_w + grow + GAP
+        self._fill_row(canvas, action, row)
 
     def draw_menu(self, canvas):
         screen = self.current()
@@ -1855,14 +2015,173 @@ class App:
                 latched=latched and token == "SHIFT",
             )
 
-    def draw_query(self, canvas, query, y, height=34):
-        rect = pygame.Rect(MARGIN, y, self.content_width(), height)
+    def _fill_row(self, canvas, action, specs):
+        count = len(specs)
+        if count < 1:
+            return
+        btn_w = (action.width - GAP * (count - 1)) // count
+        extra = action.width - (btn_w * count + GAP * (count - 1))
+        x = action.x
+        for index, (label, wid, enabled) in enumerate(specs):
+            grow = 1 if index < extra else 0
+            rect = pygame.Rect(x, action.y, btn_w + grow, action.height)
+            self.add_button(canvas, rect, label, wid, enabled)
+            x += btn_w + grow + GAP
+
+    def _draw_hit_row(self, canvas, rect, entry, wid):
+        """One full-width row: card title, topic name in dim on the right."""
+        pressed = self.pressed == wid
+        if pressed:
+            pygame.draw.rect(canvas, GREEN, rect)
+            title_color = BLACK
+            topic_color = BLACK
+        else:
+            pygame.draw.rect(canvas, BLACK, rect)
+            pygame.draw.rect(canvas, GREEN, rect, 2)
+            title_color = GREEN
+            topic_color = DIM
+        pad = 8
+        topic = ellipsize(self.font_small, entry.topic_title, max(40, rect.width // 3))
+        topic_img = self.font_small.render(topic, True, topic_color)
+        title_w = max(20, rect.width - pad * 3 - topic_img.get_width())
+        title = ellipsize(self.font_button, entry.title, title_w)
+        title_img = self.font_button.render(title, True, title_color)
+        title_y = rect.y + max(0, (rect.height - title_img.get_height()) // 2)
+        topic_y = rect.y + max(0, (rect.height - topic_img.get_height()) // 2)
+        canvas.blit(title_img, (rect.x + pad, title_y))
+        canvas.blit(topic_img, (rect.right - pad - topic_img.get_width(), topic_y))
+        self.widgets.append({"rect": rect, "id": wid, "enabled": True, "label": entry.title})
+
+    def draw_find(self, canvas):
+        screen = self.current()
+        hits = self.find_hits(screen)
+        pages = max(1, (len(hits) + FIND_PER - 1) // FIND_PER)
+        page = min(max(0, screen.get("page", 0)), pages - 1)
+        screen["page"] = page
+        rows = guide_key_rows()
+        block = FIND_KEY_H * len(rows) + GAP * (len(rows) - 1)
+        key_top = HEIGHT - block
+        row_y = TAB_H + 2
+        back = pygame.Rect(MARGIN, row_y, FIND_BACK_W, FIND_QUERY_H)
+        self.add_button(canvas, back, "Back", "back")
+        query_x = back.right + GAP
+        query_w = WIDTH - MARGIN - query_x
+        count = ""
+        reserve = 0
+        if (screen.get("query") or "").strip():
+            count = str(len(hits))
+            reserve = self.font_small.size(count)[0] + 12
+        query_rect = self.draw_query(
+            canvas,
+            screen.get("query") or "",
+            row_y,
+            FIND_QUERY_H,
+            reserve=reserve,
+            x=query_x,
+            width=query_w,
+            placeholder="card title or word",
+        )
+        if count:
+            img = self.font_small.render(count, True, DIM if hits else GREEN)
+            canvas.blit(
+                img,
+                (
+                    query_rect.right - 8 - img.get_width(),
+                    query_rect.y + (query_rect.height - img.get_height()) // 2,
+                ),
+            )
+        list_top = row_y + FIND_QUERY_H + GAP
+        list_bottom = key_top - GAP
+        show_pages = pages > 1
+        page_w = 68 if show_pages else 0
+        list_w = self.content_width() - (page_w + GAP if show_pages else 0)
+        area = max(1, list_bottom - list_top)
+        btn_h = max(1, (area - GAP * (FIND_PER - 1)) // FIND_PER)
+        self._band = pygame.Rect(MARGIN, list_top, list_w, min(area, FIND_PER * btn_h + GAP * (FIND_PER - 1)))
+        if not hits:
+            hint = "No cards match." if (screen.get("query") or "").strip() else "Titles match first, then the card text."
+            self.draw_wrapped(canvas, hint, DIM, list_top + 4, area)
+        else:
+            start = page * FIND_PER
+            for offset, entry in enumerate(hits[start : start + FIND_PER]):
+                rect = pygame.Rect(MARGIN, list_top + offset * (btn_h + GAP), list_w, btn_h)
+                self._draw_hit_row(canvas, rect, entry, f"hit:{start + offset}")
+        if show_pages:
+            prev = pygame.Rect(MARGIN + list_w + GAP, list_top, page_w, btn_h)
+            nxt = pygame.Rect(MARGIN + list_w + GAP, list_top + btn_h + GAP, page_w, btn_h)
+            self.add_button(canvas, prev, "Prev", "find-prev", page > 0)
+            self.add_button(canvas, nxt, "Next", "find-next", page + 1 < pages)
+        area_keys = pygame.Rect(MARGIN, key_top, self.content_width(), block)
+        for rect, token in layout_keys(rows, area_keys, weights={"SPACE": 3}):
+            self.add_button(canvas, rect, key_label(token), "key:" + token)
+
+    def draw_index(self, canvas):
+        screen = self.current()
+        entries = list(card_index())
+        start = screen.get("page", 0)
+        if start < 0 or (entries and start >= len(entries)):
+            start = 0
+        screen["page"] = start
+        y = TAB_H + 2
+        title = self.font_title.render("A-Z", True, GREEN)
+        canvas.blit(title, (MARGIN, y))
+        if len(entries) > INDEX_PER:
+            counter = f"{start + 1}/{len(entries)}"
+            cimg = self.font_body.render(counter, True, GREEN)
+            canvas.blit(
+                cimg,
+                (WIDTH - MARGIN - cimg.get_width(), y + max(0, (title.get_height() - cimg.get_height()) // 2)),
+            )
+        y += title.get_height() + 2
+        present = {entry.letter for entry in entries}
+        current = entries[start].letter if entries else None
+        letters = content.INDEX_LETTERS if content is not None else tuple("ABCDEFGHIJKLMNOPQRSTUVWXYZ") + ("#",)
+        rows = (letters[:13], letters[13:])
+        for row in rows:
+            count = len(row)
+            avail = self.content_width()
+            btn_w = (avail - GAP * (count - 1)) // count if count else avail
+            extra = avail - (btn_w * count + GAP * (count - 1)) if count else 0
+            x = MARGIN
+            for index, letter in enumerate(row):
+                grow = 1 if index < extra else 0
+                rect = pygame.Rect(x, y, btn_w + grow, INDEX_LETTER_H)
+                enabled = letter in present
+                self.add_button(
+                    canvas,
+                    rect,
+                    letter,
+                    "letter:" + letter,
+                    enabled=enabled,
+                    latched=enabled and letter == current,
+                )
+                x += btn_w + grow + GAP
+            y += INDEX_LETTER_H + 2
+        nav_y = self.draw_nav(canvas, self.nav_specs(screen))
+        list_top = y + 2
+        area = max(1, nav_y - 4 - list_top)
+        per = INDEX_PER
+        btn_h = max(1, (area - GAP * (per - 1)) // per)
+        self._band = pygame.Rect(0, list_top, WIDTH, max(1, nav_y - list_top))
+        if not entries:
+            self.draw_wrapped(canvas, "No cards are installed.", DIM, list_top, area)
+            return
+        for offset, entry in enumerate(entries[start : start + per]):
+            rect = pygame.Rect(MARGIN, list_top + offset * (btn_h + GAP), self.content_width(), btn_h)
+            self._draw_hit_row(canvas, rect, entry, f"index:{start + offset}")
+
+    def draw_query(self, canvas, query, y, height=34, reserve=0, x=None, width=None, placeholder="type a word"):
+        if x is None:
+            x = MARGIN
+        if width is None:
+            width = self.content_width()
+        rect = pygame.Rect(x, y, width, height)
         pygame.draw.rect(canvas, BLACK, rect)
         pygame.draw.rect(canvas, GREEN, rect, 2)
         font = self.font_body
         pad = 8
         caret_w = 2
-        limit = rect.width - pad * 2 - caret_w - 8
+        limit = rect.width - pad * 2 - caret_w - 8 - max(0, reserve)
         if query:
             shown = query
             while shown and font.size(shown)[0] > limit:
@@ -1871,7 +2190,7 @@ class App:
             text_x = rect.x + pad
         else:
             shown = ""
-            img = font.render("type a word", True, DIM)
+            img = font.render(placeholder, True, DIM)
             text_x = rect.x + pad + caret_w + 4
         text_y = rect.y + (rect.height - img.get_height()) // 2
         canvas.blit(img, (text_x, text_y))
@@ -1879,11 +2198,11 @@ class App:
             caret_x = rect.x + pad + font.size(shown)[0] + 2
         else:
             caret_x = rect.x + pad
-        caret_x = min(caret_x, rect.right - pad - caret_w)
+        caret_x = min(caret_x, rect.right - pad - caret_w - max(0, reserve))
         caret_h = max(8, font.get_height() - 2)
         caret_y = rect.y + (rect.height - caret_h) // 2
         pygame.draw.rect(canvas, GREEN, (caret_x, caret_y, caret_w, caret_h))
-        return rect.bottom
+        return rect
 
     def draw_wrapped(self, canvas, text, color, y, height):
         if not text:
@@ -1968,8 +2287,20 @@ class App:
         canvas.blit(self.scanlines, (0, 0))
 
 
-def layout_keys(rows, area):
-    wide = {"SHIFT": 76, "BKSP": 72, "ENTER": 96, "123": 64, "ABC": 64, "NUM": 64, "SEARCH": 96, "BACK": 72, "DEL": 72}
+def layout_keys(rows, area, weights=None):
+    wide = {
+        "SHIFT": 76,
+        "BKSP": 72,
+        "ENTER": 96,
+        "123": 64,
+        "ABC": 64,
+        "NUM": 64,
+        "SEARCH": 96,
+        "BACK": 72,
+        "DEL": 72,
+        "CLEAR": 76,
+    }
+    weights = weights or {}
     count = len(rows)
     key_h = (area.height - GAP * (count - 1)) // count if count else area.height
     if key_h < 1:
@@ -1986,15 +2317,36 @@ def layout_keys(rows, area):
                 fixed += wide[token]
         gaps = GAP * max(0, len(row) - 1)
         remain = area.width - fixed - gaps
-        share = max(1, remain // len(flex)) if flex else 0
-        extra = remain - share * len(flex) if flex else 0
+        flex_weights = [max(1, int(weights.get(token, 1))) for token in flex]
+        weight_sum = sum(flex_weights) if flex_weights else 1
+        if flex and all(item == 1 for item in flex_weights):
+            share = max(1, remain // len(flex))
+            extra = remain - share * len(flex)
+            widths = [share + (1 if index < extra else 0) for index in range(len(flex))]
+        elif flex:
+            widths = []
+            used = 0
+            for index, item in enumerate(flex_weights):
+                if index == len(flex_weights) - 1:
+                    width = remain - used
+                else:
+                    width = remain * item // weight_sum
+                if width < 1:
+                    width = 1
+                widths.append(width)
+                used += width
+            overflow = used - remain
+            if overflow > 0 and widths:
+                widths[-1] = max(1, widths[-1] - overflow)
+        else:
+            widths = []
         x = area.x
         flex_i = 0
         for token in row:
             if token in wide and token != "SPACE":
                 width = wide[token]
             else:
-                width = share + (1 if flex_i < extra else 0)
+                width = widths[flex_i] if flex_i < len(widths) else 1
                 flex_i += 1
             if width < 1:
                 width = 1
@@ -2173,7 +2525,7 @@ def loop(app, display, touch):
             kind = app.current()["kind"]
             if (
                 display.canvas is not None
-                and kind in ("menu", "reader", "results")
+                and kind in ("menu", "reader", "results", "find", "index")
                 and old != new
             ):
                 play_slide(app, display, old, new)
@@ -2841,6 +3193,142 @@ def self_test(screenshot_dir=None):
     result_ids = [widget["id"] for widget in listed.widgets]
     check(result_ids.count("result:0") == 1 and "result:1" in result_ids, "results are tappable", failures)
 
+    index = card_index()
+    check(index is field.GUIDE.index, "search index is the one built at load", failures)
+    check(len(index) > 50, f"index has the cards {len(index)}", failures)
+    counted = 0
+    topics = field.GUIDE.topics
+    for topic in topics.values():
+        if topic.merge and topic.parent in topics:
+            continue
+        counted += len(field.GUIDE.cards(topic.slug))
+    check(len(index) == counted, f"index lists each card once ({len(index)} vs {counted})", failures)
+    folded = [entry.title_fold for entry in index]
+    check(folded == sorted(folded), "index is alphabetical", failures)
+    which = [entry for entry in index if entry.title == "Which knot"]
+    check(len(which) == 1 and which[0].topic_slug == "knots_main" and which[0].topic_title == "Knots", "merged card is listed once under Knots", failures)
+    check(all(entry.topic_slug != "knot_which" for entry in index), "merged file is not its own topic", failures)
+    bowline = content.search_cards(index, "BOWLINE")
+    check(bowline and bowline[0].title == "Bowline" and bowline[0].topic_title == "Knots", f"title match is case-insensitive { [e.title for e in bowline[:3]] }", failures)
+    check(bowline[0] is next(entry for entry in index if entry.title == "Bowline"), "search reuses the startup index", failures)
+    heat = content.search_cards(index, "heat")
+    seen_body = False
+    heat_order_ok = True
+    for entry in heat:
+        in_title = "heat" in entry.title_fold
+        if not in_title:
+            seen_body = True
+        elif seen_body:
+            heat_order_ok = False
+    check(heat and heat_order_ok and "heat" in heat[0].title_fold, "title matches come before body matches", failures)
+    check(content.search_cards(index, "   ") == [], "blank query matches nothing", failures)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        with open(os.path.join(tmp, "camp.md"), "w", encoding="utf-8") as handle:
+            handle.write(
+                "---\ntitle: Camp\n---\n\n"
+                "## Boil water\n\nRolling boil.\n\n"
+                "## Camp stove\n\nBoil water on the stove if you can.\n\n"
+                "## Shelter\n\nA boil is not a shelter.\n"
+            )
+        sample = content.load_guide(tmp)
+        ranked = content.search_cards(sample.index, "boil")
+        check(
+            [entry.title for entry in ranked] == ["Boil water", "Camp stove", "Shelter"],
+            f"sample search order {[entry.title for entry in ranked]}",
+            failures,
+        )
+        check(all(entry.topic_title == "Camp" for entry in ranked), "sample results carry the topic", failures)
+        both = content.search_cards(sample.index, "water stove")
+        check([entry.title for entry in both] == ["Camp stove"], f"every word must match { [entry.title for entry in both] }", failures)
+        check(content.search_cards(sample.index, "BOIL")[0].title == "Boil water", "sample search ignores case", failures)
+
+    guide_home = App(show_cave=False)
+    guide_home.draw(canvas)
+    search_btn = next(widget for widget in guide_home.widgets if widget["id"] == "guide-search")
+    index_btn = next(widget for widget in guide_home.widgets if widget["id"] == "guide-index")
+    check(search_btn["rect"].height >= 60 and index_btn["rect"].height >= 60, "home search and A-Z are finger sized", failures)
+    check(search_btn["rect"].bottom <= HEIGHT and index_btn["rect"].right <= WIDTH, "home search and A-Z stay on screen", failures)
+    guide_home.pointer("down", *search_btn["rect"].center)
+    guide_home.pointer("up", *search_btn["rect"].center)
+    check(guide_home.current()["kind"] == "find", "search opens from GUIDE home", failures)
+    guide_home.draw(canvas)
+    for char in "bowline":
+        key = next(widget for widget in guide_home.widgets if widget["id"] == f"key:{char}")
+        check(key["rect"].height >= 48 and key["rect"].width >= 36, f"key {char} size {key['rect'].size}", failures)
+        guide_home.pointer("down", *key["rect"].center)
+        guide_home.pointer("up", *key["rect"].center)
+    check(guide_home.current()["query"] == "bowline", f"typed query {guide_home.current().get('query')}", failures)
+    guide_home.draw(canvas)
+    hit_rows = [widget for widget in guide_home.widgets if widget["id"].startswith("hit:")]
+    check(hit_rows and hit_rows[0]["label"] == "Bowline", f"live results { [widget['label'] for widget in hit_rows] }", failures)
+    key_ids = {widget["id"] for widget in guide_home.widgets if widget["id"].startswith("key:")}
+    check({"key:BKSP", "key:CLEAR", "key:SPACE"} <= key_ids, f"backspace clear space {key_ids}", failures)
+    check(
+        all(widget["rect"].height >= 48 and widget["rect"].width >= 36 for widget in guide_home.widgets if widget["id"].startswith("key:")),
+        "every search key is finger sized",
+        failures,
+    )
+    check(
+        all(0 <= widget["rect"].left and widget["rect"].right <= WIDTH and widget["rect"].bottom <= HEIGHT for widget in guide_home.widgets),
+        "search screen stays inside 480x320",
+        failures,
+    )
+    guide_home.pointer("down", *hit_rows[0]["rect"].center)
+    guide_home.pointer("up", *hit_rows[0]["rect"].center)
+    check(guide_home.current()["kind"] == "reader" and guide_home.current()["title"] == "BOWLINE", "result opens the card", failures)
+    check("fixed loop" in guide_home.current()["body"], "opened card is the bowline sheet", failures)
+    check("![bowline" in guide_home.current()["body"], "opened card keeps its diagram", failures)
+    found_badge = False
+    for number in range(guide_home.page_count(guide_home.current())):
+        guide_home.current()["page"] = number
+        guide_home.slide_from = None
+        guide_home.draw(canvas)
+        if any(widget["id"].startswith("zoom:") for widget in guide_home.widgets):
+            found_badge = True
+            break
+    check(found_badge, "enlarge badge still shows on a card opened from search", failures)
+    guide_home.activate("back")
+    check(guide_home.current()["kind"] == "find" and guide_home.current()["query"] == "bowline", "back returns to the results", failures)
+    guide_home.draw(canvas)
+    clear = next(widget for widget in guide_home.widgets if widget["id"] == "key:CLEAR")
+    guide_home.pointer("down", *clear["rect"].center)
+    guide_home.pointer("up", *clear["rect"].center)
+    check(guide_home.current()["query"] == "", "clear empties the query", failures)
+    guide_home.on_find_token("b")
+    guide_home.on_find_token("BKSP")
+    check(guide_home.current()["query"] == "", "backspace deletes", failures)
+    guide_home.on_find_token("SPACE")
+    guide_home.on_find_token("a")
+    check(guide_home.current()["query"] == " a", "space key inserts a space", failures)
+
+    az = App(show_cave=False)
+    az.activate("guide-index")
+    az.draw(canvas)
+    shown = [widget["label"] for widget in az.widgets if widget["id"].startswith("index:")]
+    check(shown == [entry.title for entry in index[:INDEX_PER]], f"index first page {shown}", failures)
+    check({"letter:A", "letter:Z", "letter:#"} <= {widget["id"] for widget in az.widgets}, "letter jump buttons", failures)
+    missing = [letter for letter in content.INDEX_LETTERS if letter not in {entry.letter for entry in index}]
+    if missing:
+        disabled = next(widget for widget in az.widgets if widget["id"] == "letter:" + missing[0])
+        check(not disabled["enabled"], f"empty letter {missing[0]} is not tappable", failures)
+    letter_b = next(widget for widget in az.widgets if widget["id"] == "letter:B")
+    check(letter_b["rect"].height >= 32, f"letter button height {letter_b['rect'].height}", failures)
+    az.pointer("down", *letter_b["rect"].center)
+    az.pointer("up", *letter_b["rect"].center)
+    az.draw(canvas)
+    jumped = [widget for widget in az.widgets if widget["id"].startswith("index:")]
+    check(jumped and jumped[0]["label"][:1].upper() == "B", f"B jumps to { [widget['label'] for widget in jumped] }", failures)
+    az.pointer("down", *jumped[0]["rect"].center)
+    az.pointer("up", *jumped[0]["rect"].center)
+    check(az.current()["kind"] == "reader", "index row opens the card", failures)
+    opened = az.current()["title"]
+    az.activate("back")
+    check(az.current()["kind"] == "index" and az.current().get("page", 0) > 0, "back returns to the index page", failures)
+    check(opened.startswith("B"), f"opened the B card {opened}", failures)
+    az.activate("tab:GUIDE")
+    check(az.current()["kind"] == "home" and len(az.stack) == 1, "GUIDE tab still leaves the index", failures)
+
     scan = make_scanlines()
     sample = pygame.Surface((WIDTH, HEIGHT))
     sample.fill(GREEN)
@@ -2890,6 +3378,17 @@ def self_test(screenshot_dir=None):
             field.HOST = saved_host
         search.draw(canvas)
         pygame.image.save(canvas, os.path.join(screenshot_dir, "search_kiwix_down.png"))
+        finder = App(show_cave=False)
+        finder.activate("guide-search")
+        finder.current()["query"] = "knot"
+        finder.draw(canvas)
+        pygame.image.save(canvas, os.path.join(screenshot_dir, "guide_search.png"))
+        check(any(widget["label"] == "Square knot" for widget in finder.widgets), "search screenshot shows a knot card", failures)
+        indexer = App(show_cave=False)
+        indexer.activate("guide-index")
+        indexer.draw(canvas)
+        pygame.image.save(canvas, os.path.join(screenshot_dir, "guide_index.png"))
+        check(any(widget["id"].startswith("letter:") for widget in indexer.widgets), "index screenshot draws letter jumps", failures)
         picked = None
         for topic in field.GUIDE.home_topics():
             view = field.GUIDE.present(topic.slug)

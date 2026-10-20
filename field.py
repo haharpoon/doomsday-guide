@@ -63,6 +63,8 @@ class _EmptyGuide:
     def present(self, _slug):
         return None
 
+    index = ()
+
 
 def _import_content():
     here = os.path.dirname(os.path.abspath(__file__))

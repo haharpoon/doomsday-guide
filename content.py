@@ -40,10 +40,41 @@ class Topic:
         self.path = path
 
 
+class CardEntry:
+    """One card in the startup search index.
+
+    ``body`` is the same string the topic already holds. ``title_fold`` and
+    ``body_fold`` are built once so a keystroke does not walk the files again.
+    """
+
+    __slots__ = (
+        "topic_slug",
+        "topic_title",
+        "title",
+        "body",
+        "tint",
+        "title_fold",
+        "body_fold",
+        "letter",
+    )
+
+    def __init__(self, topic_slug, topic_title, title, body, tint):
+        self.topic_slug = topic_slug
+        self.topic_title = topic_title
+        self.title = title
+        self.body = body
+        self.tint = bool(tint)
+        self.title_fold = " ".join((title or "").split()).casefold()
+        self.body_fold = fold_search_text(body)
+        self.letter = index_letter(title)
+
+
 class Guide:
     def __init__(self, topics, directory):
         self.topics = topics
         self.directory = directory
+        # Built once here, at load, and reused for every keystroke.
+        self.index = build_card_index(self)
 
     def home_topics(self):
         rows = [topic for topic in self.topics.values() if not topic.parent]
@@ -107,6 +138,104 @@ class Guide:
 
 def _topic_sort(topic):
     return (topic.order is None, topic.order if topic.order is not None else 0, topic.slug)
+
+
+# A-Z, then a bucket for titles that start with a digit ("12 V systems").
+INDEX_LETTERS = tuple(chr(code) for code in range(ord("A"), ord("Z") + 1)) + ("#",)
+
+
+def index_letter(title):
+    """Jump-list bucket for a card title. Letters win over a leading digit."""
+    for char in (title or "").strip():
+        if char.isalpha():
+            return char.upper()
+        if char.isdigit():
+            return "#"
+    return "#"
+
+
+def fold_search_text(body):
+    """Case-folded body text for matching. Image paths are dropped; alt text stays."""
+
+    def repl(match):
+        alt = match.group(1).strip()
+        return f" {alt} " if alt else " "
+
+    text = IMAGE_RE.sub(repl, body or "")
+    return " ".join(text.split()).casefold()
+
+
+def build_card_index(guide):
+    """Every card, once, alphabetical.
+
+    A ``merge: cards`` file is listed under its parent (that is where the menu
+    shows it), not as its own topic. Topics with no cards add nothing.
+    """
+    topics = getattr(guide, "topics", None) or {}
+    entries = []
+    for topic in topics.values():
+        if topic.merge and topic.parent in topics:
+            continue
+        for name, body in guide.cards(topic.slug):
+            entries.append(
+                CardEntry(
+                    topic.slug,
+                    topic.title,
+                    name,
+                    body,
+                    topic.tint,
+                )
+            )
+    entries.sort(
+        key=lambda entry: (
+            entry.title_fold,
+            entry.topic_title.casefold(),
+            entry.topic_slug,
+        )
+    )
+    return tuple(entries)
+
+
+def search_cards(entries, query):
+    """Rank cards for a typed query.
+
+    Every word must appear, case-insensitive, in the title or the body.
+    Cards whose titles contain every word come first (titles that start with
+    the query, then the rest, A–Z). Body matches follow, A–Z. An empty query
+    matches nothing.
+    """
+    folded = " ".join((query or "").split()).casefold()
+    tokens = folded.split()
+    if not tokens:
+        return []
+    title_hits = []
+    body_hits = []
+    for entry in entries:
+        in_title = all(token in entry.title_fold for token in tokens)
+        if in_title:
+            title_hits.append(entry)
+            continue
+        if all(token in entry.title_fold or token in entry.body_fold for token in tokens):
+            body_hits.append(entry)
+
+    def title_key(entry):
+        starts = entry.title_fold.startswith(folded) or entry.title_fold.startswith(tokens[0])
+        return (
+            0 if starts else 1,
+            entry.title_fold,
+            entry.topic_title.casefold(),
+            entry.topic_slug,
+        )
+
+    title_hits.sort(key=title_key)
+    body_hits.sort(
+        key=lambda entry: (
+            entry.title_fold,
+            entry.topic_title.casefold(),
+            entry.topic_slug,
+        )
+    )
+    return title_hits + body_hits
 
 
 def _script_content_dirs():

@@ -58,6 +58,8 @@ A `book` value with nothing after the colon searches both archives.
 
 `more.md` is the More button. The program adds Places, Search all archives, and (on the keyboard) Cave Mapper after the sheets you list under it. Those three are the library and the scanner, not sheets.
 
+The touch guide builds one index of every card when it loads. Search and A-Z on the GUIDE home screen use that index. A merged card is listed under the parent topic, which is where the menu shows it.
+
 `radio_freqs.json` is not a sheet. The RADIO tab reads it for the UK frequency cards. `signals.md` still holds the long radio notes.
 
 A file with `order` and no `parent` is a home-menu button. The home menu is that list, sorted by `order`. Numbers in the keyboard menu follow that order.
