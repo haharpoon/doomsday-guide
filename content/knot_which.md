@@ -7,22 +7,42 @@ merge: cards
 
 ## Which knot
 
-Use the knot that matches the job. A pretty knot in the wrong job slips or jams.
+Pick by the job. Menu names are in brackets.
 
-Join two ropes of similar size, and you may need to untie them: sheet bend.
-Join two ropes you will not need to untie, or close a loop of cord: double fisherman's knot.
-Join flat webbing or a strap: water knot. Do not use a water knot on round rope.
+Stop an end running out (Stoppers): figure-eight stopper. Simplest: overhand knot. Fatter: double overhand stopper.
 
-A loop at the end of a rope that must not slip: figure-eight loop. A bowline is faster to untie after a load and is fine for a haul line or a ridge that you can watch. Do not trust a bowline as the only thing holding a person if the loop can flap loose. A bowline that is not loaded can shake undone. Leave a tail a hand long, and stop the tail if the knot will shake.
+Tie to a post, rail, ring or tree (Hitches):
+Load that matters: round turn and two half hitches (main menu).
+Quick, you will watch it: clove hitch (main menu). Light load: two half hitches.
+Shaken or jerked: buntline hitch. Loop or sling round a pole: cow hitch.
+Post with a free top: pile hitch. Log or bundle: timber hitch.
+Bind hard, never untie: constrictor knot. Stick as a handle: marlinspike hitch.
+Quick release, light loads only: Siberian hitch, highwayman's hitch.
+Lower a load on a carabiner: Munter hitch, trained users only.
 
-Tie onto a post, ring, or tree when the load matters: round turn and two half hitches.
-A quick tie you will watch: clove hitch, then a half hitch if it starts to roll.
-Pull along a pole, or grab a tight rope with a smaller cord: rolling hitch.
+Grip or pull (Grip and haul):
+Pull along a pole or tight rope: rolling hitch. Grip a rope with a cord loop: Prusik, Klemheist.
+Smooth or tapered pole: icicle hitch. Pull a line very tight: trucker's hitch.
+Adjustable guy line: taut-line hitch (main menu).
 
-Tighten a guy line you will adjust: taut-line hitch.
-Pull a ridge line very tight: trucker's hitch.
-A loop in the middle of a rope, so you can still pull either end: alpine butterfly.
+A loop (Loops):
+End loop, must not slip: figure-eight loop (main menu). Round a tree or through a ring: figure-eight follow-through.
+Quick end loop: bowline (main menu). Middle of the rope: alpine butterfly. Two loops: bowline on a bight.
+Loop that slides closed: running bowline. Loop in thin cord: overhand loop, perfection loop.
+Comes undone with one pull: slip knot.
 
-Bind a bundle or the two ends of the same cloth: square knot. Do not use a square knot to join two climbing ropes. It can capsize and spill.
+Join two ropes (Bends and joins):
+Any two ropes: sheet bend (main menu). Thin to thick, or slippery: double sheet bend.
+Similar ropes, easy to untie: zeppelin bend. Heavy stiff rope: carrick bend.
+Must never slip: double fisherman's knot. Thin cord, light load: single fisherman's knot.
+Flat tape: water knot. Ends of one cord round a bundle: square knot (main menu).
 
-Every knot below is unfinished until you dress it. Remove slack and twists until it looks like the description, then pull it hard with the load it will actually take. A tail shorter than your palm is a knot asking to untie itself.
+Fishing and food (Fishing and snare knots): line to hook: improved clinch knot, Palomar knot, uni knot. Line to line: surgeon's knot. Snare: snare noose, law first.
+
+Poles (Lashings): read start and finish lashings first.
+Poles crossing square: square lashing. At an angle or springing apart: diagonal lashing.
+A-frame: shear lashing. Lengthen a pole: round lashing. Pot stand: tripod lashing. Platform or raft: floor lashing.
+
+Rope (Rope care): rope care and strength, common whipping, eye splice, butterfly coil, sheepshank, tie a ridge line.
+
+Every knot: dress it, set it, leave a tail a hand long, test it before you trust it.
