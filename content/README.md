@@ -58,7 +58,7 @@ A `book` value with nothing after the colon searches both archives.
 
 `more.md` is the More button. The program adds Places, Search all archives, and (on the keyboard) Cave Mapper after the sheets you list under it. Those three are the library and the scanner, not sheets.
 
-`radio_freqs.json` is not a sheet. The RADIO tab reads it for the UK frequency cards. `signals.md` still holds the long radio notes.
+`radio_freqs.json` is not a sheet. The RADIO tab reads it for the UK frequency cards. `signals.md` is the Signals & Radio menu. The long notes are the `signals_*.md` topics under it.
 
 A file with `order` and no `parent` is a home-menu button. The home menu is that list, sorted by `order`. Numbers in the keyboard menu follow that order.
 
