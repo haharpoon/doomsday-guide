@@ -7,8 +7,8 @@ path sets SDL_VIDEODRIVER=dummy. ``--window`` opens a normal desktop
 window for preview off the Pi.
 
 The top bar is the shared ``tabbar.py`` strip: 36px, GUIDE, SCAN, RADIO.
-SCAN is this screen. RADIO stays disabled. GUIDE, and the HOME button
-under the bar, leave the scanner and return to the touch guide.
+SCAN is this screen. GUIDE, and the HOME button under the bar, leave the
+scanner and return to the touch guide. RADIO leaves for the radio screen.
 
 There is no range sensor wired yet. Built-in demo geometry runs until a
 USB serial device shows up, and the picture is labelled DEMO DATA.
@@ -293,6 +293,17 @@ def returning_to_parent(flag=None) -> bool:
     return parent_is_guide(command)
 
 
+def guide_argv(tab="guide"):
+    """Command line for the touch guide. ``radio`` opens that tab."""
+
+    command = guide_command()
+    if not command:
+        return None
+    if tab == "radio":
+        return command + ["--radio"]
+    return list(command)
+
+
 def guide_command():
     """How to start the touch guide when nothing is waiting for us."""
 
@@ -309,16 +320,22 @@ def guide_command():
     return None
 
 
-def handoff_guide() -> bool:
+# field_touch treats this exit code as "open the RADIO tab". Keep it in step
+# with radio.RADIO_EXIT.
+RADIO_EXIT = 7
+
+
+def handoff_guide(tab="guide") -> bool:
     """Resume a waiting guide, or replace this process with field_touch.
 
     Returns True when the caller should exit without a console goodbye.
-    ``os.execv`` does not return on success.
+    ``os.execv`` does not return on success. ``tab="radio"`` asks a fresh
+    guide to open RADIO.
     """
 
     if returning_to_parent():
         return True
-    command = guide_command()
+    command = guide_argv(tab)
     if not command:
         return False
     try:
@@ -1901,6 +1918,7 @@ class App:
     trans_start: float = 0.0
     trans_until: float = 0.0
     exit_at: float | None = None
+    handoff: str = "guide"
     pressed: str | None = None
     flash: str | None = None
     flash_until: float = 0.0
@@ -1944,12 +1962,11 @@ class App:
         if inp.click:
             widget = layout.identify(*inp.click)
             if widget in ("HOME", "GUIDE"):
+                self.handoff = "guide"
                 self._arm_exit(widget, now)
             elif widget == "RADIO":
-                self.flash = widget
-                self.flash_until = now + FLASH_S
-                self.note = "RADIO OFF"
-                self.note_until = self.session.t + 1.8
+                self.handoff = "radio"
+                self._arm_exit(widget, now)
             elif widget == "SCAN":
                 self.flash = widget
                 self.flash_until = now + FLASH_S
@@ -2071,7 +2088,7 @@ def run_loop(window: bool, session: Session, fps: int, console: Console | None =
             remain = frame_dt - (time.perf_counter() - started)
             if remain > 0:
                 time.sleep(remain)
-        return True
+        return app.handoff or "guide"
     finally:
         if evdev is not None:
             evdev.close()
@@ -2299,7 +2316,7 @@ def self_test() -> int:
         check(tuple(early.get_at((0, 4)))[:3] == DIM, "guide outline")
         check(tuple(early.get_at((1, 4)))[:3] == DIM, "guide outline is 2px")
         check(tuple(early.get_at((320, 4)))[:3] == DIM, "radio outline")
-        check(tuple(early.get_at((321, 4)))[:3] == BLACK, "radio outline is 1px")
+        check(tuple(early.get_at((321, 4)))[:3] == DIM, "radio outline is 2px")
         room = layout.modes[0][2]
         room_px = _sample(early, room.x + 4, room.y + 4)
         check(room_px == GREEN, f"room mode filled {room_px}")
@@ -2349,12 +2366,18 @@ def self_test() -> int:
         app.handle(layout, InputState(mode=4), now=1)
         check(app.mode == 4, "number key selects trip")
         radio = InputState(click=layout.tabs[2][1].center)
-        app.handle(layout, radio, now=2)
-        check(app.mode == 4 and app.exit_at is None, "radio stays put")
-        check(app.active_note() == "RADIO OFF", "radio tab note")
+        check(app.handle(layout, radio, now=2) == "", "radio holds for the flash")
+        check(app.handoff == "radio" and app.exit_at == 2 + FLASH_S, "radio leaves for the radio screen")
+        check(app.handle(layout, InputState(), now=app.exit_at + 0.01) == "quit", "radio quits after flash")
+        app = App(Session(demo=True))
+        app.session.place(t=1.0)
         guide_click = InputState(click=layout.tabs[0][1].center)
         check(app.handle(layout, guide_click, now=3) == "", "guide holds for the flash")
         check(app.exit_at == 3 + FLASH_S, "guide leaves")
+        check(app.handoff == "guide", "guide handoff stays the guide")
+        argv = guide_argv("radio")
+        check(argv is not None and argv[-1] == "--radio", f"radio handoff argv {argv}")
+        check(RADIO_EXIT == 7, "radio exit code")
     finally:
         pygame.quit()
 
@@ -2414,9 +2437,9 @@ def main(argv=None) -> int:
         sys.stderr.write(f"cavemap: {error}\n")
         return 1
 
-    handoff = False
+    tab = ""
     try:
-        handoff = run_loop(window=window, session=session, fps=args.fps, console=console)
+        tab = run_loop(window=window, session=session, fps=args.fps, console=console)
     except (OSError, pygame.error) as error:
         console.leave()
         sys.stderr.write(
@@ -2425,12 +2448,14 @@ def main(argv=None) -> int:
         )
         return 1
     except KeyboardInterrupt:
-        handoff = True
+        tab = "guide"
     finally:
         if session.serial is not None:
             session.serial.close()
         console.leave()
-    if handoff and handoff_guide():
+    if tab == "radio" and returning_to_parent():
+        return RADIO_EXIT
+    if tab and handoff_guide(tab):
         return 0
     print("Scanner closed.")
     return 0

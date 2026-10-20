@@ -11,15 +11,33 @@ if ! dpkg -s python3-pygame >/dev/null 2>&1 || ! dpkg -s python3-evdev >/dev/nul
     || { apt-get update && apt-get install -y python3-pygame python3-evdev python3-numpy python3-serial; }
 fi
 
+# Live FM is optional. A missing package must not fail the guide install.
+if apt-get install -y rtl-sdr alsa-utils; then
+  echo "Live radio tools: rtl-sdr and alsa-utils."
+else
+  echo "rtl-sdr or alsa-utils was not installed. The RADIO tab still opens." >&2
+fi
+
 BASE="https://raw.githubusercontent.com/haharpoon/doomsday-guide/main"
-curl -fsSL "$BASE/field.py" -o /usr/local/bin/field
-curl -fsSL "$BASE/field_touch.py" -o /usr/local/bin/field_touch
-curl -fsSL "$BASE/tabbar.py" -o /usr/local/bin/tabbar.py
-curl -fsSL "$BASE/cavemap.py" -o /usr/local/bin/cavemap
-curl -fsSL "$BASE/content.py" -o /usr/local/bin/content.py
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+fetch_file() {
+  name="$1"
+  dest="$2"
+  if [ -f "$SCRIPT_DIR/$name" ]; then
+    cp -a "$SCRIPT_DIR/$name" "$dest"
+  else
+    curl -fsSL "$BASE/$name" -o "$dest"
+  fi
+}
+fetch_file field.py /usr/local/bin/field
+fetch_file field_touch.py /usr/local/bin/field_touch
+fetch_file tabbar.py /usr/local/bin/tabbar.py
+fetch_file cavemap.py /usr/local/bin/cavemap
+fetch_file content.py /usr/local/bin/content.py
+fetch_file radio.py /usr/local/bin/radio.py
 chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/tabbar.py
-chmod 644 /usr/local/bin/content.py
-python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/tabbar.py /usr/local/bin/content.py
+chmod 644 /usr/local/bin/content.py /usr/local/bin/radio.py
+python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/tabbar.py /usr/local/bin/content.py /usr/local/bin/radio.py
 
 # Sheets are Markdown. Writers edit those files; the guides only read them.
 install_content() {
@@ -92,6 +110,7 @@ except Exception as error:
         "power.md",
         "emergency.md",
         "library.md",
+        "radio_freqs.json",
     ]
     ok = False
     for name in names:
@@ -271,4 +290,6 @@ else
   echo "Touch guide: type field_touch"
 fi
 echo "Cave Mapper is the cavemap command. Log in again if it cannot open the LCD."
+echo "RADIO is the top-right tab: UK frequencies, a listening log, and Morse."
+echo "Plug in an RTL-SDR to tune live FM. Without one, the other radio tools still work."
 echo "Log out or reboot once so this screen and the groups take effect."
