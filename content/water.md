@@ -1,7 +1,7 @@
 ---
 title: Water
 order: 3
-intro: Settle, then boil when you can.
+intro: Settle, then boil when you can. Finding and collecting water, and every way to make it safe, are at the end.
 book: wikipedia_en_medicine_nopic_2026-04
 ---
 
@@ -17,6 +17,47 @@ Carry water when you leave a known source. Drink before you start. A long walk b
 
 Do not drink seawater, urine, or blood. They make you more short of water, not less. Do not drink from a pool with a chemical sheen, a dead animal in it, or a smell of fuel.
 
+## How much you need
+
+Use: planning how much water to carry, find or store.
+
+1. Drinking, to survive: at least 2.5 to 3 litres a person a day (WHO). More in heat, hard work, illness or breastfeeding.
+
+2. Drinking, cooking and basic washing: about 10 litres a person a day.
+
+3. Extra for babies' formula, medical devices and pets.
+
+4. Ration sweat, not water. Work in the cool of the day, rest in shade, and keep covered.
+
+5. Drink small amounts often. Do not save your water and collapse with a full bottle.
+
+Signs you need more: dark yellow, strong-smelling pee, or peeing less than 4 times a day; thirst, headache, dizziness, tiredness, dry mouth. Babies: fewer wet nappies, a sunken soft spot. See Medicine for dehydration.
+
+Mistakes: waiting until thirsty; drinking alcohol; eating salty food with little water.
+
+Check: your pee is pale straw colour.
+
+![water per person per day: 3 litres to drink to survive; about 10 litres with cooking and washing](img/wt_needs.png)
+
+## Signs water is unsafe
+
+Use: before you collect or drink any water. Clear water can still make you ill, so treat it anyway, but some water you should not use at all.
+
+Do not use, even boiled:
+1. A smell of fuel, chemicals or solvent, or an oily rainbow sheen.
+2. Blue-green algae: green or blue scum, paint-like or pea-soup water, often in warm still lakes. Its toxins are not killed by boiling.
+3. Orange, red or white staining from old mines, or near factories and tips.
+4. Floodwater. It carries sewage and chemicals.
+
+Treat with great care, only if there is nothing else:
+5. Dead animals in or near it, upstream of you.
+6. Below farms, towns, sewage outfalls or roads.
+7. Stagnant pools with foam, a rotten egg smell or lots of flies.
+
+Mistakes: thinking clear and cold means clean; trusting a stream below a field of sheep.
+
+Check: you have walked upstream and seen what is there.
+
 ## Settle, filter, boil
 
 If the water is cloudy, let it sit until the grit drops. Pour off the clear part. Pour it through a cloth, a shirt, or a bandanna to take out the rest of the silt. This step does not remove germs. It makes the next step work, and it keeps you from drinking mud.
@@ -30,32 +71,6 @@ Store treated water covered. Do not dip a dirty cup into the clean pot. Pour.
 If you have purification tablets or a filter you carried in, follow the instructions printed on that device. A clogged filter that you bypass is just a bottle.
 
 When you cannot boil, and the day is sunny, use a clear plastic bottle. Fill it with the clearest water you have. Lay it on its side in full sun for at least six hours. If the sky is more than half cloud, leave it for two days. This is sunlight treatment, not boiling. Use boiling when you can.
-
-## Where to look
-
-1. Follow valleys and low ground downhill. Water collects there.
-
-2. Look for green plants, reeds, willows, and lines of trees in dry country.
-
-3. Watch animals and birds at dawn and dusk. Insects and flies stay near water. Pigeons and finches fly to water.
-
-4. Dig at the outside bend of a dry stream bed, where water last flowed. Wait for water to seep into the hole.
-
-5. On the coast, dig a hole behind the first dune. The top layer of seeping water is the least salty.
-
-All found water still needs treating.
-
-## Catch rain, dew and snow
-
-1. Rain: spread a tarp, plastic sheet or poncho in a slope into a container. Let the first minutes of rain rinse it, then collect.
-
-2. Run a cloth from a tree trunk down into a bottle. Rain running down the bark follows it.
-
-3. Dew: tie cloth round your ankles and walk through wet grass before sunrise. Wring it out.
-
-4. Snow and ice: melt in a pot with a little water already in it so it does not scorch. Ice gives more water than snow.
-
-Rainwater from a clean sheet is fairly safe. Treat it if you can. Water off roofs needs treating.
 
 ## Boiling: the details
 
@@ -73,84 +88,6 @@ Boiling kills germs. It does not remove chemicals, fuel, metals or salt.
 
 No pot: heat stones in the fire and drop them into water held in a bark container, wood bowl or hole lined with plastic.
 
-## Bleach and tablets
-
-Use plain, unscented household bleach with no added cleaners. Check the strength on the label.
-
-1. Filter cloudy water first.
-
-2. Bleach 5 to 6%: 2 drops per litre, or 8 drops per gallon (3.8 litres).
-
-3. Bleach 8.25%: 2 drops per litre, or 6 drops per gallon.
-
-4. Bleach 1% (some thin bleaches): 10 drops per litre.
-
-5. Cloudy, coloured or very cold water: double the dose.
-
-6. Stir and wait 30 minutes.
-
-7. It should smell faintly of chlorine. No smell: add the same dose again and wait 15 more minutes.
-
-Tablets (chlorine dioxide, iodine): follow the packet exactly, including the wait time. Iodine is not for pregnant women or people with thyroid problems. Chemicals work poorly on some parasites; boiling is better.
-
-## Sunlight (SODIS)
-
-Works on germs in clear water, if you have sun and clear bottles.
-
-1. Use a clean, clear, colourless PET bottle, 3 litres or less, not badly scratched. Take the label off.
-
-2. Filter the water until it is clear. If you can read big print through a full bottle, it is clear enough.
-
-3. Fill it to the top and cap it.
-
-4. Lay it on its side in full sun, on a dark roof or metal sheet if you have one.
-
-5. 6 hours if less than half the sky is cloudy. Two days in a row if more than half is cloudy.
-
-6. Drink straight from the bottle.
-
-Does not work well in long spells of rain (collect rainwater instead), on cloudy water, or in coloured bottles.
-
-![bottle on its side in sun: 6 hours sunny, 2 days cloudy](img/sodis.png)
-
-## Sand filter
-
-This makes water clearer and removes some germs. Still boil or treat after.
-
-1. Cut the bottom off a plastic bottle, or use a cloth tied into a cone. Turn it upside down.
-
-2. Put a cloth or grass plug in the neck.
-
-3. Layer from the bottom: small gravel, then coarse sand, then fine sand. Make the fine sand the deepest layer.
-
-4. Crushed charcoal from your fire, not ash, can go under the sand to improve taste and smell.
-
-5. Pour water in slowly. Throw away the first lot.
-
-6. Rinse or replace the top layer of sand when it slows down.
-
-![bottle filter layers: cloth, gravel, charcoal, sand](img/sand_filter.png)
-
-## Solar still
-
-Slow. Gives a little water, often under a litre a day. Only use it when nothing else works.
-
-1. Dig a hole about 1 metre wide and 60 cm deep in damp ground, in full sun.
-
-2. Put a cup in the centre bottom.
-
-3. Pile green leaves or put salty or dirty water around the cup. Not in the cup.
-
-4. Cover the hole with clear plastic. Seal the edges with soil.
-
-5. Put a small stone in the middle of the plastic so it dips over the cup.
-
-6. Water evaporates, condenses on the plastic, and drips into the cup.
-
-The water from the cup is distilled and safe to drink. A tube from the cup lets you drink without opening it. Do not dig hard in heat: you lose more sweat than you gain.
-
-![solar still: plastic over hole, stone in middle, drip into cup](img/solar_still.png)
-
 ## Store water safely
 
 1. Use clean containers with lids. Food-grade plastic or glass. Never ones that held chemicals or fuel.
@@ -165,18 +102,36 @@ The water from the cup is distilled and safe to drink. A tube from the cup lets 
 
 6. Keep drinking water apart from washing water.
 
-Plan at least 3 litres per person a day for drinking. More in heat or hard work, plus water for cooking and washing.
+Plan at least 3 litres per person a day for drinking. More in heat or hard work, plus water for cooking and washing. See How much you need.
 
-## Water sources
+Long-term store: the UK government advises buying sealed bottled water rather than filling your own bottles. Keep it to its date, then use it and replace it. Your own filled containers: tap water, clean containers, swap every 6 months.
 
-Written in our own words from:
+Keep stored water away from petrol, paint, cleaning products and garden chemicals. Plastic lets their fumes through.
 
-CDC: cdc.gov/water-emergency/about/index.html (boiling, 3 minutes above 6,500 ft, bleach doses). US EPA: epa.gov/ground-water-and-drinking-water/emergency-disinfection-drinking-water
+Check: every container has a date, and the oldest gets used first.
 
-WHO: Guidelines for drinking-water quality; household water treatment.
+## Emergency water at home
 
-SODIS / Eawag: sodis.ch/methode/anwendung/index_EN.html
+Use: the taps stop, and you have no stored water yet. There is often a lot of water inside a house.
 
-US Army FM 21-76 / ATP 3-50.21 Survival (public domain, armypubs.army.mil): finding water, solar still.
+1. Turn off the water at the stopcock if the mains may be dirty (you will be told).
 
-Hesperian, Where There Is No Doctor (free non-commercial).
+2. Hot water cylinder (if you have one, usually in an airing cupboard): switch off the boiler and immersion heater first. Let it cool. Drain from the tap near the bottom. Treat it before drinking.
+
+3. Pipes: open the highest tap in the house, then run the lowest tap into a clean container.
+
+4. Toilet cistern, the tank behind the toilet, not the bowl: usable if no blue or chemical cleaner is in it. Treat before drinking.
+
+5. Ice cubes, and the liquid in tinned vegetables and fruit.
+
+6. A loft cold-water tank is not drinking water: boil or treat it, or use it for washing and flushing.
+
+7. Rain butts: flushing and washing only, unless treated.
+
+Combi boilers have no hot water tank.
+
+Never drink from radiators or central heating systems. They contain chemicals.
+
+Check: every container is labelled drink (treated) or wash.
+
+![water in a house: hot cylinder drain tap, lowest tap after opening the highest, toilet cistern not the bowl; not radiators](img/wt_home.png)

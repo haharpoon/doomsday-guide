@@ -52,6 +52,50 @@ Children usually stop breathing first, so breaths matter more.
 
 5. Alone with no phone: do 1 minute of CPR, then go for help.
 
+## Defibrillator (AED)
+
+Anyone can use one. No training is needed. It talks you through every step and only shocks a heart that needs it.
+
+1. Keep CPR going. Send someone for the AED. Public ones hang in cabinets on walls; 999 can give the code and say where the nearest one is.
+
+2. Open the lid or press the power button. Do what the voice says.
+
+3. Bare the chest. Wipe it dry. Peel off any medicine patch.
+
+4. Pads as the picture on them shows: one below the right collarbone, one on the left side of the chest, below the armpit. Not over a pacemaker bump under the skin: move the pad aside.
+
+5. While it checks the heart, nobody touches the person.
+
+6. Shock advised: shout "Stand clear!", look that nobody touches, press the shock button if it asks.
+
+7. Straight back to CPR after a shock or a "no shock" message. Leave the pads on. Keep following the voice.
+
+Child: use child pads or the child setting if there is one. If not, adult pads are fine. If the pads would touch on a small chest, put one on the front centre and one on the back.
+
+Wet person: move them off water and dry the chest first.
+
+![AED pads: one below the right collarbone, one on the left side below the armpit](img/fa_aed_pads.png)
+
+## Drowning
+
+Do not swim out to someone. Many rescuers drown.
+
+1. Shout to them to float on their back, arms and legs out. Cold water causes gasping for about the first minute; floating for 60 to 90 seconds lets it pass.
+
+2. Reach with a stick, branch, pole or piece of clothing while you lie flat on the bank. Or throw a rope or anything that floats.
+
+3. Call 999 and ask for the Coastguard at the coast, or Fire and Rescue inland.
+
+Once they are out:
+
+4. Not breathing normally: give 5 rescue breaths first, then CPR 30 pushes to 2 breaths. Alone with no phone: do 1 minute of CPR, then go for help.
+
+5. Vomiting is common. Turn the head to the side, clear the mouth, carry on.
+
+6. Breathing: recovery position, wet clothes off, wrap them up warm. See Hypothermia.
+
+Anyone who breathed in water must see a doctor, even if they seem fine. Breathing problems can start hours later.
+
 ## Recovery position
 
 For someone unresponsive who is breathing normally.
@@ -88,6 +132,127 @@ Baby under 1: lay face down along your forearm, head low, 5 back blows. Then tur
 
 If they go unresponsive, start CPR. Anyone given abdominal thrusts must be checked by a doctor.
 
+## Heart attack
+
+A blocked artery starves part of the heart. Fast help saves heart muscle.
+
+Signs:
+- Crushing, squeezing or heavy pain in the centre of the chest. It may spread to the arms, neck, jaw, back or belly.
+- Short of breath, sweating, feeling sick, grey or pale.
+- Some people (often women, older people and diabetics) feel only breathless, sick or "indigestion".
+
+1. Call 999 at once. Do not let them walk or drive.
+
+2. Sit them on the floor, knees bent, back against a wall or your legs. This eases the heart.
+
+3. Aspirin 300 mg, chewed slowly, for adults who are not allergic to it. If you only have 75 mg tablets, 4 of them make 300 mg. Not for under 16s.
+
+4. If they have angina spray (GTN), help them use it.
+
+5. Loosen tight clothes. Keep them calm and still.
+
+6. Check breathing often. If they become unresponsive and stop breathing normally, start CPR and get an AED.
+
+![heart attack position: sitting on the floor, knees bent, back supported](img/fa_heart_attack.png)
+
+## Stroke: FAST
+
+A stroke is a blocked or burst vessel in the brain. Every minute counts.
+
+Think FAST:
+- Face: has one side drooped? Ask them to smile.
+- Arms: can they lift both arms and hold them up? One may drift down.
+- Speech: slurred, muddled, or no words?
+- Time: call 999 now if you see any one of these.
+
+Other signs: sudden weakness or numbness down one side, sudden loss of sight, dizziness and falling, confusion, a sudden very bad headache.
+
+1. Call 999. Note the time the signs started. Doctors need it.
+
+2. Do not give food, drink or tablets. Swallowing may not work.
+
+3. Awake: let them rest, propped up and comfortable. Reassure them; they may understand you even if they cannot speak.
+
+4. Unresponsive but breathing: recovery position, weak side up. Not breathing: CPR.
+
+Signs that come and go still need 999 the same day. It can be a warning stroke.
+
+A diabetic with a low sugar can look like a stroke. If they can swallow, see Diabetic emergency.
+
+![FAST: face drooping, arm drifting, speech slurred, time to call 999](img/fa_fast.png)
+
+## Asthma attack
+
+Signs: wheeze, cough, tight chest, short of breath, cannot finish a sentence. Getting worse quickly.
+
+1. Sit them up straight, leaning slightly forward. Stay calm and keep them calm. Loosen tight clothes.
+
+2. Blue reliever inhaler (salbutamol): 1 puff every 30 to 60 seconds, up to 10 puffs. Shake it between puffs. Use a spacer if they have one.
+
+3. AIR or MART inhaler (one inhaler for both prevention and relief): 1 puff every 1 to 3 minutes, up to 6 puffs.
+
+4. Their own asthma plan wins if it says something different.
+
+Call 999 if: they get worse at any time, they are no better after the full dose, or they have no inhaler.
+
+Still no better after 10 minutes and no ambulance yet: repeat the same dose.
+
+Danger signs: blue or grey lips, too breathless to talk, exhausted, confused, or the wheeze goes quiet but they still cannot breathe.
+
+After any attack they should see a doctor or nurse within 2 days.
+
+![asthma: 1 puff every 30 to 60 seconds, up to 10 puffs](img/fa_asthma.png)
+
+## Seizures (fits)
+
+Most seizures stop on their own within a few minutes. Your job is to keep the person safe.
+
+During the seizure:
+
+1. Note the time it starts.
+
+2. Move hard or hot things away. Only move the person if they are in danger, such as a road, water or a fire.
+
+3. Cushion the head: a folded coat, or your hands.
+
+4. Loosen anything tight round the neck.
+
+5. Do not hold them down. Do not put anything in their mouth, not even a finger. They will not swallow their tongue.
+
+After it stops:
+
+6. Roll them onto their side (recovery position). Check breathing.
+
+7. Stay and talk calmly. They may be confused, sleepy or embarrassed. Nothing to eat or drink until fully awake.
+
+Call 999 if: it is their first seizure, it lasts more than 5 minutes (or longer than usual for them), another starts before they wake, they are injured, or breathing is a problem afterwards.
+
+People with epilepsy may carry a card or a care plan with their own rescue medicine. Follow it if you have been shown how.
+
+## Diabetic emergency: low sugar
+
+Low blood sugar (a "hypo") comes on in minutes in people who take insulin or some diabetes tablets.
+
+Signs: shaky, sweaty, pale, hungry, grumpy or odd, confused, blurred vision, drowsy. It can look like being drunk.
+
+If they are awake and can swallow:
+
+1. Sit them down. Give 15 to 20 g of fast sugar: 5 glucose or dextrose tablets, or a small glass of fruit juice or a sugary (not diet) fizzy drink, or 4 large jelly babies, or 2 tubes of glucose gel.
+
+2. Wait 10 to 15 minutes. Check their sugar with their meter if they have one: aim for above 4 mmol/L.
+
+3. Still unwell or under 4: give the same again and check after another 10 to 15 minutes. Still low after 3 rounds: get medical help.
+
+4. Once better, give a starchy snack: a sandwich, biscuits, or their next meal.
+
+Unresponsive or cannot swallow safely:
+
+5. Nothing by mouth. They will choke.
+
+6. Recovery position. Call 999. If they have a glucagon kit and you know how to use it, give it.
+
+Not sure if it is low or high sugar? Give sugar. It helps a low quickly and does little harm to a high.
+
 ## Severe bleeding
 
 1. Press hard right on the wound with a pad, cloth or your gloved hand. Keep pressing for at least 10 minutes. Do not peek.
@@ -121,6 +286,46 @@ Only for life-threatening limb bleeding that pressure cannot stop.
 Do not loosen it. Do not cover it. If bleeding continues, add a second one above the first. Getting help is now urgent.
 
 ![tourniquet above the wound, windlass twisted, time written](img/tourniquet.png)
+
+## Chest wound
+
+A wound that goes through the chest wall can let air in round the lung. You may hear sucking or see bubbles when they breathe.
+
+Current UK guidance (Resuscitation Council UK, 2025):
+
+1. Call 999.
+
+2. Leave the wound open to the air. Do not cover it with plastic, tape or any airtight dressing. Sealing it can trap air inside the chest and squeeze the lung and heart.
+
+3. If it bleeds, press beside or on it with a pad to control the bleeding, then lift the pad away when it stops.
+
+4. Trained, with a vented chest seal? You may use that, because it lets air out. Watch that blood does not clog the vent.
+
+5. Sit them up, leaning toward the injured side, if that helps their breathing.
+
+6. Something stuck in the chest: leave it in. Pad around it.
+
+7. Watch closely: worse breathing, blue lips, faster pulse, collapse. Be ready for CPR.
+
+Older books say to tape plastic on three sides. That is no longer advised for first aiders.
+
+## Nosebleed
+
+1. Sit down and lean forward, head tilted forward, mouth open. Do not tip the head back: blood runs down the throat and makes you sick.
+
+2. Pinch the soft part of the nose, just above the nostrils, firmly.
+
+3. Hold for 10 to 15 minutes by the clock. Breathe through the mouth. Do not let go to check.
+
+4. Spit blood out rather than swallow it.
+
+5. A cold pack on the bridge of the nose may help a little.
+
+After it stops, for 24 hours: do not blow or pick the nose, no hot drinks or alcohol, no heavy lifting, and do not lie flat.
+
+Get help if: it is still bleeding after 15 minutes of good pressure, it is heavy, it started after a blow to the head, they feel faint or weak, they are on blood thinners, or breathing is hard.
+
+![nosebleed: lean forward, pinch the soft part of the nose for 10 to 15 minutes](img/fa_nosebleed.png)
 
 ## Clean a wound
 
@@ -174,6 +379,24 @@ What to do: open the dressing, clean again, let pus drain, rinse well. Keep the 
 
 Get help urgently if: red streaks, fever, the person is confused, or redness spreads fast. They need antibiotics. Tetanus is a risk with dirty wounds if vaccines are not up to date.
 
+## Splinters
+
+1. Wash your hands and the skin with soap and water.
+
+2. Sterilise tweezers and a needle: boil for 1 minute, or hold in a flame until red and let it cool, or wipe with alcohol.
+
+3. Part of it sticks out: grip it close to the skin and pull out slowly, at the same angle it went in.
+
+4. All under the skin: gently lift the skin over one end with the needle until you can grip it. Do not dig deep.
+
+5. Squeeze gently to make it bleed a little, wash again, and cover.
+
+6. Hard to see? Soak the skin in warm water for 10 minutes first, or use a magnifier in good light.
+
+Leave it and get help if: it is deep, large, or in an eye, under a nail you cannot reach, or near a joint. Glass and metal often need a doctor.
+
+Watch for infection over the next days (see Signs of infection). Tetanus is a risk with soil-dirty splinters if vaccines are not up to date.
+
 ## Burns
 
 1. Stop the burning. Remove from heat. Smother flames: stop, drop, roll.
@@ -189,6 +412,34 @@ Get help urgently if: red streaks, fever, the person is confused, or redness spr
 6. Do not burst blisters. No butter, oil or toothpaste.
 
 Get help if: the burn is bigger than the person's hand, on face, hands, feet, groin or joints, is white or charred, is from chemicals or electricity, or the person is a child, elderly, or breathed in smoke.
+
+## Electric shock
+
+Never touch someone who may still be touching the power.
+
+House power (mains, 230 V):
+
+1. Switch off at the fuse box (consumer unit), or pull the plug out.
+
+2. Cannot switch off? Stand on something dry that does not conduct: a rubber mat, a wooden box, a thick pile of newspaper. Push the person, or the cable, away with a dry wooden broom handle or chair.
+
+3. Or loop a dry rope round their ankles or under their arms and pull, without touching them.
+
+High voltage (power lines, pylons, substations, railways):
+
+4. Keep everyone at least 18 metres away. Power can jump through the air. Call 999 and say "high voltage". In the UK call 105 to report damaged power lines.
+
+5. Do not go near until the power company says it is off.
+
+Once the power is off:
+
+6. Check breathing. Start CPR and use an AED if needed.
+
+7. Cool burns with cool running water for 20 minutes. Look for two burns: where the power went in and where it came out.
+
+Everyone who had a big shock must see a doctor. It can upset the heart rhythm and burn deep inside.
+
+Lightning: people struck are safe to touch straight away. Start CPR if needed; lightning victims often recover.
 
 ## Fractures and splints
 
@@ -227,6 +478,78 @@ For a broken arm, wrist, collarbone or bad sprain.
 No cloth: pin the sleeve to the shirt, or button the hand into the jacket. Check fingers stay warm and pink.
 
 ![arm sling: arm across chest, cloth tied at neck](img/arm_sling.png)
+
+## Head injury and concussion
+
+Most bumps are minor. Watch for signs that the brain is hurt.
+
+Call 999 if they:
+- were knocked out and have not woken, or cannot stay awake
+- have a fit, are confused, or their behaviour changes
+- have trouble seeing, hearing, speaking, walking or with balance
+- have clear fluid or blood from the ears or nose, or bruising behind the ears
+- have new weakness or numbness, or a dent or a wound with something in it
+- fell more than 1 metre or 5 stairs, or were hit at high speed
+
+Get advice soon (111) if they are being sick, are dizzy, take blood thinners, or had been drinking.
+
+At home after a minor knock:
+
+1. Cold pack wrapped in a cloth, a few minutes at a time.
+
+2. Paracetamol for headache.
+
+3. An adult stays with them for at least 24 hours. They may sleep; you do not need to keep them awake. Check they wake normally.
+
+4. Rest. No alcohol. No sport or rough play for at least 3 weeks for adults. Back to work or school only when feeling better.
+
+Concussion: headache, dizziness, feeling sick, foggy thinking, poor memory, mood changes. Stop all activity and get it checked. Symptoms can last 2 weeks or more.
+
+Any head injury: suspect a neck injury too (next card).
+
+## Spinal injury and log roll
+
+Suspect a neck or back injury after a fall from height, a dive into shallow water, a crash, or a crush.
+
+1. Tell them not to move. If awake, let them hold their own head in the most comfortable position. Never force the head straight.
+
+2. Unresponsive on their back: kneel behind the head and hold it steady with a hand over each ear. Keep the nose in line with the belly button.
+
+3. Airway first, always. If they are not breathing, open the airway with a jaw thrust (fingers behind the angles of the jaw, push the jaw forward). If that fails, tilt the head. Breathing beats the neck.
+
+4. Do not move them unless they are in danger or they are vomiting.
+
+Log roll (needs at least 3, better 4 or 5 people):
+
+5. The person at the head is in charge. Everyone else kneels on one side: one at the shoulders, one at the hips, one at the legs.
+
+6. Head person says "Ready, steady, roll". Everyone turns them together as one stiff log, toward the helpers. Head, shoulders and hips stay in line.
+
+7. To lay them back, the head person counts again.
+
+![log roll: one person holds the head in line, three roll the body together](img/fa_log_roll.png)
+
+## Dislocations
+
+A bone has come out of its joint. Shoulders, fingers, kneecaps, elbows and hips are most common.
+
+Signs: severe pain, the joint looks the wrong shape, cannot move it, swelling.
+
+1. Do not try to put it back. That needs a doctor and pain relief, and can break bone or trap nerves and blood vessels.
+
+2. Support it in the position you found it. Pad the gaps with clothing.
+
+3. Arm or shoulder: a sling, or a towel tucked under the arm and tied round. Leg: pad and splint as for a fracture.
+
+4. Cold pack wrapped in a cloth for up to 20 minutes every 2 to 3 hours.
+
+5. Paracetamol for pain. Nothing else to eat or drink if they may need an operation soon.
+
+6. Check below the joint every 15 minutes: warm, pink, can feel your touch. Cold, white or numb: this is urgent.
+
+A kneecap or finger sometimes slips back on its own. It still needs checking for breaks.
+
+Hip, elbow or any dislocation with no pulse or feeling beyond it: get help fast. Treat it like a fracture while you wait.
 
 ## Sprains and strains
 
@@ -288,6 +611,31 @@ Mild: shivering, cold, clumsy. Severe: shivering stops, confused, drowsy.
 
 No alcohol. If unresponsive and not breathing normally, start CPR.
 
+## Frostbite
+
+Skin and the tissue under it freeze. Fingers, toes, nose and ears go first.
+
+Early: cold, white or red, numb, stinging or burning. Worse: hard, waxy, white, grey or blue, then blisters, then black.
+
+1. Treat hypothermia first. Get them out of the wind and wet.
+
+2. Take off rings, wet gloves and tight boots from the area.
+
+3. Warm hands in the armpits, or feet on a companion's belly. Do not rub or massage. Do not use snow.
+
+4. Rewarm in warm water, about 37 to 39°C: comfortable to your own elbow, not hot. Keep it in for about 30 minutes, until the skin is soft and colour returns. It will hurt: give paracetamol.
+
+5. Never use a fire, stove, radiator, hot water bottle or heat lamp. Numb skin burns easily.
+
+6. Dry gently. Loose clean dressing, with gauze between fingers or toes. Raise the part.
+
+7. Do not burst blisters. Do not walk on thawed feet if you can avoid it.
+
+If it might freeze again before you reach shelter, do not thaw it yet. Thawing then refreezing does the most damage.
+
+Hard frozen skin, swelling or blisters: get medical help.
+
+
 ## Heat exhaustion and heatstroke
 
 Heat exhaustion: headache, dizzy, sweating, pale clammy skin, cramps, sick, very thirsty.
@@ -309,6 +657,24 @@ Heatstroke is an emergency: temperature very high, hot skin that may be dry, con
 2. Recovery position if unresponsive.
 
 3. Get help urgently.
+
+## Sunburn
+
+1. Get out of the sun.
+
+2. Cool the skin with a cool shower or damp towels. Do not put ice on it. Take care that a baby or small child does not get too cold.
+
+3. Drink plenty of water.
+
+4. After-sun or a plain, unperfumed moisturiser. No petroleum jelly.
+
+5. Paracetamol or ibuprofen for pain (see the dose cards).
+
+6. Do not pop blisters or peel the skin. Loose clothes. Keep it covered from sun until healed.
+
+Get help if: large blisters or swelling, fever or chills, dizzy, sick, headache or cramps (these are heat exhaustion signs), or a baby or young child is burnt.
+
+Prevent it: shade from 11am to 3pm, hats, long sleeves, sunscreen SPF 30 or more, put on again after sweating or swimming.
 
 ## Dehydration and ORS recipe
 
@@ -346,6 +712,30 @@ Usually clears in 5 to 7 days. The danger is losing water.
 
 Get help if: blood in poo, high fever, more than 7 days (2 days in children), signs of dehydration, or severe belly pain.
 
+## Poisoning and overdose
+
+Medicines, cleaning products, plants, mushrooms, fumes, alcohol and drugs.
+
+1. Your safety first. Fumes or gas: get them and yourself into fresh air. Do not enter a room full of fumes or smoke.
+
+2. Swallowed: do not make them sick. Nothing to eat or drink. Wipe out the mouth.
+
+3. On the skin: take off the clothes and rinse the skin with lots of running water for 20 minutes. Wear gloves.
+
+4. In the eye: see Eye injuries.
+
+5. Call 999 if they are drowsy, unresponsive, fitting, or breathing badly. Otherwise call 111 for advice.
+
+6. Unresponsive and breathing: recovery position. Not breathing: CPR. Use a face shield if their mouth may be contaminated.
+
+7. Keep the packet, bottle, plant or mushroom, and any vomit, to show the medics. Note what, how much, and when.
+
+Paracetamol overdose: get help even if they feel well. Liver damage shows up days later, and treatment works best early.
+
+Opioid overdose (heroin, methadone, strong painkillers): very slow or no breathing, pinpoint pupils, cannot be woken. Call 999. In the UK anyone may give naloxone to save a life; follow the kit instructions. It can wear off before the drug does, so stay with them.
+
+Alcohol: keep them on their side, warm, and watched. Never leave someone very drunk to "sleep it off" alone.
+
 ## Allergic reaction and anaphylaxis
 
 Mild: itchy rash, hives, sneezing, puffy eyes. Give an antihistamine (see medicine cards). Watch them.
@@ -366,13 +756,41 @@ Anaphylaxis is life-threatening. Signs: swelling of lips, tongue or throat; trou
 
 Bee sting: scrape the sting out sideways with a fingernail or card. Wash, cool with a cold cloth.
 
-Tick: grip close to the skin with fine tweezers, pull straight up slowly. Wash. Watch 4 weeks for a spreading red ring rash or fever.
+Tick: see Ticks and Lyme disease.
 
 Animal bite: wash with soap and lots of running water for several minutes. Do not close it. Rabies risk if the animal could carry it: get help.
 
 Snake bite: keep still and calm. Keep the limb still and at heart level. Remove rings. No cutting, sucking, ice or tourniquet. Note the time. Get help.
 
 Watch all bites and stings for anaphylaxis and infection.
+
+## Ticks and Lyme disease
+
+Ticks live in long grass, bracken and woods across the UK. Remove them fast: the longer one feeds, the higher the risk of Lyme disease.
+
+Check: after being outdoors, look over the whole body, especially behind knees, groin, armpits, waist, and hair and behind the ears in children. Check pets too.
+
+Remove it:
+
+1. Use fine-tipped tweezers or a tick hook.
+
+2. Grip the tick as close to the skin as you can, by its head, not its body.
+
+3. Pull upward slowly and steadily. Do not twist hard, squeeze, burn or smother it with oil or cream.
+
+4. Clean the bite with soap and water. Wash your hands.
+
+5. Write down the date and where on the body.
+
+A bit of mouth left in the skin usually works out on its own. Do not dig.
+
+Lyme disease signs, 1 to 4 weeks later (up to 3 months):
+- A round or oval red rash spreading out from the bite, sometimes like a bullseye. On brown or black skin it can look like a bruise. Usually not itchy.
+- Flu-like illness: fever, headache, aching muscles and joints, tiredness.
+
+Either sign: see a doctor and say you were bitten. Antibiotics work well when started early.
+
+![tick removal: grip close to the skin, pull straight up slowly](img/fa_tick.png)
 
 ## Eye injuries
 
@@ -385,6 +803,151 @@ Object stuck in the eye: do not remove it. Cover both eyes loosely (eyes move to
 Blow to the eye: cool cloth for 15 minutes, no pressure on the eye.
 
 Get help if: changes in vision, pain that does not settle, blood in the eye, or anything stuck.
+
+## Dental emergencies
+
+Knocked-out adult tooth (speed matters: best within 30 to 60 minutes):
+
+1. Find it. Hold it by the white crown only. Never touch the root.
+
+2. Dirty: rinse it briefly in milk, saline or their own spit. Do not scrub it or use water for long.
+
+3. Push it gently back into its socket, the right way round.
+
+4. Bite on a clean folded cloth to hold it. See a dentist as soon as possible.
+
+5. Cannot put it back? Keep it in milk, or in their spit in a cup, and go to a dentist now.
+
+Baby tooth knocked out: do not put it back. It can damage the adult tooth underneath. See a dentist.
+
+Broken tooth: keep the pieces in milk. Cover a sharp edge with sugar-free gum or dental wax.
+
+Toothache:
+- Paracetamol or ibuprofen (see the dose cards). No aspirin under 16.
+- Warm salt water rinse, adults: half a teaspoon of salt in a glass of warm water. Rinse and spit. Not for children.
+- Soft food. Chew on the other side. Avoid sweet, very hot and very cold food.
+- Clove oil (a licensed toothache remedy, adults and over-2s): a little on a cotton bud, on the tooth or into the hole only. It burns gums and skin. Swallowing a few millilitres can poison a small child: keep it locked away.
+
+Go to A&E if the face or neck swells, or swelling makes it hard to breathe, swallow or open the eye. That is a spreading infection.
+
+## Moving a casualty
+
+Do not move an injured person unless they are in danger, or you must reach help or shelter. Moving can worsen injuries, especially to the spine.
+
+Protect your back: bend your knees, keep your back straight, hold the load close, lift with your legs.
+
+Drags (one rescuer, quick, over short distances):
+- Clothing drag: grip the collar and shoulders of their coat, support the head on your forearms, walk backwards.
+- Blanket drag: roll them onto a blanket, coat or tarp, pull from the head end.
+
+Walking wounded: human crutch. Stand at the injured side, their arm round your neck, your arm round their waist.
+
+Two rescuers:
+- Two-handed seat: for a person who cannot hold on. Squat each side, hands under thighs and behind the back.
+- Four-handed seat: for a person who can hold on with both arms. Each rescuer grips their own right wrist and the other's left wrist to make a square seat.
+- Chair carry: sit them on a sturdy chair, one rescuer at the back, one at the front legs. Good on stairs.
+
+Never use a carry for someone you think has a neck or back injury. Wait for help and keep them still and warm.
+
+![four-handed seat: two rescuers grip wrists to make a square](img/fa_four_hand_seat.png)
+
+## Improvised stretcher
+
+For long carries, an unresponsive person, or a leg injury.
+
+Blanket and poles:
+
+1. Two strong poles about 2 to 2.5 m long, and a blanket or tarp.
+
+2. Lay the blanket flat. Put one pole a third of the way across. Fold that side over it.
+
+3. Put the second pole on the folded edge, a little apart from the first. Fold the rest of the blanket over it.
+
+4. The casualty's weight holds the folds shut.
+
+Jackets and poles: zip up 2 or 3 strong coats, turn the sleeves inside, and push the poles through the sleeves.
+
+Before use: test it with an uninjured person of similar weight.
+
+Carrying:
+- Four carriers if you can, one at each corner. Lift together on a count.
+- Strap or tie the person on, with padding, and keep them warm.
+- Feet first on the flat. On slopes and stairs keep the head uphill.
+- Swap carriers often. Short steps, out of step with each other to stop swaying.
+
+![improvised stretcher: blanket folded over two poles in thirds](img/fa_stretcher.png)
+
+## Triage: many hurt
+
+When there are more hurt people than helpers, sort them fast so the ones who can be saved get help first. Spend under a minute on each. Only stop to open airways and stop heavy bleeding. This follows the START method.
+
+1. Shout: "If you can walk, come to me." Those who walk are GREEN (minor). Use them as helpers.
+
+2. Go to each person who is left, nearest first.
+
+3. Not breathing: open the airway once. Still not breathing: BLACK (dead or not survivable now). Starts breathing: RED. Move on.
+
+4. Breathing more than 30 times a minute: RED (immediate).
+
+5. No pulse at the wrist, or the nail bed takes more than 2 seconds to pink up after you press it: RED. Press on heavy bleeding, put a helper on it, move on.
+
+6. Cannot follow a simple order ("squeeze my hand"): RED.
+
+7. Everyone else: YELLOW (can wait a while).
+
+Children are different: breathing under 15 or over 45 a minute is RED. If a child is not breathing but has a pulse, give 5 rescue breaths before you decide.
+
+Mark each person (tape, a label, a pen on the forehead). Check everyone again as soon as you can. People change.
+
+![triage: walk = green; no breath = black; fast breath, no pulse or cannot obey = red; else yellow](img/fa_triage.png)
+
+## Caring for a sick person
+
+Most fevers, colds, flu and stomach bugs get better at home with rest, fluids and watching.
+
+1. Bed rest in a warm (not hot), airy room. One carer if possible.
+
+2. Fluids: small, frequent drinks. Water, weak tea, soup, ORS if there is diarrhoea or vomiting. Aim for pale yellow pee.
+
+3. Fever (38°C or more): light clothing and a sheet. Do not wrap up a feverish child. Do not sponge with cold water. Paracetamol or ibuprofen for comfort (see the dose cards).
+
+4. Food: small plain meals when they want them. Fluids matter more than food for a few days.
+
+5. Keep them clean: wash the face and hands, clean the mouth and teeth, sips of water for dry lips.
+
+6. Bedbound: help them change position at least every 2 hours. Check heels, hips and the base of the spine for red patches (pressure sores). Get them sitting up and moving as soon as they can.
+
+7. Stop the spread: their own cup, plate and towel. Wash your hands after every contact. See Sanitation for nursing someone infectious.
+
+8. Keep a log: temperature, pulse, breathing, pee, drinks and medicines, with the time (next card).
+
+## Observations and when to worry
+
+Check and write down every 4 hours, more often if they are getting worse.
+
+Breathing: count chest rises for 30 seconds, times 2. Count while they think you are checking the pulse.
+
+Pulse: two fingers on the thumb side of the wrist. Count 30 seconds, times 2.
+
+Temperature: under the tongue or armpit thermometer. Normal is about 37°C.
+
+Also note: drinks taken, pee (when and colour), awake and making sense or not, skin colour.
+
+Normal adult at rest: breathing 12 to 20 a minute, pulse 60 to 100.
+
+Worry and get urgent help (adult) if:
+- Breathing 25 or more a minute, or 8 or fewer
+- Pulse over 130, or under 40
+- Temperature 39°C or more that will not come down, or under 35°C
+- New confusion, slurred speech, very sleepy
+- Blue, grey, pale or blotchy skin, lips or tongue
+- No pee all day, or a rash that does not fade when you press a glass on it
+
+Children: worry if under 3 months with 38°C or more, 3 to 6 months with 39°C or more, breathing very fast or grunting, floppy or hard to wake, a weak high cry, or no pee for 12 hours.
+
+These can be sepsis. Trust your instincts: if you think something is seriously wrong, get help now.
+
+![observations chart: time, temperature, pulse, breaths, drinks, pee, alert](img/fa_obs_chart.png)
 
 ## Medicine safety first
 
@@ -510,9 +1073,11 @@ Keep it dry in a clear box. Check every 6 months.
 
 7. Thermometer, pencil and notebook to log doses.
 
-8. Any personal meds: adrenaline auto-injectors, inhalers.
+8. Any personal meds: adrenaline auto-injectors, inhalers, glucose tablets for diabetics.
 
-9. Soap and hand gel.
+9. Aspirin 300 mg (adults, for a suspected heart attack), fine tweezers or a tick hook, a face shield for rescue breaths, clove oil for toothache, a small torch.
+
+10. Soap and hand gel.
 
 ## Sources
 
@@ -535,5 +1100,19 @@ CDC: wound care, heat illness, tick removal, snakebite (cdc.gov).
 US Army FM 21-76 / ATP 3-50.21 Survival (public domain).
 
 Hesperian, Where There Is No Doctor (free non-commercial).
+
+Added in batch 6 (our own words):
+
+NHS: nhs.uk/conditions/heart-attack/treatment, nhs.uk/conditions/stroke/symptoms, nhs.uk/conditions/asthma/asthma-attack, nhs.uk/symptoms/what-to-do-if-someone-has-a-seizure-fit, nhs.uk/conditions/low-blood-sugar-hypoglycaemia, nhs.uk/conditions/head-injury-and-concussion, nhs.uk/conditions/dislocated-shoulder, nhs.uk/conditions/nosebleed, nhs.uk/conditions/frostbite, nhs.uk/conditions/sunburn, nhs.uk/conditions/poisoning, nhs.uk/conditions/lyme-disease, nhs.uk/conditions/knocked-out-tooth, nhs.uk/conditions/toothache, nhs.uk/conditions/sepsis
+
+Resuscitation Council UK 2025 first aid guideline (chest pain and aspirin 300 mg, hypoglycaemia 15-20 g glucose, open chest wounds left open, cervical spine, drowning 5 breaths, opioid overdose, stroke FAST): resus.org.uk/professional-library/2025-resuscitation-guidelines/first-aid-guidelines. AED use: resus.org.uk/public-resource/how-do-cpr
+
+St John Ambulance electric shock: sja.org.uk/first-aid-advice/electrocution. British Red Cross drowning and seizures: redcross.org.uk/first-aid/learn-first-aid. RNLI Float to Live: rnli.org
+
+Wilderness Medical Society frostbite guideline 2024 (rewarm at 37-39°C, avoid refreezing): wms.org
+
+Clove Oil BP product information: medicines.org.uk/emc/product/4817/smpc
+
+START and JumpSTART triage: chemm.hhs.gov/startalgotext.htm. Observation limits based on the NHS National Early Warning Score (NEWS2), Royal College of Physicians.
 
 This is first aid, not a doctor. Get medical help as soon as you can.

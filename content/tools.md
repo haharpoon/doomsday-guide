@@ -140,6 +140,8 @@ Carved hook: cut a J shape from bone or hard wood. Notch the top for the line.
 
 Bait: worms, insects, guts. Fish early morning and dusk, in shade and deep slow water.
 
+For rigging a line, bait and cleaning the catch, see Hunting & fishing.
+
 ## Fish trap
 
 Fish swim in easily and struggle to find the way out.
@@ -191,6 +193,8 @@ Simple snare idea (survival only):
 3. Tie the end to a firm stake.
 
 4. Set several. Check every morning and evening. Leaving animals suffering is cruel and illegal.
+
+For skinning, gutting and checking the meat, see Hunting & fishing.
 
 ## Deadfall: figure-four
 
@@ -302,6 +306,106 @@ Cows with calves kill people walking dogs every year.
 
 Horses: speak as you approach, never walk close behind them.
 
+## Bone awl and needle
+
+Use: to make holes in leather and sew heavy material, from bones of game you have eaten.
+
+1. Use raw or dried bone, not cooked. Cooked bone is brittle. A leg bone from a deer, sheep or large bird works.
+
+2. Break or saw it lengthways. Score a groove with a flint or saw on each side, then split it.
+
+3. Grind a long sliver to a point on sandstone or rough concrete. Wet the stone.
+
+4. Awl: leave a thick end for your palm. Point about 5 cm long.
+
+5. Needle: grind it thin, then drill an eye with a fine flint point, twisting from both sides. Smooth it on fine stone or leather.
+
+![bone tools: leg bone scored and split, sliver ground on wet sandstone, awl with fat handle, needle with drilled eye](img/tl_bone.png)
+
+Mistakes: grinding dry, which overheats and cracks the bone; an eye too near the end, which breaks off.
+
+Check: the needle slides through cloth without snagging.
+
+## Mallet and wedges
+
+Use: splitting logs and driving pegs without an axe or with a small one.
+
+1. Mallet: cut a log of hardwood (oak, ash, beech, apple) about 40 cm long and 10 cm across.
+
+2. Carve the bottom half down to a handle, leaving the top as a head. Round the end of the handle.
+
+3. Wedges: cut green hardwood 20 to 25 cm long. Carve one end to a long taper, flat on two faces. Dry them near (not in) the fire to harden.
+
+4. To split: start a crack on the end of the log with a knife or small axe tapped with the mallet. Drive a wedge in. Drive a second wedge into the crack further along. Swap as each one loosens.
+
+5. Never hit a wedge with the back of an axe if it is steel: chips fly.
+
+![mallet carved from a log; wedges driven one after another into a crack along a log](img/tl_mallet.png)
+
+Mistakes: wedges with a short steep taper, which jump out; hitting with the mallet's thin handle instead of the head.
+
+Check: the crack runs along the grain and the log opens without the wedge bouncing out.
+
+## Birch bark container
+
+Use: a light, waterproof box or bowl for gathering berries, carrying tinder, or boiling water with hot stones.
+
+1. Take bark only from fallen or dead birch, with the landowner's permission. Peeling bark off a living tree harms or kills it.
+
+2. Cut a rectangle about twice as long as wide. Warm it by the fire or soak it if it is stiff.
+
+3. Score a smaller rectangle in the middle, on the inside face, for the base. Do not cut through.
+
+4. Fold up the sides along the scores. Push the corners in and fold them flat against the ends, like wrapping a present.
+
+5. Hold the corners with a split stick clipped over the rim, or stitch with spruce root or cord through awl holes.
+
+![birch bark box: rectangle scored for a base, sides folded up, corners tucked, held with a split-stick clip](img/tl_birch_box.png)
+
+Mistakes: the white side inside, which cracks; folding cold, brittle bark.
+
+Check: fill it with water. A good one holds it without dripping.
+
+## Bow saw frame
+
+Use: you have a saw blade (or a hacksaw blade) but no frame.
+
+1. Cut two side arms of straight green wood about 50 cm long and 3 cm thick, and one cross bar a little longer than the blade.
+
+2. Cut a slot in the bottom end of each arm for the blade. Hold the blade with a nail or pin through its holes.
+
+3. Notch the middle of each arm to hold the ends of the cross bar. It sits there like the bar of an H.
+
+4. Tie a loop of cord between the top ends of the arms. Put a short stick through the cord and twist it to tighten. Lock the stick against the cross bar.
+
+5. Twist until the blade is tight and does not flex.
+
+![bow saw: H frame of two arms and a cross bar, blade pinned across the bottom, twisted cord with a toggle at the top](img/tl_bow_saw.png)
+
+Mistakes: a frame too short to clear the log; loose blade that bends and snaps.
+
+Check: pluck the blade. It should ping, not twang loosely.
+
+## Haft a stone axe or blade
+
+Use: to put a handle on a stone axe head or a knife blade.
+
+1. Handle: a straight piece of green hardwood, 40 to 60 cm for an axe, 12 cm for a knife.
+
+2. Axe: split the top of the handle, or bind a short fork, and set the head in the split. Use the narrow butt of the stone.
+
+3. Glue: pine pitch. Warm pine resin until runny (it catches fire easily, so use embers, not flame). Stir in powdered charcoal and a little crumbled dry grass or dung. Use while warm.
+
+4. Coat the joint with glue, then bind tight with wet rawhide, sinew or strong cord in a cross pattern. Rawhide shrinks as it dries and grips hard.
+
+5. Leave it to set and dry for a day before using.
+
+![hafted stone axe: split handle, head in the split, glue and cross-wrapped binding, binding above and below](img/tl_haft.png)
+
+Mistakes: a handle that is too thin at the head; binding with stretchy cord that loosens when wet.
+
+Check: tap the head on a log gently. No wobble, no movement in the binding.
+
 ## Sources
 
 Written in our own words from:
@@ -317,3 +421,5 @@ NHS: adder bites and animal bites.
 Environment Agency: gov.uk/fishing-licences and gov.uk/guidance/apply-to-use-fishing-instruments-other-than-rod-and-line-in-england
 
 Countryside Code: gov.uk/government/publications/the-countryside-code. Ramblers: ramblers.org.uk (cattle advice).
+
+US Army FM 21-76 / ATP 3-50.21 chapter 12 (public domain): bone tools, hafting, saws and wedges. Pine pitch glue and birch bark containers: standard bushcraft practice, described in our own words. Woodland Trust: do not strip bark from living trees.

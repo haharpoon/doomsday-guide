@@ -223,6 +223,166 @@ In an outbreak:
 
 Look up cholera, dysentery and dehydration in Medicine.
 
+## Handwashing step by step
+
+Soap and water for at least 20 seconds: about as long as singing Happy Birthday twice.
+
+1. Wet your hands with clean water.
+
+2. Soap: enough to cover all of both hands.
+
+3. Rub palm to palm.
+
+4. Right palm over the back of the left hand, fingers laced. Then swap.
+
+5. Palm to palm with fingers laced, to clean between them.
+
+6. Backs of fingers into the opposite palm, fingers locked.
+
+7. Grip each thumb in the other hand and twist.
+
+8. Rub fingertips in circles in the other palm. Swap.
+
+9. Rinse under pouring water (a tippy tap or a jug held by someone else).
+
+10. Dry in the air or on a clean towel used only by you.
+
+Short of water? Wet, turn the water off, soap and scrub, then rinse. Ash or clean sand instead of soap works better than water alone.
+
+Hand gel (60% alcohol or more) works when hands look clean. It does not work well on dirty or greasy hands, or against some stomach bugs. Wash with soap after diarrhoea and vomiting.
+
+![handwashing steps: palms, backs, between fingers, backs of fingers, thumbs, fingertips](img/sn_handwash.png)
+
+## Bleach for cleaning
+
+Bleach kills germs on surfaces, not dirt. Clean with soap and water first, then disinfect.
+
+Check the strength on the label: most UK household bleach is about 4 to 5% (sodium hypochlorite). Plain bleach, no added scents or thickeners if you can get it.
+
+For 5% bleach:
+- Surfaces, toilets, door handles, pots: 0.1% solution. 1 part bleach to 49 parts water: 20 ml (4 teaspoons) of bleach, topped up with water to 1 litre.
+- Blood, vomit, poo, and a sick person's room: 0.5% solution. 1 part bleach to 9 parts water: 100 ml of bleach, topped up with water to 1 litre.
+
+1. Wear gloves. Open windows.
+
+2. Wipe on with a cloth. Leave wet for at least 1 minute (10 minutes for spills), then rinse surfaces that touch food.
+
+3. Spills: cover with cloth or paper, pour the 0.5% solution on, wait 10 minutes, wipe up, then clean again.
+
+4. Make it fresh every day in a covered, labelled container. It weakens with time and sunlight.
+
+Never mix bleach with other cleaners, especially ammonia, vinegar or acids: it makes toxic gas.
+
+Drinking water uses far less: see Bleach and tablets in Water.
+
+![bleach mixes for 5% bleach: 1 to 49 for surfaces, 1 to 9 for spills](img/sn_bleach.png)
+
+## Laundry by hand
+
+1. Sort: very dirty and sick-room laundry separate. Shake off solids outside first (into the latrine).
+
+2. Soak in warm soapy water for at least an hour. Overnight for heavy dirt.
+
+3. Wash: squeeze, rub on a washboard or against itself, or agitate in a bucket with a lid and a plunger (a clean sink plunger works).
+
+4. Rinse twice in clean water, until no soap comes out. Soap left in cloth irritates skin.
+
+5. Wring out: twist, or roll in a towel, or fold over a pole and twist the ends.
+
+6. Dry in sunshine where you can. Sun and wind kill many germs. Shake out and stretch while damp to reduce creases.
+
+Sick person's bedding and clothes: wash separately, hot (60°C or more, or bring to the boil in a big pot for 10 minutes), or soak in 0.1% bleach for 30 minutes before washing. Wear gloves.
+
+Wash away from drinking water sources, and tip waste water onto the ground or a soakaway at least 30 m from water.
+
+Lice and scabies: see those cards. Hot wash or seal clothes in a bag for 3 days.
+
+## Nursing someone infectious
+
+Flu, Covid, diarrhoea and vomiting, chest infections. Keep it from spreading.
+
+1. Their own room, or a corner screened off, with a window that opens.
+
+2. One carer if possible: not someone old, pregnant or with a weak immune system.
+
+3. Carer wears a mask when close, and gloves for body fluids. Wash hands after every contact and after taking gloves off.
+
+4. Their own cup, plate, towel and bucket or toilet. Wash dishes in hot soapy water.
+
+5. Clean surfaces they touch daily: 0.1% bleach. Spills of vomit or poo: 0.5% (Bleach for cleaning).
+
+6. Laundry: carry it to the wash in a bag, do not shake it.
+
+7. Tissues into a bag, then tie it. Catch coughs and sneezes in a tissue or elbow.
+
+8. The sick person and their carer do not cook for others.
+
+9. Isolate until 48 hours after diarrhoea and vomiting stop. For fevers, until the fever has gone for a day without medicine.
+
+Care for them well: see Caring for a sick person and Observations in First aid.
+
+## Bucket toilet
+
+Use: the toilet will not flush (no water, sewer blocked or flooded), at home or in camp.
+
+1. Two buckets with lids if you can. One for poo, one for wee. Keeping them apart cuts smell a lot.
+
+2. Line the poo bucket with a strong bin bag, or two. Put a layer of sawdust, soil, cat litter or ash in the bottom.
+
+3. After each poo, cover it with a cupful of the same dry material. Keep the lid on.
+
+4. Wee: dilute it about 1 part to 10 of water and pour it on soil or a lawn away from food crops, or down a working drain.
+
+5. When the bag is about half full, tie it, put it in a second bag and store it in a covered bin away from the house until it can be collected or buried in a latrine 30 m from water.
+
+![bucket toilet: lined bucket with a lid, dry cover material and scoop, separate wee bucket, hand washing beside it](img/san_bucket.png)
+
+Mistakes: filling the bag too full to lift; no lid; no handwashing next to it.
+
+Check: no smell and no flies means you are using enough cover material.
+
+## Composting toilet
+
+Use: a long stay with no sewer, when you have a place to store the compost safely.
+
+1. A seat over a large container or chamber, with a bucket of dry cover: sawdust, wood shavings, dry leaves or straw.
+
+2. Divert wee if you can (a funnel at the front to a separate container). Wet piles smell and do not compost well.
+
+3. Cover every deposit. When the container is full, seal it, label it with the date and start a second one.
+
+4. Store it, untouched, for at least 1.5 to 2 years at normal UK temperatures (about 1 year if kept above 20 °C). Keep it covered, out of the rain, and 30 m from any water.
+
+5. Use the finished compost only around trees, shrubs and flowers. Not on vegetables you eat raw or root crops.
+
+![composting toilet: two chambers, one in use and one closed and dated for two years, urine diverted, cover bucket](img/san_compost.png)
+
+Mistakes: emptying too early; adding water; putting it on the vegetable patch.
+
+Check: finished compost is dark, crumbly and smells of soil.
+
+## Greywater
+
+Use: dish, washing and laundry water when you have no drains.
+
+1. Grey water is wash water. Black water has poo in it and must go to the toilet or latrine.
+
+2. Strain out food bits and grease through a cloth. Bin them.
+
+3. Use little soap. Plain soap is better than detergent or bleach for the soil.
+
+4. Pour it onto soil or a soak pit at least 30 m from water, wells and springs, and away from camp. Move the spot often.
+
+5. A soak pit: a hole about 1 m deep filled with stones or gravel, covered with leaves or a board so children and animals cannot get in.
+
+6. Use the same day. Stored grey water starts to smell and breed germs within a day.
+
+![greywater soak pit: strain the water, pour into a gravel-filled pit 30 m from water with a cover](img/san_greywater.png)
+
+You can water ornamental plants and fruit trees with it, at the roots. Not on leaves or vegetables you eat raw.
+
+Check: no puddles. If water pools, dig a new pit or spread it more.
+
 ## Sanitation sources
 
 Written in our own words from public guidance:
@@ -241,6 +401,17 @@ CDC body lice: cdc.gov/lice/about/body-lice.html
 
 NHS: nhs.uk/conditions/scabies, nhs.uk/conditions/head-lice-and-nits, nhs.uk/conditions/dysentery, nhs.uk/conditions/toxic-shock-syndrome, nhs.uk/conditions/acid-and-chemical-burns, nhs.uk/live-well/healthy-teeth-and-gums/how-to-keep-your-teeth-clean, nhs.uk/live-well/best-way-to-wash-your-hands
 
+WHO, How to handwash: who.int/publications/m/item/hand-hygiene-why-how-and-when-brochure. WHO bleach dilution guide (0.1% surfaces, 0.5% spills): who.int/docs/default-source/wpro---documents/wpro---pdf-infographics/covid-19/bleach-dilution-and-guidance-for-visitors-20200622.pdf. CDC chlorine solution preparation: cdc.gov/healthcare-associated-infections/hcp/cleaning-global/appendix-e.html
+
+NHS, how to avoid spreading infections at home and laundry at 60°C: nhs.uk/conditions/norovirus and nhs.uk/conditions/flu
+
 UNICEF guide to menstrual hygiene materials: unicef.org/media/91346/file/UNICEF-Guide-menstrual-hygiene-materials-2019.pdf
 
 US Army FM 21-76 / ATP 3-50.21 Survival (public domain): soap from fat and ash, chewing stick, personal hygiene.
+
+WHO Guidelines for the safe use of wastewater, excreta and greywater, volume 4 (2006): storage of dry toilet waste 1.5 to 2 years at 2 to 20 °C, or 1 year above 20 °C; greywater use on non-food plants.
+
+GOV.UK Prepare and water companies' advice for when toilets cannot be flushed: bagged bucket toilet. Sphere Handbook WASH chapter: 30 m from water sources.
+
+Oxfam and WEDC (Loughborough University) technical briefs: soak pits for greywater.
+
