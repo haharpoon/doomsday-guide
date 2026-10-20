@@ -3742,6 +3742,60 @@ def self_test(screenshot_dir=None):
             failures,
         )
 
+    knot_slugs = (
+        "knots_main",
+        "knots_stoppers",
+        "knots_hitches",
+        "knots_more",
+        "knots_loops",
+        "knots_bends",
+        "knots_fishing",
+        "knots_lashing",
+        "knots_rope",
+    )
+    knot_indexed = [entry for entry in card_index() if entry.topic_slug in knot_slugs]
+    check(len(knot_indexed) == 58, f"all 58 knot cards are indexed ({len(knot_indexed)})", failures)
+    check(
+        any(entry.title == "Which knot" and entry.topic_title == "Knots" for entry in knot_indexed),
+        "the which-knot chooser is indexed under Knots",
+        failures,
+    )
+    for slug in knot_slugs:
+        if slug == "knots_main":
+            continue
+        titles = [name for name, _body in field.GUIDE.cards(slug)]
+        got = [entry.title for entry in knot_indexed if entry.topic_slug == slug]
+        check(sorted(got) == sorted(titles) and len(got) == len(titles), f"knot sub-menu {slug} is searchable", failures)
+    bend = App(show_cave=False)
+    bend.activate("guide-search")
+    bend.current()["query"] = "zeppelin"
+    bend.draw(canvas)
+    bend_row = next((widget for widget in bend.widgets if widget["label"] == "Zeppelin bend"), None)
+    check(bend_row is not None, "search lists a bends sub-menu card", failures)
+    if bend_row is not None:
+        bend.pointer("down", *bend_row["rect"].center)
+        bend.pointer("up", *bend_row["rect"].center)
+        check(bend.current()["kind"] == "reader" and bend.current()["title"] == "ZEPPELIN BEND", "zeppelin opens from search", failures)
+        check("will not jam" in bend.current()["body"] and "![" in bend.current()["body"], "zeppelin card keeps its text and diagram", failures)
+        bend.activate("back")
+        check(bend.current()["kind"] == "find" and bend.current()["query"] == "zeppelin", "back returns to the zeppelin results", failures)
+    chooser_at = next(i for i, entry in enumerate(card_index()) if entry.title == "Which knot")
+    chooser = App(show_cave=False)
+    chooser.activate("guide-index")
+    chooser.current()["page"] = chooser_at
+    chooser.draw(canvas)
+    chooser_row = next(widget for widget in chooser.widgets if widget["id"] == f"index:{chooser_at}")
+    check(chooser_row["label"] == "Which knot", "A-Z lists the knot chooser", failures)
+    chooser.pointer("down", *chooser_row["rect"].center)
+    chooser.pointer("up", *chooser_row["rect"].center)
+    check(
+        chooser.current()["kind"] == "reader" and "Pick by the job" in chooser.current()["body"],
+        "A-Z opens the knot chooser",
+        failures,
+    )
+    chooser.activate("back")
+    check(chooser.current()["kind"] == "index" and chooser.current().get("page") == chooser_at, "back returns to the chooser row", failures)
+
     az = App(show_cave=False)
     az.activate("guide-index")
     az.draw(canvas)
@@ -3840,7 +3894,9 @@ def self_test(screenshot_dir=None):
         finder.current()["query"] = "knot"
         finder.draw(canvas)
         pygame.image.save(canvas, os.path.join(screenshot_dir, "guide_search.png"))
-        check(any(widget["label"] == "Square knot" for widget in finder.widgets), "search screenshot shows a knot card", failures)
+        shown_hits = [widget["label"] for widget in finder.widgets if str(widget["id"]).startswith("hit:")]
+        expect_hits = [entry.title for entry in content.search_cards(card_index(), "knot")[:FIND_PER]]
+        check(shown_hits == expect_hits and bool(shown_hits), f"search screenshot shows {shown_hits}", failures)
         indexer = App(show_cave=False)
         indexer.activate("guide-index")
         indexer.draw(canvas)
