@@ -6,7 +6,8 @@ framebuffer, so this draws with the dummy SDL driver and writes a frame only
 when the picture changes. With no framebuffer, it opens a 480x320 window.
 
 Touch input is the ADS7846 device via evdev. The top bar is GUIDE | SCAN | RADIO
-(see tabbar.py, shared with Cave Mapper). Calibration in ~/.touchcal.json
+(see tabbar.py, shared with Cave Mapper). RADIO is the frequency guide,
+listening log, and Morse trainer in radio.py. Calibration in ~/.touchcal.json
 is {"cx": [a, b, c], "cy": [d, e, f]}:
 
     x = a*rawX + b*rawY + c
@@ -58,6 +59,11 @@ try:
     import content
 except ImportError:
     content = None
+
+try:
+    import radio
+except ImportError:
+    radio = None
 
 
 def load_field():
@@ -964,6 +970,7 @@ class App:
             self.font_button = load_font(16)
             self.font_tab = load_font(16)
             self.font_small = load_font(13)
+            self.font_freq = load_font(28, bold=True)
             for screen in self.stack:
                 screen.pop("_lines", None)
                 screen.pop("_pages", None)
@@ -1077,7 +1084,38 @@ class App:
             self.slide_from = old
         return moved
 
+    def stop_radio_audio(self):
+        if radio is None:
+            return
+        for screen in self.stack:
+            if screen.get("kind") == "radio":
+                radio.stop_audio(screen)
+
+    def open_radio(self):
+        self.notice = ""
+        self.slide_from = None
+        if radio is None:
+            self.notice = "Radio is not available."
+            return
+        for index, screen in enumerate(self.stack):
+            if screen.get("kind") == "radio":
+                self.stack = self.stack[: index + 1]
+                return
+        if not self.stack or self.stack[0].get("kind") != "home":
+            self.stack.insert(0, {"kind": "home"})
+        self.stack = [self.stack[0], radio.new_screen()]
+
+    def open_signals(self, slug="signals"):
+        topics = getattr(field.GUIDE, "topics", {}) or {}
+        topic = topics.get(slug)
+        if topic is None:
+            self.notice = "Signals sheet is not installed."
+            return
+        self.open_item(topic_to_item(topic))
+
     def back(self):
+        if self.current().get("kind") == "radio":
+            self.stop_radio_audio()
         if len(self.stack) > 1:
             self.slide_from = None
             self.stack.pop()
@@ -1138,6 +1176,7 @@ class App:
         if wid in ("cave", "tab:SCAN"):
             self.tab_flash = "SCAN"
             if self.cave_on():
+                self.stop_radio_audio()
                 self.pending = "cave"
                 self.notice = "Opening Cave Mapper..."
             else:
@@ -1145,6 +1184,7 @@ class App:
             return
         if wid == "tab:GUIDE":
             self.tab_flash = "GUIDE"
+            self.stop_radio_audio()
             self.notice = ""
             self.slide_from = None
             if screen["kind"] != "home" or len(self.stack) > 1:
@@ -1152,7 +1192,12 @@ class App:
             return
         if wid == "tab:RADIO":
             self.tab_flash = "RADIO"
-            self.notice = "Radio is not available."
+            self.notice = ""
+            self.open_radio()
+            return
+        if wid.startswith("radio:"):
+            if radio is not None and screen.get("kind") == "radio":
+                radio.on_tap(self, wid.split(":", 1)[1])
             return
         if wid == "back":
             self.back()
@@ -1308,7 +1353,9 @@ class App:
                 env = os.environ.copy()
                 env["CAVEMAP_FROM_GUIDE"] = "1"
                 code = subprocess.call([exe], env=env)
-                if code != 0:
+                if radio is not None and code == radio.RADIO_EXIT:
+                    self.open_radio()
+                elif code != 0:
                     message = "Cave Mapper closed with an error."
             except OSError as error:
                 sys.stderr.write(f"field_touch cavemap failed: {error}\n")
@@ -1368,6 +1415,7 @@ class App:
             now = time.monotonic()
             if (
                 hit
+                and hit != "radio:key"
                 and self.last_fire is not None
                 and self.last_fire[0] == hit
                 and now - self.last_fire[1] < DEBOUNCE
@@ -1381,6 +1429,8 @@ class App:
             self.origin = (x, y)
             self.swiping = False
             self.pressed = hit
+            if hit == "radio:key" and self.current().get("kind") == "radio":
+                self.current()["key_down_at"] = now
             return True
         if kind == "move":
             if self.suppress or self.origin is None:
@@ -1389,6 +1439,8 @@ class App:
                 if self.hit(x, y) != self.pressed:
                     self.pressed = None
                     return True
+                return False
+            if self.pressed == "radio:key":
                 return False
             if self.current().get("kind") == "diagram":
                 dx = x - self.origin[0]
@@ -1441,6 +1493,23 @@ class App:
                     return True
                 self.back()
                 return True
+            if self.current().get("kind") == "radio" and radio is not None:
+                if pressed == "radio:key" or (
+                    pressed
+                    and pressed.startswith("radio:")
+                    and not swiping
+                    and abs(dx) < SWIPE
+                    and abs(dy) < SWIPE
+                ):
+                    self.last_fire = (pressed, time.monotonic())
+                    self.activate(pressed)
+                    return True
+                if abs(dx) >= SWIPE and abs(dx) > abs(dy):
+                    radio.swipe(self.current(), -1 if dx > 0 else 1)
+                    return True
+                if abs(dy) >= SWIPE and abs(dy) > abs(dx):
+                    radio.swipe(self.current(), -1 if dy > 0 else 1)
+                    return True
             on_tab = bool(pressed) and pressed.startswith("tab:")
             if (not on_tab) and (swiping or (abs(dy) >= SWIPE and abs(dy) > abs(dx))):
                 if self.current()["kind"] in ("reader", "menu", "results"):
@@ -1473,6 +1542,13 @@ class App:
                     screen["query"] += text
                 return True
             return False
+        if screen["kind"] == "radio" and radio is not None:
+            if event.key in (pygame.K_LEFT, pygame.K_UP, pygame.K_PAGEUP):
+                radio.swipe(screen, -1)
+                return True
+            if event.key in (pygame.K_RIGHT, pygame.K_DOWN, pygame.K_PAGEDOWN):
+                radio.swipe(screen, 1)
+                return True
         if screen["kind"] == "diagram":
             if event.key in (pygame.K_LEFT, pygame.K_UP, pygame.K_PAGEUP):
                 self.diagram_delta(-1)
@@ -1577,12 +1653,15 @@ class App:
             if scan:
                 canvas.blit(self.scanlines, (0, 0))
             return
+        active = "GUIDE"
+        if any(screen.get("kind") == "radio" for screen in self.stack) and kind != "home":
+            active = "RADIO"
         self.tab_hits = tabbar.draw_tabbar(
             canvas,
             self.font_tab,
-            active="GUIDE",
+            active=active,
             pressed=self._tab_pressed_name(),
-            enabled={"GUIDE": True, "SCAN": self.cave_on(), "RADIO": False},
+            enabled={"GUIDE": True, "SCAN": self.cave_on(), "RADIO": radio is not None},
         )
         if kind == "home":
             self.draw_home(canvas)
@@ -1594,6 +1673,8 @@ class App:
             self.draw_search(canvas)
         elif kind == "results":
             self.draw_results(canvas)
+        elif kind == "radio" and radio is not None:
+            radio.render(self, canvas)
         if scan:
             canvas.blit(self.scanlines, (0, 0))
 
@@ -1994,7 +2075,7 @@ def flash_tab(app, display):
     app.tab_pressed = None
 
 
-def run():
+def run(start=None):
     os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
     mode = choose_mode()
     if mode == "fb":
@@ -2003,6 +2084,8 @@ def run():
         os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     boot_pygame()
     app = App()
+    if start == "radio":
+        app.open_radio()
     display = Display(mode)
     touch = TouchInput()
     try:
@@ -2021,6 +2104,7 @@ def run():
             app.draw_goodbye(display.canvas)
             display.present(display.canvas)
     finally:
+        app.stop_radio_audio()
         touch.close()
         display.close()
     return 0
@@ -2096,6 +2180,9 @@ def loop(app, display, touch):
                 changed = False
             else:
                 changed = True
+        if radio is not None and app.current().get("kind") == "radio":
+            if radio.tick(app.current()):
+                changed = True
         if app.pending:
             app.draw(display.canvas)
             display.present(display.canvas)
@@ -2110,7 +2197,10 @@ def loop(app, display, touch):
             app.draw(display.canvas)
             display.present(display.canvas)
         elif not app.quit_requested:
-            idle_wait(touch)
+            if radio is not None and radio.busy(app.current()):
+                pygame.time.wait(20)
+            else:
+                idle_wait(touch)
 
 
 class Axis:
@@ -2240,10 +2330,10 @@ def self_test(screenshot_dir=None):
     check("Exit" in cave_labels and "Cave Mapper" not in cave_labels, "scan tab replaces the cave button", failures)
     check(all(widget["rect"].height >= 60 for widget in cave_app.widgets), "cave home button height", failures)
     scan = next(hit for hit in cave_app.tab_hits if hit["name"] == "SCAN")
-    radio = next(hit for hit in cave_app.tab_hits if hit["name"] == "RADIO")
+    radio_tab = next(hit for hit in cave_app.tab_hits if hit["name"] == "RADIO")
     guide = next(hit for hit in cave_app.tab_hits if hit["name"] == "GUIDE")
-    check(scan["enabled"] and not radio["enabled"] and guide["enabled"], "scan on, radio placeholder", failures)
-    check(guide["rect"].height == 36 and scan["rect"].width == radio["rect"].width == guide["rect"].width, "equal 36px tabs", failures)
+    check(scan["enabled"] and radio_tab["enabled"] and guide["enabled"], "scan and radio are on", failures)
+    check(guide["rect"].height == 36 and scan["rect"].width == radio_tab["rect"].width == guide["rect"].width, "equal 36px tabs", failures)
     check(guide["rect"].width * 3 == WIDTH, "tabs fill the width", failures)
     # y=2 misses the scanline; the active GUIDE fill is the main green.
     check(tuple(canvas.get_at((8, 2))[:3]) == GREEN, "active tab is filled green", failures)
@@ -2258,6 +2348,8 @@ def self_test(screenshot_dir=None):
     dark.draw(canvas)
     dark_scan = next(hit for hit in dark.tab_hits if hit["name"] == "SCAN")
     check(not dark_scan["enabled"], "scan disabled without cavemap", failures)
+    dark_radio = next(hit for hit in dark.tab_hits if hit["name"] == "RADIO")
+    check(dark_radio["enabled"], "radio stays on when cavemap is missing", failures)
 
     app.pointer("down", *app.widgets[0]["rect"].center)
     app.pointer("up", *app.widgets[0]["rect"].center)
@@ -2861,6 +2953,11 @@ def self_test(screenshot_dir=None):
             card.draw(canvas)
             pygame.image.save(canvas, os.path.join(screenshot_dir, file_name + ".png"))
 
+    if radio is not None:
+        radio.exercise(lambda: App(show_cave=True), canvas, lambda cond, msg: check(cond, msg, failures), screenshot_dir)
+    else:
+        check(False, "radio module imports", failures)
+
     if failures:
         for message in failures:
             sys.stderr.write(message + "\n")
@@ -2877,6 +2974,8 @@ def main(argv):
             sys.stderr.write("usage: field_touch.py --screenshots DIR\n")
             return 2
         return self_test(argv[1])
+    if argv and argv[0] == "--radio":
+        return run(start="radio")
     return run()
 
 

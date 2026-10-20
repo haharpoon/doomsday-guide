@@ -1,0 +1,222 @@
+{
+  "legal": "Airband, marine, PMR: unintended recipients under the Wireless Telegraphy Act s48.",
+  "guide": "signals",
+  "cards": [
+    {
+      "title": "BBC Radio 1",
+      "short": "R1",
+      "listen": true,
+      "group": "broadcast",
+      "freq": "97.6-99.8 MHz",
+      "preset": "98.8",
+      "summary": "National FM. The exact channel depends on the area."
+    },
+    {
+      "title": "BBC Radio 2",
+      "short": "R2",
+      "listen": true,
+      "group": "broadcast",
+      "freq": "88.0-90.2 MHz",
+      "preset": "89.1",
+      "summary": "National FM. The exact channel depends on the area."
+    },
+    {
+      "title": "BBC Radio 3",
+      "short": "R3",
+      "listen": true,
+      "group": "broadcast",
+      "freq": "90.2-92.4 MHz",
+      "preset": "91.3",
+      "summary": "National FM. The exact channel depends on the area."
+    },
+    {
+      "title": "BBC Radio 4 FM",
+      "short": "R4",
+      "listen": true,
+      "group": "broadcast",
+      "freq": "92.5-96.1 / 103.5-104.9 MHz",
+      "preset": "93.5",
+      "summary": "About 92.5-96.1 or 103.5-104.9 by area. See Signals."
+    },
+    {
+      "title": "PMR446 ch 1",
+      "short": "P1",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.00625 MHz",
+      "preset": "446.00625",
+      "summary": "Licence-free, 0.5 W, 12.5 kHz steps. Not a broadcast."
+    },
+    {
+      "title": "PMR446 ch 2",
+      "short": "P2",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.01875 MHz",
+      "preset": "446.01875",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 3",
+      "short": "P3",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.03125 MHz",
+      "preset": "446.03125",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 4",
+      "short": "P4",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.04375 MHz",
+      "preset": "446.04375",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 5",
+      "short": "P5",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.05625 MHz",
+      "preset": "446.05625",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 6",
+      "short": "P6",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.06875 MHz",
+      "preset": "446.06875",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 7",
+      "short": "P7",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.08125 MHz",
+      "preset": "446.08125",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 8",
+      "short": "P8",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.09375 MHz",
+      "preset": "446.09375",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 9",
+      "short": "P9",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.10625 MHz",
+      "preset": "446.10625",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 10",
+      "short": "P10",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.11875 MHz",
+      "preset": "446.11875",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 11",
+      "short": "P11",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.13125 MHz",
+      "preset": "446.13125",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 12",
+      "short": "P12",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.14375 MHz",
+      "preset": "446.14375",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 13",
+      "short": "P13",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.15625 MHz",
+      "preset": "446.15625",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 14",
+      "short": "P14",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.16875 MHz",
+      "preset": "446.16875",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 15",
+      "short": "P15",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.18125 MHz",
+      "preset": "446.18125",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "PMR446 ch 16",
+      "short": "P16",
+      "listen": false,
+      "group": "pmr",
+      "freq": "446.19375 MHz",
+      "preset": "446.19375",
+      "summary": "Licence-free, 0.5 W. Same rules as channel 1."
+    },
+    {
+      "title": "Marine VHF Ch16",
+      "short": "VHF16",
+      "listen": false,
+      "group": "marine",
+      "freq": "156.8 MHz",
+      "preset": "156.8",
+      "summary": "Distress and calling. See Signals & Radio."
+    },
+    {
+      "title": "2 m calling",
+      "short": "2m",
+      "listen": true,
+      "group": "amateur",
+      "freq": "145.500 MHz",
+      "preset": "145.500",
+      "summary": "Amateur FM calling channel. Listening is allowed."
+    },
+    {
+      "title": "MSF time signal",
+      "short": "MSF",
+      "listen": true,
+      "group": "time",
+      "freq": "60 kHz",
+      "preset": "60",
+      "summary": "Anthorn time signal. Sometimes off for maintenance."
+    },
+    {
+      "title": "Meshtastic EU868",
+      "short": "LoRa",
+      "listen": false,
+      "group": "lora",
+      "freq": "869.525 MHz",
+      "preset": "869.525",
+      "summary": "EU868 LoRa default. Messages may not be for you."
+    }
+  ]
+}

@@ -1,8 +1,9 @@
 """Shared 36px tab bar for the 480x320 field guide and Cave Mapper.
 
 GUIDE | SCAN | RADIO, three equal widths. Active is filled #1AFF80 with
-black text. Inactive is a #0A5C2E outline and dim text. RADIO is always a
-dimmed placeholder. Both programs import this so the bar stays the same.
+black text. Inactive is a #0A5C2E outline and dim text. A caller can turn a
+tab off; none of them is forced off. Both programs import this so the bar
+stays the same.
 
     import tabbar
 
@@ -19,8 +20,6 @@ TABS = ("GUIDE", "SCAN", "RADIO")
 GREEN = (0x1A, 0xFF, 0x80)
 DIM = (0x0A, 0x5C, 0x2E)
 BLACK = (0, 0, 0)
-# RADIO is a placeholder on both the guide and the scanner.
-ALWAYS_DISABLED = frozenset({"RADIO"})
 
 
 def tab_rects(width=WIDTH, y=0, height=TAB_H):
@@ -40,15 +39,13 @@ def draw_tabbar(surface, font, active, pressed=None, enabled=None, y=0):
     """Draw the bar and return hit records: name, rect, enabled.
 
     `pressed` is the tab name drawn inverted (finger down, or the brief flash).
-    `enabled` defaults every tab on except RADIO, which is never enabled.
+    `enabled` defaults every tab on. Pass False to dim one.
     """
     flags = {}
     if enabled:
         flags.update(enabled)
     for name in TABS:
-        flags.setdefault(name, name not in ALWAYS_DISABLED)
-        if name in ALWAYS_DISABLED:
-            flags[name] = False
+        flags.setdefault(name, True)
     hits = []
     for name, rect in tab_rects(surface.get_width(), y, TAB_H):
         is_enabled = bool(flags.get(name))
