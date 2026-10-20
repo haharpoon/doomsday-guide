@@ -3496,6 +3496,36 @@ def self_test(screenshot_dir=None):
         f"search finds the nested whistle card {[entry.title for entry in whistle_hits[:3]]}",
         failures,
     )
+    by_topic = {}
+    for entry in index:
+        by_topic.setdefault(entry.topic_slug, []).append(entry.title)
+    for topic in field.GUIDE.topics.values():
+        if not topic.parent or (topic.merge and topic.parent in topics):
+            continue
+        titles = [name for name, _body in field.GUIDE.cards(topic.slug)]
+        got = by_topic.get(topic.slug, [])
+        check(
+            sorted(got) == sorted(titles) and len(got) == len(titles),
+            f"sub-menu {topic.slug} cards missing from the index",
+            failures,
+        )
+    drill = next((entry for entry in index if entry.title == "Hand drill"), None)
+    check(
+        drill is not None
+        and drill.topic_slug == "fire_light"
+        and drill.topic_title == "Ways to light a fire"
+        and "friction fire" in drill.body,
+        "hand drill is indexed under its fire sub-menu",
+        failures,
+    )
+    started = time.perf_counter()
+    rebuilt = content.build_card_index(field.GUIDE)
+    index_s = time.perf_counter() - started
+    check(index_s < 0.5 and len(rebuilt) == len(index), f"index rebuild {index_s:.3f}s for {len(index)} cards", failures)
+    started = time.perf_counter()
+    content.search_cards(index, "shelter")
+    search_s = time.perf_counter() - started
+    check(search_s < 0.1, f"search scan {search_s:.3f}s", failures)
 
     with tempfile.TemporaryDirectory() as tmp:
         with open(os.path.join(tmp, "camp.md"), "w", encoding="utf-8") as handle:
@@ -3621,6 +3651,41 @@ def self_test(screenshot_dir=None):
     nested_index.activate("back")
     check(nested_index.current()["kind"] == "index" and nested_index.current().get("page") == whistle_at, "back returns to that index row", failures)
 
+    submenu = App(show_cave=False)
+    submenu.activate("guide-search")
+    submenu.current()["query"] = "hand drill"
+    submenu.draw(canvas)
+    drill_row = next((widget for widget in submenu.widgets if widget["label"] == "Hand drill"), None)
+    check(drill_row is not None, "search lists the fire sub-menu card", failures)
+    if drill_row is not None:
+        submenu.pointer("down", *drill_row["rect"].center)
+        submenu.pointer("up", *drill_row["rect"].center)
+        check(
+            submenu.current()["kind"] == "reader" and submenu.current()["title"] == "HAND DRILL",
+            "sub-menu search result opens the card",
+            failures,
+        )
+        check(
+            "friction fire" in submenu.current()["body"] and "fire_hand_drill.png" in submenu.current()["body"],
+            "sub-menu card keeps its text and diagram",
+            failures,
+        )
+        drill_badge = False
+        for number in range(submenu.page_count(submenu.current())):
+            submenu.current()["page"] = number
+            submenu.slide_from = None
+            submenu.draw(canvas)
+            if any(widget["id"].startswith("zoom:") for widget in submenu.widgets):
+                drill_badge = True
+                break
+        check(drill_badge, "sub-menu card still shows the enlarge badge", failures)
+        submenu.activate("back")
+        check(
+            submenu.current()["kind"] == "find" and submenu.current()["query"] == "hand drill",
+            "back returns to the sub-menu search",
+            failures,
+        )
+
     az = App(show_cave=False)
     az.activate("guide-index")
     az.draw(canvas)
@@ -3645,6 +3710,18 @@ def self_test(screenshot_dir=None):
     az.activate("back")
     check(az.current()["kind"] == "index" and az.current().get("page", 0) > 0, "back returns to the index page", failures)
     check(opened.startswith("B"), f"opened the B card {opened}", failures)
+    present_letters = {entry.letter for entry in index}
+    az.draw(canvas)
+    for letter in content.INDEX_LETTERS:
+        button = next(widget for widget in az.widgets if widget["id"] == "letter:" + letter)
+        if letter not in present_letters:
+            check(not button["enabled"], f"letter {letter} with no cards stays disabled", failures)
+            continue
+        az.activate("letter:" + letter)
+        az.draw(canvas)
+        first = next(widget for widget in az.widgets if widget["id"].startswith("index:"))
+        landed = card_index()[az.current()["page"]]
+        check(landed.letter == letter and first["label"] == landed.title, f"letter {letter} jumps to {landed.title}", failures)
     az.activate("tab:GUIDE")
     check(az.current()["kind"] == "home" and len(az.stack) == 1, "GUIDE tab still leaves the index", failures)
 
