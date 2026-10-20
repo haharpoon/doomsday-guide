@@ -49,7 +49,23 @@ US Army manuals are public domain and approved for public release.
 
 Hesperian lets you copy it for non-commercial use with credit, but asks permission before passing on digital copies. Download it for yourself from Hesperian. Do not hand out cards with it on.
 
-Open PDFs on the Pi with the desktop's PDF viewer, or from another device over Wi-Fi.
+The guide and Kiwix do not open PDFs, and kiwix-serve on port 8080 only shares the ZIMs, not this folder. To read a PDF, copy it to a phone, laptop or tablet:
+
+USB stick: plug it into the Pi. Run lsblk to find its name (often sda1). Then type:
+
+sudo mount /dev/sda1 /mnt
+
+sudo cp -r /var/lib/kiwix/pdf /mnt/
+
+sudo umount /mnt
+
+Wait for the last command to finish before you pull the stick out.
+
+Over the network, if SSH is turned on: on the other computer, type the line below, using your Pi user name and the address from the login screen. An SFTP app on a phone works too.
+
+scp -r user@192.168.1.20:/var/lib/kiwix/pdf .
+
+If the Pi has a desktop, open them there with its PDF viewer.
 
 ## Download
 

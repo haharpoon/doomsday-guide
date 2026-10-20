@@ -173,7 +173,7 @@ d.rectangle([380, 150, 432, 180], outline=G, width=3); t(d, (384, 156), "bench",
 d.rectangle([290, 162, 318, 180], outline=K, fill=K); L(d, [(290, 165), (318, 165)], 2)
 t(d, (250, 196), "low door", 12)
 t(d, (330, 196), "sticks = 30 cm walls", 12)
-t(d, (240, 236), "Pile, wait 1-2 h, dig out.", 12)
+t(d, (240, 236), "Pile, wait 2 h+, dig out.", 12)
 t(d, (240, 254), "No flame without a vent.", 12)
 save(im, "shelter_snow")
 

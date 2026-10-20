@@ -94,7 +94,7 @@ Eat the leaves raw or wilted, best before the flowers open. The flowers are edib
 
 Many plants in the carrot family have white umbrella-shaped flower heads and feathery leaves. Some are deadly. The universal advice is: do not eat any wild plant from the carrot family unless you are an expert.
 
-Hemlock: up to 2 m tall. Smooth, hollow stems with purple blotches and spots, and no hairs. Leaves finely divided, like a fern or parsley. Mature plants smell unpleasant, like mice. Grows on verges, ditches and stream edges. A small amount of any part can paralyse breathing and kill.
+Hemlock: often 1.5 to 2.5 m tall. Smooth, hollow stems with purple blotches and spots, and no hairs. Leaves finely divided, like a fern or parsley. Mature plants smell unpleasant, like mice. Grows on verges, ditches and stream edges. A small amount of any part can paralyse breathing and kill.
 
 Hemlock water dropwort: one of the most poisonous plants in the UK. Grows in and beside water: streams, ditches, canals and wet woods. Up to 1.5 m. Grooved hollow stems, parsley-like leaves, white umbrella flowers. The roots are fat, pale tubers like fingers or small parsnips, and are often washed out of banks. Mistaken for wild celery, wild parsnip or water parsnip. Eating even a little root can cause fits and death within hours. Wash your hands after touching it.
 
@@ -104,7 +104,7 @@ Cow parsley, wild carrot and others are edible, but they look too close to these
 
 ## Deadly: foxglove and death cap
 
-Foxglove: tall spike of pink-purple tube flowers with dark spots inside, June to September. In the first year it is only a rosette of soft, hairy, toothed leaves, and that is when it is mistaken for comfrey or other greens. Comfrey leaves have smooth edges. Foxglove contains heart poisons. Every part is toxic.
+Foxglove: tall spike of pink-purple tube flowers with dark spots inside, June to September. In the first year it is only a rosette of soft, hairy, toothed leaves, and that is when it is mistaken for comfrey or other greens. Comfrey leaves have smooth edges. Foxglove contains heart poisons. Every part is toxic. Do not eat comfrey either: it contains chemicals that damage the liver.
 
 Death cap: a mushroom found in deciduous woods, often under oak and beech. Cap olive-green to yellowish, 5 to 15 cm. White gills. A floppy ring on the stem, and a swollen base sitting in a cup, often hidden in the soil. Young "button" death caps look like edible mushrooms.
 
