@@ -2878,10 +2878,26 @@ def self_test(screenshot_dir=None):
         failures,
     )
     check(len(field.SHELTER) == 14 and len(field.WATER) == 7 and len(field.FIRE) == 8, f"sheet counts {len(field.SHELTER)} {len(field.WATER)} {len(field.FIRE)}", failures)
-    check(len(field.KNOTS_MAIN) == 8 and field.KNOTS_MAIN[0][0] == "Which knot", "main knots", failures)
+    knot_main_cards = [name for name, _body in field.KNOTS_MAIN]
+    check(
+        knot_main_cards
+        == [
+            "Which knot",
+            "Rope words",
+            "Square knot",
+            "Sheet bend",
+            "Bowline",
+            "Figure-eight loop",
+            "Clove hitch",
+            "Round turn and two half hitches",
+            "Taut-line hitch",
+        ],
+        f"main knots {knot_main_cards}",
+        failures,
+    )
     check(field.KNOT_WHICH == field.KNOTS_MAIN[0][1], "which knot text", failures)
-    check(len(field.KNOTS_MORE) == 8, "more knots", failures)
-    check("standing     standing" in field.KNOTS_MAIN[1][1], "square knot diagram text", failures)
+    check([name for name, _body in field.KNOTS_MORE][:1] == ["Rolling hitch"] and len(field.KNOTS_MORE) == 5, "grip and haul knots", failures)
+    check("Right end over the left end" in field.KNOTS_MAIN[2][1], "square knot steps", failures)
     check(
         content.console_body("See ![ridge pole](img/ridge.png) here.") == "See [diagram: ridge pole] here.",
         "console diagram placeholder",
@@ -2890,12 +2906,52 @@ def self_test(screenshot_dir=None):
     check(content.console_body(field.SHELTER[0][1]) == field.SHELTER[0][1], "plain sheet is unchanged", failures)
     knots = App(show_cave=False)
     knots.activate("home:7")
-    knot_labels = [item["label"] for item in knots.current()["items"]]
+    knot_items = knots.current()["items"]
+    knot_labels = [item["label"] for item in knot_items]
+    knot_menus = [
+        ("Stoppers", 3, "Overhand knot", "Double overhand stopper"),
+        ("Hitches", 10, "Two half hitches", "Munter hitch"),
+        ("Grip and haul", 5, "Rolling hitch", "Trucker's hitch"),
+        ("Loops", 7, "Figure-eight follow-through", "Slip knot"),
+        ("Bends and joins", 6, "Double sheet bend", "Water knot"),
+        ("Fishing and snare knots", 5, "Improved clinch knot", "Snare noose"),
+        ("Lashings", 7, "Start and finish lashings", "Floor lashing"),
+        ("Rope care", 6, "Rope care and strength", "Tie a ridge line"),
+    ]
     check(
-        knot_labels[0] == "Which knot" and knot_labels[-2:] == ["More knots", "Lashings"] and len(knot_labels) == 10,
+        knot_labels[:9] == knot_main_cards and knot_labels[9:] == [menu[0] for menu in knot_menus],
         f"knots menu {knot_labels}",
         failures,
     )
+    which_text = field.KNOT_WHICH.lower()
+    knot_pictures = []
+    for label, count, first, last in knot_menus:
+        item = next((entry for entry in knot_items if entry["label"] == label), {})
+        labels = [entry["label"] for entry in item.get("items", [])]
+        check(
+            item.get("action") == "menu" and len(labels) == count and labels[0] == first and labels[-1] == last,
+            f"knots {label} menu {labels}",
+            failures,
+        )
+        for entry in item.get("items", []):
+            check(entry["label"].lower() in which_text, f"which knot lists {entry['label']}", failures)
+            found = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", entry.get("body", ""))
+            if entry["label"] != "Rope care and strength":
+                check(bool(found), f"knot card has a diagram: {entry['label']}", failures)
+            knot_pictures.extend(found)
+    for name, body in field.KNOTS_MAIN[2:]:
+        check(name.lower() in which_text, f"which knot lists {name}", failures)
+        found = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body)
+        check(bool(found), f"knot card has a diagram: {name}", failures)
+        knot_pictures.extend(found)
+    knot_missing = [rel for rel in knot_pictures if content.resolve_image(field.GUIDE.directory, rel) is None]
+    check(not knot_missing, f"knot diagrams exist {knot_missing}", failures)
+    knot_sizes = {
+        pygame.image.load(str(content.resolve_image(field.GUIDE.directory, rel))).get_size()
+        for rel in set(knot_pictures)
+        if rel not in knot_missing
+    }
+    check(knot_sizes <= {(480, 284)}, f"knot diagrams are 480x284 {knot_sizes}", failures)
     more = App(show_cave=False)
     more.activate("home:16")
     more_labels = [item["label"] for item in more.current()["items"]]
@@ -3859,6 +3915,31 @@ def self_test(screenshot_dir=None):
             ("nav_nocompass", "Improvised compass", "nav_needle_card"),
             ("emergency", "Fire at home", "emergency_fire_card"),
             ("tools", "Bow saw frame", "tools_bow_saw_card"),
+        ):
+            body = dict(field.GUIDE.cards(slug)).get(card_name, "")
+            check(bool(body), f"screenshot card {slug}/{card_name}", failures)
+            card = App(show_cave=False)
+            card.stack.append({"kind": "reader", "title": card_name.upper(), "body": body, "page": 0, "tint": True})
+            for number, blocks in enumerate(card.reader_pages(card.current())):
+                if any(block.get("kind") == "image" for block in blocks):
+                    card.current()["page"] = number
+                    break
+            card.draw(canvas)
+            pygame.image.save(canvas, os.path.join(screenshot_dir, file_name + ".png"))
+
+        knot_shots = App(show_cave=False)
+        knot_shots.activate("home:7")
+        knot_shots.draw(canvas)
+        pygame.image.save(canvas, os.path.join(screenshot_dir, "knots_menu.png"))
+        for slug, card_name, file_name in (
+            ("knots_main", "Clove hitch", "knots_clove_card"),
+            ("knots_stoppers", "Figure-eight stopper", "knots_fig8_stopper_card"),
+            ("knots_hitches", "Munter hitch", "knots_munter_card"),
+            ("knots_loops", "Alpine butterfly", "knots_butterfly_card"),
+            ("knots_bends", "Zeppelin bend", "knots_zeppelin_card"),
+            ("knots_fishing", "Snare noose", "knots_snare_card"),
+            ("knots_lashing", "Floor lashing", "knots_floor_lashing_card"),
+            ("knots_rope", "Tie a ridge line", "knots_ridgeline_card"),
         ):
             body = dict(field.GUIDE.cards(slug)).get(card_name, "")
             check(bool(body), f"screenshot card {slug}/{card_name}", failures)

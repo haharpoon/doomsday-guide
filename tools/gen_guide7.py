@@ -250,16 +250,26 @@ lines(d, 352, 52, ["logs as long", "as you", "", "fire in the gap", "", "eats wo
 save(im, "fire_long")
 
 im, d = new("SWEDISH TORCH")
-E(d, [90, 64, 230, 104], 4)                                                        # top
-L(d, [(90, 84), (90, 244)], 4); L(d, [(230, 84), (230, 244)], 4)
-d.arc([90, 224, 230, 264], 0, 180, fill=G, width=4)
-L(d, [(100, 84), (220, 84)], 3); L(d, [(160, 66), (160, 102)], 3)
-L(d, [(160, 104), (160, 190)], 2); dashed(d, (100, 190), (220, 190), 2)
-flame(d, 160, 82, 30, 14)
-t(d, (250, 60), "Cut down in a", 15); t(d, (250, 80), "cross, 2/3 deep", 15)
-t(d, (250, 120), "tinder in the", 15); t(d, (250, 140), "middle, light", 15); t(d, (250, 160), "at the top", 15)
-t(d, (250, 196), "20-30 cm wide,", 15); t(d, (250, 216), "40-60 cm tall", 15)
-t(d, (40, 190), "2/3", 15)
+# side view: log with the cross cut showing as a slot
+E(d, [30, 60, 150, 92], 4)                                                         # top
+L(d, [(30, 76), (30, 238)], 4); L(d, [(150, 76), (150, 238)], 4)
+d.arc([30, 222, 150, 254], 0, 180, fill=G, width=4)
+L(d, [(40, 76), (140, 76)], 4); L(d, [(90, 62), (90, 90)], 4)                 # cross on top
+d.rectangle([86, 92, 94, 180], outline=G, width=3)                               # cut slot
+dashed(d, (30, 180), (150, 180), 2)
+flame(d, 90, 74, 30, 14)
+arrow(d, (166, 128), (166, 80), 2); arrow(d, (166, 132), (166, 178), 2)
+t(d, (174, 120), "cut", 13); t(d, (174, 136), "2/3", 13)
+t(d, (90, 262), "SIDE", 14, "ma")
+# top view: cross cut, tinder in the centre
+C(d, (272, 140), 52, 4); C(d, (272, 140), 18, 2)
+L(d, [(222, 140), (322, 140)], 6); L(d, [(272, 90), (272, 190)], 6)
+dot(d, (272, 140), 9)
+t(d, (272, 210), "tinder in the", 13, "ma"); t(d, (272, 226), "centre", 13, "ma")
+t(d, (272, 262), "TOP", 14, "ma")
+t(d, (344, 62), "Dry log,", 13); t(d, (344, 78), "20-30 cm wide,", 13); t(d, (344, 94), "40-60 cm tall.", 13)
+t(d, (344, 126), "Light at the", 13); t(d, (344, 142), "top. It burns", 13); t(d, (344, 158), "down inside.", 13)
+t(d, (344, 190), "A pot can sit", 13); t(d, (344, 206), "on top.", 13)
 save(im, "fire_swedish")
 
 im, d = new("KEYHOLE FIRE (top view)")
