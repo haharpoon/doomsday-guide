@@ -1627,6 +1627,7 @@ def exercise(make_app, canvas, check, screenshot_dir=None):
         if screenshot_dir:
             pygame.image.save(canvas, os.path.join(screenshot_dir, "radio_morse_flash.png"))
         app.current()["flash"] = None
+        app.draw(canvas)
         _tap(app, "radio:practice")
         app.draw(canvas)
         key = next(widget for widget in app.widgets if widget["id"] == "radio:key")
