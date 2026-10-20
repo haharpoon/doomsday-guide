@@ -2223,7 +2223,11 @@ def self_test(screenshot_dir=None):
     paged.activate("home-next")
     paged.draw(canvas)
     page_two = [widget["label"] for widget in paged.widgets if widget["id"].startswith("home:")]
-    check(page_two == ["Navigation", "More"], f"home page two {page_two}", failures)
+    check(
+        page_two == ["Growing food", "Tools and wildlife", "Sanitation", "Navigation", "More"],
+        f"home page two {page_two}",
+        failures,
+    )
     check("Exit" in labels and "Cave Mapper" not in labels, "exit without cavemap", failures)
     heights = [widget["rect"].height for widget in app.widgets]
     check(all(height >= 60 for height in heights), f"home button height {heights}", failures)
@@ -2336,7 +2340,7 @@ def self_test(screenshot_dir=None):
     check(app.current()["query"] == "  ", "tap works again after the debounce", failures)
 
     food = App(show_cave=False)
-    food.activate("home:6")
+    food.activate("home:8")
     food.draw(canvas)
     food_items = food.current().get("items", [])
     check(
@@ -2350,7 +2354,22 @@ def self_test(screenshot_dir=None):
     home_titles = [topic.title for topic in field.GUIDE.home_topics()]
     check(
         home_titles
-        == ["Shelter", "Medicine", "First aid", "Water", "Fire", "Knots", "Food", "Tools and wildlife", "Sanitation", "Navigation", "More"],
+        == [
+            "Shelter",
+            "Medicine",
+            "First aid",
+            "Childbirth",
+            "Mental health",
+            "Water",
+            "Fire",
+            "Knots",
+            "Food",
+            "Growing food",
+            "Tools and wildlife",
+            "Sanitation",
+            "Navigation",
+            "More",
+        ],
         f"home menu order {home_titles}",
         failures,
     )
@@ -2366,7 +2385,7 @@ def self_test(screenshot_dir=None):
     )
     check(content.console_body(field.SHELTER[0][1]) == field.SHELTER[0][1], "plain sheet is unchanged", failures)
     knots = App(show_cave=False)
-    knots.activate("home:5")
+    knots.activate("home:7")
     knot_labels = [item["label"] for item in knots.current()["items"]]
     check(
         knot_labels[0] == "Which knot" and knot_labels[-2:] == ["More knots", "Lashings"] and len(knot_labels) == 10,
@@ -2374,7 +2393,7 @@ def self_test(screenshot_dir=None):
         failures,
     )
     more = App(show_cave=False)
-    more.activate("home:10")
+    more.activate("home:13")
     more_labels = [item["label"] for item in more.current()["items"]]
     check(
         more_labels
@@ -2392,7 +2411,7 @@ def self_test(screenshot_dir=None):
     clothing_labels = [item["label"] for item in more.current()["items"][1].get("items", [])]
     check(len(clothing_labels) == 11 and clothing_labels[0] == "Layers", f"clothing menu {clothing_labels}", failures)
     sanitation = App(show_cave=False)
-    sanitation.activate("home:8")
+    sanitation.activate("home:11")
     san_items = sanitation.current().get("items", [])
     check(
         sanitation.current()["kind"] == "menu"
@@ -2403,13 +2422,43 @@ def self_test(screenshot_dir=None):
         failures,
     )
     navigation = App(show_cave=False)
-    navigation.activate("home:9")
+    navigation.activate("home:12")
     nav_labels = [item["label"] for item in navigation.current().get("items", [])]
     check(
         len(nav_labels) == 17 and nav_labels[0] == "Lost? STOP" and nav_labels[-1] == "Navigation sources",
         f"navigation menu {nav_labels}",
         failures,
     )
+    guide5_pictures = []
+    for home_id, label, count, first, last in (
+        ("home:3", "Childbirth", 14, "Signs of labour", "Childbirth sources"),
+        ("home:4", "Mental health", 14, "Stress is normal", "Mental health sources"),
+        ("home:9", "Growing food", 14, "Fast crops", "Growing sources"),
+    ):
+        topic_app = App(show_cave=False)
+        topic_app.activate(home_id)
+        topic_labels = [item["label"] for item in topic_app.current().get("items", [])]
+        check(
+            topic_app.current()["kind"] == "menu"
+            and topic_app.current()["title"] == label.upper()
+            and len(topic_labels) == count
+            and topic_labels[0] == first
+            and topic_labels[-1] == last,
+            f"{label} menu {topic_labels}",
+            failures,
+        )
+    for slug in ("childbirth", "mentalhealth", "growing"):
+        for _name, body in field.GUIDE.cards(slug):
+            guide5_pictures.extend(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body))
+    check(len(guide5_pictures) == 14, f"childbirth, mental health and growing diagrams {len(guide5_pictures)}", failures)
+    guide5_missing = [rel for rel in guide5_pictures if content.resolve_image(field.GUIDE.directory, rel) is None]
+    check(not guide5_missing, f"childbirth, mental health and growing diagrams exist {guide5_missing}", failures)
+    guide5_sizes = {
+        pygame.image.load(str(content.resolve_image(field.GUIDE.directory, rel))).get_size()
+        for rel in guide5_pictures
+        if rel not in guide5_missing
+    }
+    check(guide5_sizes <= {(480, 284)}, f"childbirth, mental health and growing diagrams are 480x284 {guide5_sizes}", failures)
     new_menus = {}
     for index, (label, count, first, last) in enumerate(
         (
@@ -2795,6 +2844,11 @@ def self_test(screenshot_dir=None):
             ("power", "Carbon monoxide", "power_co_card"),
             ("emergency", "Utilities shutoff", "emergency_utilities_card"),
             ("library", "What to get", "library_card"),
+            ("childbirth", "Tie and cut the cord", "childbirth_cord_card"),
+            ("childbirth", "Heavy bleeding after birth", "childbirth_bleeding_card"),
+            ("mentalhealth", "Calm breathing", "mentalhealth_breathing_card"),
+            ("growing", "Three Sisters", "growing_three_sisters_card"),
+            ("growing", "Potatoes", "growing_potatoes_card"),
         ):
             body = dict(field.GUIDE.cards(slug)).get(card_name, "")
             check(bool(body), f"screenshot card {slug}/{card_name}", failures)

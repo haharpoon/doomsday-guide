@@ -144,9 +144,9 @@ Use these when you have hours and expect to stay. Snow insulates very well, and 
 
 Snow cave: dig into a deep, firm drift, about 3 m deep. Keep the roof domed so melt water runs down the walls, not onto you. Make the sleeping bench higher than the door, because cold air sinks out of the low door. Walls and roof at least 30 cm thick.
 
-Quinzhee: when there is no drift, make one. Pile and mix snow into a mound about 2 m high and wide enough to lie down in. Push sticks about 30 cm long into the mound all over. Wait at least an hour or two for the snow to set. Then hollow it out from a low door. Stop digging at each stick end you meet: that is your wall thickness.
+Quinzhee: when there is no drift, make one. Pile and mix snow into a dome about 1.5 to 2 m high and 2.5 to 3 m across: your height plus a metre or more. Leave it at least 2 hours to set (longer is better). Push sticks about 30 cm long into the mound all over. Then hollow it out from a low door. Stop digging at each stick end you meet: that is your wall thickness.
 
-Both: poke a vent hole in the roof, about the width of a fist, and keep it clear. Never run a stove, candle or fire inside without a vent. Carbon monoxide has no smell and kills in your sleep. If you cannot see your breath inside, it is too warm and the roof will drip.
+Both: poke a vent hole through the roof, about 5 to 10 cm across (smaller in hard cold), and keep it clear. Never run a stove, candle or fire inside without a vent. Carbon monoxide has no smell and kills in your sleep. If you cannot see your breath inside, it is too warm and the roof will drip.
 
 Never dig a snow shelter where snow could slide onto it.
 
