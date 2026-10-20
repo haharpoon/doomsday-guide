@@ -1,7 +1,7 @@
 ---
 title: Navigation
 order: 8
-intro: Know where you are before you move. Map first, compass second, sky and signs last.
+intro: Know where you are before you move. Map and compass first; no-compass methods and route planning are in the sub-menus.
 ---
 
 ## Lost? STOP
@@ -154,108 +154,30 @@ Attack point: when the target is small, like a sheepfold or a spring, first go t
 
 ![handrail wall, aiming off to one side of a bridge, river as a catching feature, attack point at a wall corner](img/nav_handrails.png)
 
-## Sun and watch
+## Resection: where am I?
 
-The sun rises roughly in the east and sets roughly in the west. In the UK it is due south at about 1 pm in summer time (BST) and about midday in winter (GMT), up to half an hour later in the far west.
+Use: you can see two or three features you can find on the map, but you do not know where you are.
 
-Watch method, northern hemisphere, with a dial watch set to local time:
-1. Hold the watch flat. Point the hour hand at the sun.
-2. Halfway between the hour hand and 12 is south. In summer time use 1 instead of 12.
+1. Pick features far apart, ideally about 60 to 90 degrees apart: a summit, a mast, a church, a lake end.
 
-Southern hemisphere: point the 12 at the sun. Halfway between 12 and the hour hand is north. On daylight saving time use 1 instead of 12.
+2. Take a compass bearing to the first one. Point the direction-of-travel arrow at it, turn the housing until red sits in the shed, read the bearing.
 
-If unsure which end is which, remember the sun is in the east in the morning and in the west in the afternoon.
+3. Correct for magnetic variation (compass to map) if it matters where you are.
 
-This is rough. It is worst in the middle of the day and near the tropics, where the sun is high. A digital watch works if you draw a clock face on the ground with the time on it.
+4. Lay the compass on the map with the edge touching the feature. Turn the whole compass until the orienting lines run with the grid lines, north up. Do not turn the housing.
 
-## Shadow stick
+5. Draw a line along the edge back from the feature towards you. You are somewhere on it.
 
-When you have sun and 15 to 30 minutes:
+6. Do the same for the second and third features. Where the lines cross is you.
 
-1. Push a straight stick upright into flat, open ground.
+![resection: bearings back from a summit, a mast and a church cross in a small triangle where you stand](img/nav_resection.png)
 
-2. Mark the tip of its shadow with a pebble.
+The lines usually make a small triangle (a cocked hat). You are inside it. A big triangle means a bad bearing: do it again.
 
-3. Wait until the tip has moved a few centimetres, at least 15 minutes. Mark it again.
+Shortcut: if you are on a handrail, such as a path or river, one bearing to one feature is enough. Where its line crosses the handrail is you.
 
-4. A line from the first mark to the second runs west to east. The first mark is always west, anywhere on Earth.
-
-5. Stand with the first mark on your left and the second on your right. You are facing north.
-
-![shadow stick: stick, first mark W, second mark E, line west to east, north at right angles](img/nav_shadow_stick.png)
-
-Use a taller stick and wait longer for a better line. A fuzzy shadow under thin cloud gives a poor result. The US Army says not to rely on it above 60 degrees latitude, where the sun stays low.
-
-## North Star
-
-In the northern hemisphere, find the Plough (Big Dipper): seven bright stars shaped like a saucepan.
-
-The two stars at the end of the pan, furthest from the handle, are the Pointers. Follow the line through them away from the bottom of the pan, about five times the gap between them. You reach the North Star (Polaris). It is not very bright, but it is alone.
-
-On the other side of the North Star from the Plough is Cassiopeia, a W of five stars. If the Plough is behind cloud, use the W.
-
-The North Star is within 1 degree of true north. It stays put while the rest of the sky turns around it. Drop a line straight down from it to the horizon. That is north.
-
-Its height above the horizon is about your latitude: about 50 to 60 degrees up in Britain.
-
-![Plough pointers lead to the North Star; Southern Cross long axis and Pointers lead to the south celestial pole](img/nav_stars.png)
-
-## Southern Cross
-
-In the southern hemisphere there is no bright south star. Use the Southern Cross: four bright stars in a kite shape, with two bright Pointer stars beside it.
-
-1. Run a line along the long axis of the cross, from the top star through the foot star.
-
-2. Carry it on about four and a half to five times the length of the cross.
-
-3. Draw a second line at right angles out from the middle of the two Pointers.
-
-4. Where the lines meet is near the south celestial pole. Drop straight down to the horizon. That is south.
-
-Do not confuse it with the False Cross nearby. The False Cross is larger and dimmer and has no Pointers.
-
-The sky turns, so check every 15 to 30 minutes and pick a new landmark on the horizon.
-
-## Natural signs and their limits
-
-These are weak on their own. Use two or three that agree, and check with the sun.
-
-Moss grows where it is damp and shady. That can be any side of a tree, rock or wall. Do not navigate by moss.
-
-On a lone tree in the open, the sunny side (south in the UK) often has more and fuller branches.
-
-In Britain the strongest winds mostly come from the west and south-west. Exposed trees and bushes often lean or are swept to the north-east. Snow drifts form on the side away from the wind.
-
-Many old churches in England were built with the altar at the east end. Not all.
-
-Satellite TV dishes in the UK point roughly south-east.
-
-Streams run downhill. Roads, villages and the sea are more likely downstream. In steep ground, a stream can drop over a waterfall or into a gorge. Walk the bank, not the bed, and go round.
-
-If signs disagree with the compass, believe the compass, unless it is next to metal.
+Check: the shape of the land around you matches the contours at that point.
 
 ## Places
 
 Look up the place name in Places if you know a town, park, river or country. The travel guide on this Pi describes towns, roads, transport and where to find help.
-
-## Navigation sources
-
-Written in our own words from public guidance:
-
-Ordnance Survey, map reading: ordnancesurvey.co.uk/documents/resources/map-reading.pdf
-
-OS grid references: getoutside.ordnancesurvey.co.uk/guides/a-beginners-guide-to-grid-references/
-
-OS compass guide: osmaps.com/discover/guides/a-beginners-guide-to-using-a-compass/ and distance, pacing and Naismith: osmaps.com/discover/guides/advanced-guide-measuring-distance/
-
-British Geological Survey, grid magnetic angle: geomag.bgs.ac.uk/data_service/models_compass/gma_calc.html and OS on the three norths: ordnancesurvey.co.uk/news/three-norths-departing-england
-
-US Army FM 3-25.26 Map Reading and Land Navigation (public domain): pace count, shadow-tip, watch method, North Star, handrails and catching features, deliberate offset. Text at globalsecurity.org/military/library/policy/army/fm/3-25-26/ch9.htm
-
-US Army ATP 3-50.21 / FM 21-76 Survival (public domain), field-expedient direction finding.
-
-Te Ara, Encyclopedia of New Zealand: teara.govt.nz/en/diagram/7486/navigating-by-the-southern-cross
-
-Mountain Rescue England and Wales, how to call for help: mountain.rescue.org.uk/how-to-call-out-mr/
-
-Practise with a map and compass on a known walk before you need it.

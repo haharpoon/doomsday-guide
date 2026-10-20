@@ -2566,6 +2566,53 @@ def check(condition, message, failures):
         failures.append(message)
 
 
+# Batch 7: topics split into sub-menus. Each row is
+# (home id, title, own cards, first card, sub-menus, ends with search).
+# A sub-menu is (label, cards, first card, last card); one card opens as a sheet.
+GUIDE7_MENUS = (
+    ("home:6", "Fire", 8, "Fire triangle", (
+        ("Ways to light a fire", 14, "Which method?", "Pump drill"),
+        ("Tinder and firewood", 7, "Birch bark", "Choosing firewood"),
+        ("Fires for jobs", 8, "Dakota fire hole", "Low-smoke fire"),
+        ("Keep, carry, put out", 3, "Bank a fire overnight", "Put it out properly"),
+        ("Fire sources", 1, "Fire sources", "Fire sources"),
+    ), False),
+    ("home:0", "Shelter", 14, "Choose a site", (
+        ("More wild shelters", 9, "Wickiup or tipi", "Swamp bed"),
+        ("Snow shelters", 4, "Snow trench", "Igloo basics"),
+        ("Buildings and cars", 4, "Choose a building", "Car as shelter"),
+        ("Long-term building", 5, "Plan a long-term shelter", "Thatching basics"),
+        ("Shelter sources", 1, "Shelter sources", "Shelter sources"),
+    ), False),
+    ("home:5", "Water", 7, "Find it and carry it", (
+        ("Finding and collecting", 10, "Where to look", "Seawater: never drink it"),
+        ("Making it safe", 12, "Which method?", "Clean your containers"),
+        ("Water sources", 1, "Water sources", "Water sources"),
+    ), True),
+    ("home:8", "Food", 10, "Food", (
+        ("Deadly plants", 7, "Deadly: hemlock and water dropwort", "Ragwort"),
+        ("Wild greens", 9, "Nettle and cleavers", "Marsh samphire"),
+        ("Fruit, nuts and seeds", 10, "Blackberry and hazelnut", "Acorns: leach first"),
+        ("Seashore food", 3, "Seaweeds", "Shellfish poisoning"),
+        ("Mushrooms", 5, "Why to say no", "Penny bun (cep)"),
+        ("Food sources", 1, "Food sources", "Food sources"),
+    ), True),
+    ("home:15", "Navigation", 12, "Lost? STOP", (
+        ("Without a compass", 9, "Sun and watch", "Natural signs and their limits"),
+        ("Routes and conditions", 8, "Plan a route: Naismith", "Draw a map from memory"),
+        ("Navigation sources", 1, "Navigation sources", "Navigation sources"),
+    ), False),
+)
+GUIDE7_SLUGS = (
+    "fire", "fire_light", "fire_fuel", "fire_build", "fire_keep",
+    "shelter", "shelter_wild", "shelter_snow", "shelter_town", "shelter_long",
+    "water", "water_find", "water_treat",
+    "food", "food_deadly", "food_greens", "food_fruit", "food_shore", "food_fungi",
+    "navigation", "nav_nocompass", "nav_route",
+)
+GUIDE7_PICTURES = 91
+
+
 def self_test(screenshot_dir=None):
     global FONT_REGULAR, FONT_BOLD
     failures = []
@@ -2666,7 +2713,17 @@ def self_test(screenshot_dir=None):
     paged.draw(canvas)
     page_two = [widget["label"] for widget in paged.widgets if widget["id"].startswith("home:")]
     check(
-        page_two == ["Growing food", "Tools and wildlife", "Sanitation", "Navigation", "More"],
+        page_two
+        == [
+            "Cooking & preserving",
+            "Growing food",
+            "Animals & livestock",
+            "Tools and wildlife",
+            "Hunting & fishing",
+            "Sanitation",
+            "Navigation",
+            "More",
+        ],
         f"home page two {page_two}",
         failures,
     )
@@ -2788,7 +2845,7 @@ def self_test(screenshot_dir=None):
     food.draw(canvas)
     food_items = food.current().get("items", [])
     check(
-        food.current()["kind"] == "menu" and len(food_items) == 15 and food_items[-1].get("action") == "search",
+        food.current()["kind"] == "menu" and len(food_items) == 17 and food_items[-1].get("action") == "search",
         f"food menu keeps search {[item.get('label') for item in food_items]}",
         failures,
     )
@@ -2808,8 +2865,11 @@ def self_test(screenshot_dir=None):
             "Fire",
             "Knots",
             "Food",
+            "Cooking & preserving",
             "Growing food",
+            "Animals & livestock",
             "Tools and wildlife",
+            "Hunting & fishing",
             "Sanitation",
             "Navigation",
             "More",
@@ -2817,7 +2877,7 @@ def self_test(screenshot_dir=None):
         f"home menu order {home_titles}",
         failures,
     )
-    check(len(field.SHELTER) == 11 and len(field.WATER) == 11 and len(field.FIRE) == 12, "sheet counts", failures)
+    check(len(field.SHELTER) == 14 and len(field.WATER) == 7 and len(field.FIRE) == 8, f"sheet counts {len(field.SHELTER)} {len(field.WATER)} {len(field.FIRE)}", failures)
     check(len(field.KNOTS_MAIN) == 8 and field.KNOTS_MAIN[0][0] == "Which knot", "main knots", failures)
     check(field.KNOT_WHICH == field.KNOTS_MAIN[0][1], "which knot text", failures)
     check(len(field.KNOTS_MORE) == 8, "more knots", failures)
@@ -2837,11 +2897,21 @@ def self_test(screenshot_dir=None):
         failures,
     )
     more = App(show_cave=False)
-    more.activate("home:13")
+    more.activate("home:16")
     more_labels = [item["label"] for item in more.current()["items"]]
     check(
         more_labels
-        == ["Signals & Radio", "Clothing", "Weather", "Power", "Emergency plan", "Offline library", "Places", "Search all archives"],
+        == [
+            "Signals & Radio",
+            "Clothing",
+            "Weather",
+            "Power",
+            "Repairs & making",
+            "Emergency plan",
+            "Offline library",
+            "Places",
+            "Search all archives",
+        ],
         f"more menu {more_labels}",
         failures,
     )
@@ -2935,28 +3005,28 @@ def self_test(screenshot_dir=None):
     weather_item = more.current()["items"][2]
     weather_labels = [item["label"] for item in weather_item.get("items", [])]
     check(
-        weather_item.get("action") == "menu" and len(weather_labels) == 12 and weather_labels[0] == "Read the sky",
+        weather_item.get("action") == "menu" and len(weather_labels) == 16 and weather_labels[0] == "Read the sky",
         f"weather menu {weather_labels}",
         failures,
     )
     clothing_labels = [item["label"] for item in more.current()["items"][1].get("items", [])]
-    check(len(clothing_labels) == 11 and clothing_labels[0] == "Layers", f"clothing menu {clothing_labels}", failures)
+    check(len(clothing_labels) == 16 and clothing_labels[0] == "Layers", f"clothing menu {clothing_labels}", failures)
     sanitation = App(show_cave=False)
-    sanitation.activate("home:11")
+    sanitation.activate("home:14")
     san_items = sanitation.current().get("items", [])
     check(
         sanitation.current()["kind"] == "menu"
-        and len(san_items) == 14
+        and len(san_items) == 21
         and san_items[1]["label"] == "Cat hole"
         and san_items[-1].get("action") == "search",
         f"sanitation menu keeps search {[item.get('label') for item in san_items]}",
         failures,
     )
     navigation = App(show_cave=False)
-    navigation.activate("home:12")
+    navigation.activate("home:15")
     nav_labels = [item["label"] for item in navigation.current().get("items", [])]
     check(
-        len(nav_labels) == 17 and nav_labels[0] == "Lost? STOP" and nav_labels[-1] == "Navigation sources",
+        len(nav_labels) == 15 and nav_labels[0] == "Lost? STOP" and nav_labels[-1] == "Navigation sources",
         f"navigation menu {nav_labels}",
         failures,
     )
@@ -2964,7 +3034,7 @@ def self_test(screenshot_dir=None):
     for home_id, label, count, first, last in (
         ("home:3", "Childbirth", 14, "Signs of labour", "Childbirth sources"),
         ("home:4", "Mental health", 14, "Stress is normal", "Mental health sources"),
-        ("home:9", "Growing food", 14, "Fast crops", "Growing sources"),
+        ("home:10", "Growing food", 14, "Fast crops", "Growing sources"),
     ):
         topic_app = App(show_cave=False)
         topic_app.activate(home_id)
@@ -2991,14 +3061,12 @@ def self_test(screenshot_dir=None):
     }
     check(guide5_sizes <= {(480, 284)}, f"childbirth, mental health and growing diagrams are 480x284 {guide5_sizes}", failures)
     new_menus = {}
-    for index, (label, count, first, last) in enumerate(
-        (
-            ("Power", 12, "Volts, amps, watts", "Power sources"),
-            ("Emergency plan", 10, "Make a plan", "Emergency sources"),
-            ("Offline library", 7, "What Kiwix is", "Library sources"),
-        )
+    for index, (label, count, first, last) in (
+        (3, ("Power", 15, "Volts, amps, watts", "Power sources")),
+        (5, ("Emergency plan", 17, "Make a plan", "Emergency sources")),
+        (6, ("Offline library", 7, "What Kiwix is", "Library sources")),
     ):
-        item = more.current()["items"][3 + index]
+        item = more.current()["items"][index]
         labels = [entry["label"] for entry in item.get("items", [])]
         new_menus[label] = item
         check(
@@ -3010,7 +3078,7 @@ def self_test(screenshot_dir=None):
     for slug in ("power", "emergency", "library"):
         for _name, body in field.GUIDE.cards(slug):
             guide4_pictures.extend(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body))
-    check(len(guide4_pictures) == 8, f"power and emergency diagrams {len(guide4_pictures)}", failures)
+    check(len(guide4_pictures) == 17, f"power and emergency diagrams {len(guide4_pictures)}", failures)
     guide4_missing = [rel for rel in guide4_pictures if content.resolve_image(field.GUIDE.directory, rel) is None]
     check(not guide4_missing, f"power and emergency diagrams exist {guide4_missing}", failures)
     guide4_sizes = {
@@ -3024,11 +3092,106 @@ def self_test(screenshot_dir=None):
     for slug in ("navigation", "sanitation", "clothing", "weather"):
         for _name, body in field.GUIDE.cards(slug):
             pictures.extend(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body))
-    check(len(pictures) == 16, f"new topic diagrams {len(pictures)}", failures)
+    check(len(pictures) == 29, f"new topic diagrams {len(pictures)}", failures)
     missing = [rel for rel in pictures if content.resolve_image(content_dir, rel) is None]
     check(not missing, f"new topic diagrams exist {missing}", failures)
     sizes = {pygame.image.load(str(content.resolve_image(content_dir, rel))).get_size() for rel in pictures if rel not in missing}
     check(sizes <= {(480, 284)}, f"new topic diagrams are 480x284 {sizes}", failures)
+    for home_id, label, count, first, last in (
+        ("home:2", "First aid", 53, "Scene safety and DRABC", "Sources"),
+        ("home:9", "Cooking & preserving", 17, "Flatbread", "Cooking sources"),
+        ("home:11", "Animals & livestock", 13, "Before you start (UK rules)", "Animals sources"),
+        ("home:13", "Hunting & fishing", 13, "The law first (UK)", "Hunting & fishing sources"),
+    ):
+        topic_app = App(show_cave=False)
+        topic_app.activate(home_id)
+        topic_labels = [item["label"] for item in topic_app.current().get("items", [])]
+        check(
+            topic_app.current()["kind"] == "menu"
+            and topic_app.current()["title"] == label.upper()
+            and len(topic_labels) == count
+            and topic_labels[0] == first
+            and topic_labels[-1] == last,
+            f"{label} menu {topic_labels}",
+            failures,
+        )
+    repairs_item = more.current()["items"][4]
+    repairs_labels = [entry["label"] for entry in repairs_item.get("items", [])]
+    check(
+        repairs_item.get("action") == "menu"
+        and len(repairs_labels) == 14
+        and repairs_labels[0] == "Tools to keep"
+        and repairs_labels[-1] == "Repairs sources",
+        f"repairs menu {repairs_labels}",
+        failures,
+    )
+    guide6_pictures = []
+    for slug in ("firstaid", "cooking", "animals", "hunting", "repairs"):
+        for _name, body in field.GUIDE.cards(slug):
+            guide6_pictures.extend(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body))
+    check(len(guide6_pictures) == 32, f"first aid, cooking, animals, hunting and repairs diagrams {len(guide6_pictures)}", failures)
+    guide6_missing = [rel for rel in guide6_pictures if content.resolve_image(content_dir, rel) is None]
+    check(not guide6_missing, f"batch 6 diagrams exist {guide6_missing}", failures)
+    guide6_sizes = {
+        pygame.image.load(str(content.resolve_image(content_dir, rel))).get_size()
+        for rel in guide6_pictures
+        if rel not in guide6_missing
+    }
+    check(guide6_sizes <= {(480, 284)}, f"batch 6 diagrams are 480x284 {guide6_sizes}", failures)
+
+    for home_id, label, own, first, subs, searched in GUIDE7_MENUS:
+        topic_app = App(show_cave=False)
+        topic_app.activate(home_id)
+        items = topic_app.current().get("items", [])
+        labels = [item["label"] for item in items]
+        want = own + len(subs) + (1 if searched else 0)
+        check(
+            topic_app.current()["kind"] == "menu"
+            and topic_app.current()["title"] == label.upper()
+            and len(items) == want
+            and labels[0] == first
+            and labels[own:own + len(subs)] == [sub[0] for sub in subs]
+            and (not searched or items[-1].get("action") == "search"),
+            f"{label} menu {labels}",
+            failures,
+        )
+        for offset, (sub_label, count, sub_first, sub_last) in enumerate(subs):
+            item = items[own + offset] if own + offset < len(items) else {}
+            if count == 1:
+                check(item.get("action") == "sheet" and item.get("label") == sub_label, f"{label}/{sub_label} sheet", failures)
+                continue
+            sub_labels = [entry["label"] for entry in item.get("items", [])]
+            check(
+                item.get("action") == "menu"
+                and len(sub_labels) == count
+                and sub_labels[:1] == [sub_first]
+                and sub_labels[-1:] == [sub_last],
+                f"{label}/{sub_label} menu {sub_labels}",
+                failures,
+            )
+        # Walk into the first sub-menu, open its first card, and come back out.
+        walker = App(show_cave=False)
+        walker.activate(home_id)
+        walker.activate(f"menu:{own}")
+        check(walker.current()["kind"] == "menu" and walker.current()["title"] == subs[0][0].upper(), f"{label} opens {subs[0][0]}", failures)
+        walker.activate("menu:0")
+        check(walker.current()["kind"] == "reader" and walker.current()["title"] == subs[0][2].upper(), f"{label} sub-menu card opens", failures)
+        walker.back()
+        walker.back()
+        check(walker.current()["kind"] == "menu" and walker.current()["title"] == label.upper(), f"{label} back from sub-menu", failures)
+    guide7_pictures = []
+    for slug in GUIDE7_SLUGS:
+        for _name, body in field.GUIDE.cards(slug):
+            guide7_pictures.extend(re.findall(r"!\[[^\]]*\]\(([^)]+)\)", body))
+    check(len(guide7_pictures) == GUIDE7_PICTURES, f"batch 7 diagrams {len(guide7_pictures)}", failures)
+    guide7_missing = [rel for rel in guide7_pictures if content.resolve_image(content_dir, rel) is None]
+    check(not guide7_missing, f"batch 7 diagrams exist {guide7_missing}", failures)
+    guide7_sizes = {
+        pygame.image.load(str(content.resolve_image(content_dir, rel))).get_size()
+        for rel in guide7_pictures
+        if rel not in guide7_missing
+    }
+    check(guide7_sizes <= {(480, 284)}, f"batch 7 diagrams are 480x284 {guide7_sizes}", failures)
 
     with tempfile.TemporaryDirectory() as tmp:
         img_dir = os.path.join(tmp, "img")
@@ -3510,6 +3673,11 @@ def self_test(screenshot_dir=None):
         home = App(show_cave=True)
         home.draw(canvas)
         pygame.image.save(canvas, os.path.join(screenshot_dir, "home.png"))
+        home_two = App(show_cave=True)
+        home_two.draw(canvas)
+        home_two.activate("home-next")
+        home_two.draw(canvas)
+        pygame.image.save(canvas, os.path.join(screenshot_dir, "home_page2.png"))
         section = App(show_cave=False)
         section.activate("home:0")
         section.activate("menu:0")
@@ -3596,6 +3764,24 @@ def self_test(screenshot_dir=None):
             ("mentalhealth", "Calm breathing", "mentalhealth_breathing_card"),
             ("growing", "Three Sisters", "growing_three_sisters_card"),
             ("growing", "Potatoes", "growing_potatoes_card"),
+            ("firstaid", "Stroke: FAST", "firstaid_fast_card"),
+            ("firstaid", "Triage: many hurt", "firstaid_triage_card"),
+            ("firstaid", "Nosebleed", "firstaid_nosebleed_card"),
+            ("cooking", "Rocket stove", "cooking_rocket_card"),
+            ("cooking", "Water-bath canning", "cooking_canning_card"),
+            ("hunting", "Kill and clean a fish", "hunting_fish_card"),
+            ("animals", "Chickens: housing", "animals_coop_card"),
+            ("repairs", "Fix a bike puncture", "repairs_puncture_card"),
+            ("sanitation", "Bleach for cleaning", "sanitation_bleach_card"),
+            ("fire_light", "Hand drill", "fire_hand_drill_card"),
+            ("fire_build", "Swedish torch", "fire_swedish_card"),
+            ("shelter_wild", "Hammock and tarp", "shelter_hammock_card"),
+            ("shelter_town", "Car as shelter", "shelter_car_card"),
+            ("water_treat", "Biosand filter", "water_biosand_card"),
+            ("food_fruit", "Sweet chestnut or horse chestnut?", "food_chestnut_card"),
+            ("nav_nocompass", "Improvised compass", "nav_needle_card"),
+            ("emergency", "Fire at home", "emergency_fire_card"),
+            ("tools", "Bow saw frame", "tools_bow_saw_card"),
         ):
             body = dict(field.GUIDE.cards(slug)).get(card_name, "")
             check(bool(body), f"screenshot card {slug}/{card_name}", failures)

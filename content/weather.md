@@ -209,6 +209,90 @@ Met Office warnings use colours. Each one mixes how bad the impact could be with
 
 Warnings cover rain, thunderstorms, wind, snow, lightning, ice, extreme heat and fog. Listen to BBC local radio or Radio 4 on batteries if the internet is down. See Signals & Radio.
 
+## Barometer: reading the numbers
+
+Use: you have a barometer, or a phone or watch that shows pressure (hPa or mb, the same thing).
+
+1. Read it at the same height. If you walk uphill, the reading drops about 1 hPa for every 8 m climbed. That is not weather. Read it in camp or set the watch to a fixed height.
+
+2. Compare with 3 hours ago. The Met Office calls a change of 0.1 to 1.5 hPa slow, 1.6 to 3.5 normal, 3.6 to 6 quick, more than 6 very rapid.
+
+3. Falling quickly: a deep low and strong winds are likely within hours. Get to shelter or lower ground.
+
+4. Rising after rain: clearing, often with showers and colder air.
+
+5. Normal pressure is about 1013 hPa. Over 1025 is a high, usually settled. Below about 990 is a deep low.
+
+![barometer tendency over 3 hours: slow, normal, quick and very rapid falls, with what each means](img/wx_barometer.png)
+
+Mistakes: reading the number alone. The change matters more.
+
+Check: write the reading and time down each morning and evening. You will learn your local patterns.
+
+## Wind by eye (Beaufort)
+
+Use: to judge wind strength without a meter.
+
+Force 3 (gentle, 8-12 mph): leaves and small twigs keep moving. Flags flap.
+
+Force 4 (moderate, 13-18 mph): dust and loose paper lift. Small branches move.
+
+Force 5 (fresh, 19-24 mph): small trees in leaf sway. Little waves on ponds.
+
+Force 6 (strong, 25-31 mph): big branches move. Wires whistle. Umbrellas are hard to use.
+
+Force 7 (near gale, 32-38 mph): whole trees move. Hard to walk into the wind.
+
+Force 8 (gale, 39-46 mph): twigs break off. Walking is very hard.
+
+Force 9 and over: slates come off roofs, branches and trees fall.
+
+![Beaufort by eye: tree at force 3 twigs moving, 5 small tree sways, 7 whole tree bends, 9 branches break](img/wx_beaufort.png)
+
+Pitch tarps low and side-on at force 5 and over. Keep out of woods at force 8 and over: falling branches kill.
+
+Check: wind on hills and ridges is often twice what you feel in the valley.
+
+## Hill and mountain weather
+
+Use: before and during any walk on high ground.
+
+1. It gets colder as you climb: about 1 °C for every 150 m, more in dry air. A mild 12 °C in the valley can be 5 °C on a 1000 m summit.
+
+2. Wind gets stronger with height and funnels through gaps and over ridges. Add wind chill: a strong wind can make it feel 10 °C colder.
+
+3. Cloud on the tops can come down fast. Plan your route and bearings before you go up.
+
+4. Look for mountain forecasts: the Met Office mountain forecast and MWIS give summit wind, temperature and cloud base.
+
+5. Set a turn-back time and a turn-back rule (for example, gusts over 40 mph or cloud below your route), and stick to it.
+
+![hill weather: valley 12 C, temperature falling about 1 C per 150 m to 5 C on the summit, wind stronger, cloud base on the tops](img/wx_hill.png)
+
+Mistakes: judging the hill from the car park; forgetting that the sun sets earlier behind a ridge.
+
+Check: you carry an extra warm layer, hat, gloves and waterproofs even in summer.
+
+## Signs from plants and animals
+
+Use: as extra clues over the next few hours. Never instead of a forecast.
+
+1. Heavy dew or frost on the grass at dawn means the night was clear and calm. A fine morning often follows.
+
+2. No dew on a clear-looking morning, with wind: cloud or rain may be on the way.
+
+3. Swallows and swifts feed lower when humid, unsettled air keeps insects low. Often a few hours before rain.
+
+4. Smells get stronger and sounds carry further when the air is damp and still before rain.
+
+5. Pine cones open in dry air and close when it is damp. Many flowers, such as daisies and dandelions, close in dull, damp weather.
+
+![signs: dew on a web after a clear night, swallows feeding low, pine cone closed in damp air](img/wx_signs.png)
+
+Limits: these tell you about now and the next few hours, not tomorrow. Animal behaviour has many causes. Cows lying down mean nothing reliable.
+
+Check: two or three signs that agree with the sky and the pressure.
+
 ## Weather sources
 
 Written in our own words from public guidance:
@@ -222,3 +306,7 @@ GOV.UK and Environment Agency floods: gov.uk/help-during-flood, gov.uk/guidance/
 NHS: nhs.uk/live-well/seasonal-health/heatwave-how-to-cope-in-hot-weather, nhs.uk/live-well/seasonal-health/keep-warm-keep-well, nhs.uk/conditions/hypothermia
 
 A forecast beats any sign in the sky. Get one when you can.
+
+Met Office: pressure tendency terms (slowly, quickly, very rapidly), the Beaufort wind force scale, mountain forecasts. Mountain Weather Information Service (mwis.org.uk): summit wind, temperature lapse and cloud base.
+
+Royal Meteorological Society (rmets.org): folk weather signs and how far to trust them.

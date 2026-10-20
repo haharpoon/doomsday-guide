@@ -2,6 +2,7 @@
 title: Food
 order: 6
 book: wikipedia_en_medicine_nopic_2026-04
+intro: Know it for certain or leave it. Deadly plants first, then greens, fruit and nuts, the shore and mushrooms.
 ---
 
 ## Food
@@ -46,71 +47,25 @@ The law: picking leaves, flowers, fruit and seeds of common plants is usually fi
 
 Never eat wild mushrooms unless an expert you trust has checked them in your hand. Mushroom mistakes kill.
 
-## Nettle and cleavers
+## Seasonal calendar
 
-Stinging nettle: upright, up to 2 m. Pointed, toothed leaves in opposite pairs, covered in stinging hairs. Tiny greenish flowers hang in strings near the top.
+Use: knowing what to look for each month in Britain. Dates shift with the weather and how far north you are.
 
-Pick the top 4 to 6 leaves of young plants, spring to early summer. Wear gloves or pinch the leaves firmly from underneath. Boiling or steaming for a couple of minutes removes the sting. Eat like spinach, or in soup or tea. Avoid old plants once they flower: the leaves get tough and gritty.
+Spring (March to May): nettle tops, wild garlic, cleavers, dandelion, chickweed, sorrel, young hawthorn leaves. Birch sap from late February to April.
 
-Cleavers (goosegrass, sticky willy): a scrambling plant that sticks to clothes. Square stems with tiny hooked hairs. Narrow leaves in rings (whorls) of 6 to 8 round the stem. Tiny white four-petalled flowers, then small round hooked seeds.
+Summer (June to August): elderflower (June), sorrel, plantain, marsh samphire (July and August), bilberries (July to September), the first blackberries (August).
 
-Pick young shoots in spring and cook them as greens or in soup. Older plants are too hairy and stringy. The hard ripe seeds can be roasted as a coffee substitute.
+Autumn (September to November): blackberries, elderberries (cooked), hazelnuts, sweet chestnuts, beech nuts, acorns (leached), rosehips, haws, crab apples, sloes (best after the first frost). Fungi, for experts only.
 
-Both are safe beginner plants. Nettle has no dangerous lookalike that also stings.
+Winter (December to February): chickweed, sea beet, seaweeds, mussels in the cold months, dandelion leaves, burdock roots. Stored nuts, dried fruit and roots.
 
-## Dandelion
+All year: fish, shellfish where safe, nettles in sheltered spots.
 
-Leaves in a flat rosette from the root, long and deeply toothed. One hollow, leafless stem per flower, with milky sap. One bright yellow flower head on each stem, closing at night, then a round seed clock.
+Mistakes: picking past its season (tough, bitter or rotten); one plant only (you need variety).
 
-All parts are edible. Young leaves raw in salad, older leaves cooked (they get bitter). Flowers raw or in batter. Roots scrubbed and cooked, or dried, roasted and ground as a coffee substitute.
+Check: you know what is in season this month before you set out.
 
-Lookalikes such as cat's-ear and hawkbits are not dangerous, but they have branched or hairy stems. True dandelion: smooth, hollow, unbranched stem, one flower.
-
-Dandelion leaf is a diuretic: it makes you pee more. Do not lean on it when water is short.
-
-## Blackberry and hazelnut
-
-Blackberry (bramble): thorny, arching stems. Leaves of 3 to 5 toothed leaflets. White or pink flowers, then berries that ripen from green to red to black, late summer to autumn. Pick ripe, black berries above dog height. Each berry is a cluster of small round bobbles. No poisonous UK berry looks like that on a thorny bramble.
-
-Hazel: shrub or small tree, often many stems. Round, soft, hairy leaves with a pointed tip and double-toothed edge. Yellow catkins ("lambs' tails") in late winter. Nuts in a frilly green husk, in clusters of 1 to 4, ripe in September and October when the shell turns brown. Squirrels get most of them. Eat raw or roasted. Nuts are rich in fat and protein: high calories for little weight.
-
-Throw out any nut with a hole in it, or that looks or tastes mouldy.
-
-## Wild garlic or lily of the valley?
-
-Wild garlic (ramsons) is a top spring food. Lily of the valley grows in the same woods, looks similar before it flowers, and is highly poisonous: it contains heart poisons.
-
-Wild garlic: each leaf rises on its own stalk straight from the ground. Leaves broad, pointed, soft and floppy. Flowers are white stars, about 25 in a round ball-shaped head on a bare stem. Crush a leaf: it smells strongly of garlic.
-
-Lily of the valley: usually two or three leaves wrapped around one stem, stiffer and shinier. Flowers are small white bells hanging down one side of the stem. Crushed leaves do not smell of garlic.
-
-The smell test is not enough on its own. After picking garlic, your fingers smell of garlic and every leaf seems to. Check the growth habit of each leaf you pick. Do not grab handfuls. Lords-and-ladies (arum) leaves also grow among wild garlic and are poisonous: they are arrow-shaped.
-
-Eat the leaves raw or wilted, best before the flowers open. The flowers are edible too.
-
-![wild garlic: single leaves from the ground, star flower ball. Lily of the valley: paired leaves on a stem, hanging bells](img/food_garlic_lily.png)
-
-## Deadly: hemlock and water dropwort
-
-Many plants in the carrot family have white umbrella-shaped flower heads and feathery leaves. Some are deadly. The universal advice is: do not eat any wild plant from the carrot family unless you are an expert.
-
-Hemlock: often 1.5 to 2.5 m tall. Smooth, hollow stems with purple blotches and spots, and no hairs. Leaves finely divided, like a fern or parsley. Mature plants smell unpleasant, like mice. Grows on verges, ditches and stream edges. A small amount of any part can paralyse breathing and kill.
-
-Hemlock water dropwort: one of the most poisonous plants in the UK. Grows in and beside water: streams, ditches, canals and wet woods. Up to 1.5 m. Grooved hollow stems, parsley-like leaves, white umbrella flowers. The roots are fat, pale tubers like fingers or small parsnips, and are often washed out of banks. Mistaken for wild celery, wild parsnip or water parsnip. Eating even a little root can cause fits and death within hours. Wash your hands after touching it.
-
-Cow parsley, wild carrot and others are edible, but they look too close to these two. Do not take the risk.
-
-![hemlock: smooth stem with purple blotches, feathery leaf, white umbrella flowers; water dropwort roots like pale fingers](img/food_hemlock.png)
-
-## Deadly: foxglove and death cap
-
-Foxglove: tall spike of pink-purple tube flowers with dark spots inside, June to September. In the first year it is only a rosette of soft, hairy, toothed leaves, and that is when it is mistaken for comfrey or other greens. Comfrey leaves have smooth edges. Foxglove contains heart poisons. Every part is toxic. Do not eat comfrey either: it contains chemicals that damage the liver.
-
-Death cap: a mushroom found in deciduous woods, often under oak and beech. Cap olive-green to yellowish, 5 to 15 cm. White gills. A floppy ring on the stem, and a swollen base sitting in a cup, often hidden in the soil. Young "button" death caps look like edible mushrooms.
-
-Half a cap can kill an adult. Symptoms may not start for 6 to 24 hours, then seem to get better, while the liver is failing. Death cap causes most mushroom deaths worldwide. Cooking does not destroy the poison.
-
-If anyone has eaten a plant or fungus that might be poisonous: get medical help at once, even if they feel fine. Take a sample of the plant. Do not make them vomit.
+![foraging year: spring greens, summer flowers and berries, autumn fruit and nuts, winter roots and shore food](img/fd_calendar.png)
 
 ## Universal edibility test: last resort
 
@@ -123,6 +78,78 @@ In the UK, with time to search, you are far better off finding plants you know. 
 If you are truly stranded somewhere unknown, the manual's outline: test only plants that are plentiful, one plant and one part at a time. Reject anything with milky sap, a bitter or soapy taste, an almond smell, carrot-like or parsley-like leaves, three-part leaves, beans or seeds in pods, or fine hairs and spines. Then rub on skin, hold to the lip, hold in the mouth, and swallow a tiny amount, waiting hours at each stage, and about 24 hours in total per part.
 
 Stop at the first burning, numbness, bitterness or sickness. Even a plant that passes can make you ill in large amounts.
+
+## Insects and grubs
+
+Use: protein and fat when other food is scarce. Many people in the world eat them every day.
+
+Good to eat, cooked: grasshoppers and crickets (pull off legs and wings), beetle grubs from rotten logs, ants and their eggs, termites, earthworms, land snails.
+
+1. Collect by hand, in a tin. Look under logs, bark, stones and in rotten wood.
+
+2. Earthworms and snails: keep them a day in a clean container with damp leaves so they empty their guts.
+
+3. Cook everything: roast, fry or boil. Raw insects can carry parasites.
+
+4. Grind roasted insects into a paste or powder and add to stew.
+
+Do not eat: brightly coloured, hairy or stinging insects, anything that smells bad, caterpillars, flies, ticks, mosquitoes, spiders, or slugs and snails that are brightly coloured or from the sea shore.
+
+People allergic to shellfish may react to insects.
+
+Mistakes: eating them raw; collecting from sprayed fields.
+
+Check: cooked until hot all through and crisp.
+
+## Calories and rationing
+
+As a guide, the NHS says an average man needs about 2,500 kcal a day and an average woman about 2,000. Cold, hard work and carrying loads can double that. Children need less but should not go hungry first.
+
+Water comes before food. If you have less than about 1 litre of water a day, eat little, and avoid dry, salty and high-protein food: digesting them uses water. Sugary and starchy food is easier on your water.
+
+Rationing:
+
+1. Count everything: food, water, people and days you may need to last.
+
+2. Eat perishable food first, then canned, then dried.
+
+3. Ration food, not water. Drink what you need if you have it.
+
+4. Share equally, with a little extra to anyone doing heavy work, ill, pregnant or breastfeeding.
+
+5. Rest more and work in the cool hours. Wasted energy is wasted food.
+
+6. Keep warm. Shivering burns calories fast.
+
+Rough energy: fats and oils about 9 kcal per gram. Sugar, flour, rice, oats, protein about 4. Nuts about 6. A handful of nuts gives more than a bucket of greens.
+
+Most foraged greens give almost no calories. They are for vitamins. Your calories come from stores, nuts, seeds, roots, fish and meat.
+
+## Emergency calories
+
+Use: hard times, heavy work or cold. Calories keep you warm and thinking.
+
+Rough calories per 100 g:
+- Oil, butter, lard: about 900
+- Nuts, peanut butter, seeds: about 550 to 650
+- Chocolate, biscuits: about 500
+- Sugar, honey: about 300 to 400
+- Dry oats, rice, pasta, flour, dried beans: about 350
+- Bread: about 250
+- Tinned beans, potatoes: about 80 to 100
+- Leafy wild greens: about 20 to 40
+
+1. Fat and starch first. Add oil or fat to everything.
+
+2. Lean meat alone is not enough. Eat the fat, marrow and organs too.
+
+3. Nuts, seeds and roots are the best wild calories. Greens are for vitamins.
+
+4. Eat little and often. Hot food helps more than cold.
+
+Mistakes: filling up on greens and tea; lean rabbit only for weeks (you lose weight and get ill).
+
+Check: count roughly: 2,000 to 2,500 kcal each a day, more in cold and hard work.
 
 ## Drying and smoking
 
@@ -137,6 +164,8 @@ Rough guide from the US Army manual: meat smoked overnight keeps about a week. T
 Fruit, berries, mushrooms you know and sliced roots dry the same way.
 
 Store dried food in a dry, sealed bag or tin. If it gets damp, smells off or grows mould, throw it out.
+
+For bread, pickles, fermenting, bottling and storing food, see Cooking & preserving.
 
 ![smoking rack: meat strips on a frame above coals, cloth wall to hold smoke](img/food_smoke_rack.png)
 
@@ -175,43 +204,3 @@ Ash bake: roots and tubers can be buried in hot ash under the coals.
 Always cook meat and fish until the centre is steaming hot, with no pink juices.
 
 ![stone boiling: stones heated in fire, lifted with sticks into a lined pit of water](img/food_stone_boil.png)
-
-## Calories and rationing
-
-As a guide, the NHS says an average man needs about 2,500 kcal a day and an average woman about 2,000. Cold, hard work and carrying loads can double that. Children need less but should not go hungry first.
-
-Water comes before food. If you have less than about 1 litre of water a day, eat little, and avoid dry, salty and high-protein food: digesting them uses water. Sugary and starchy food is easier on your water.
-
-Rationing:
-
-1. Count everything: food, water, people and days you may need to last.
-
-2. Eat perishable food first, then canned, then dried.
-
-3. Ration food, not water. Drink what you need if you have it.
-
-4. Share equally, with a little extra to anyone doing heavy work, ill, pregnant or breastfeeding.
-
-5. Rest more and work in the cool hours. Wasted energy is wasted food.
-
-6. Keep warm. Shivering burns calories fast.
-
-Rough energy: fats and oils about 9 kcal per gram. Sugar, flour, rice, oats, protein about 4. Nuts about 6. A handful of nuts gives more than a bucket of greens.
-
-Most foraged greens give almost no calories. They are for vitamins. Your calories come from stores, nuts, seeds, roots, fish and meat.
-
-## Food sources
-
-Written in our own words from:
-
-Food Standards Agency / UK Government, Guidance for safe foraging (Open Government Licence): gov.uk/government/publications/guidance-for-safe-foraging/guidance-for-safe-foraging
-
-Woodland Trust (facts only): woodlandtrust.org.uk/blog/2020/04/edible-garden-weeds, woodlandtrust.org.uk/trees-woods-and-wildlife/plants/wild-flowers/wild-garlic, woodlandtrust.org.uk/trees-woods-and-wildlife/plants/wild-flowers/lily-of-the-valley, woodlandtrust.org.uk/trees-woods-and-wildlife/plants/wild-flowers/foxglove, woodlandtrust.org.uk/trees-woods-and-wildlife/plants/wild-flowers/bramble, woodlandtrust.org.uk/trees-woods-and-wildlife/british-trees/a-z-of-british-trees/hazel, woodlandtrust.org.uk/trees-woods-and-wildlife/fungi-and-lichens/deathcap, woodlandtrust.org.uk/blog/2020/07/uk-poisonous-plants, woodlandtrust.org.uk/visiting-woods/things-to-do/foraging/foraging-guidelines
-
-US Army ATP 3-50.21 Survival, chapter 4: food needs, water and food, edibility test, sun drying, smoking, stone boiling, baking (public domain, armypubs.army.mil).
-
-NHS calories: nhs.uk/live-well/healthy-weight/managing-your-weight/understanding-calories
-
-National Center for Home Food Preservation (University of Georgia): nchfp.uga.edu/how/dry and nchfp.uga.edu/how/cure-smoke
-
-Food Standards Agency cooking: food.gov.uk/safety-hygiene/cooking-your-food
