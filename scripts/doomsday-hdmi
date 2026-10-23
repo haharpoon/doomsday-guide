@@ -1,0 +1,541 @@
+#!/usr/bin/env python3
+"""Switch the Pi 3B between TFT-only boot and an HDMI framebuffer.
+
+The touch UI finds the panel by the sysfs name fb_ili9486 and, when a
+second framebuffer with an HDMI name exists, copies each frame onto it.
+This script only edits the boot files that decide whether that second
+framebuffer is created. It does not change the running kernel. Reboot
+after ``on`` or ``off``.
+
+``off`` (the default the image ships with) is the known-good panel setup:
+
+  config.txt    dtoverlay=disable-fwfb
+  cmdline.txt   initcall_blacklist=simplefb_driver_init
+
+Those two were added because the firmware's HDMI framebuffer was taking
+/dev/fb0 and the panel was not. With them set, HDMI is off and the
+ILI9486 panel is the only framebuffer.
+
+``on`` comments out disable-fwfb, drops simplefb_driver_init from the
+blacklist, and asks the firmware to bring HDMI up at 1280x720 even when
+nothing is plugged in at boot (a projector connected afterwards has to
+accept that mode). The panel overlay is left alone.
+
+What that does on Pi OS Trixie (kernel 6.12), and what is uncertain
+without this exact board on the bench:
+
+* Removing disable-fwfb and the simplefb blacklist is the switch that
+  lets the firmware publish a framebuffer again. It is not always the
+  whole story. dtoverlay=vc4-kms-v3d (the Trixie default) disables the
+  legacy /soc/fb node. The firmware then creates a simple-framebuffer
+  for early boot, and KMS replaces it ("switching to vc4 from simple")
+  with one DRM fbdev device, usually named vc4drmfb. That is the device
+  the mirror writes. simple-framebuffer does not stay mapped to HDMI
+  once KMS has taken the connector.
+
+* With vc4-kms-v3d commented out, the HDMI device is the legacy
+  framebuffer named BCM2708 FB (or simple-framebuffer if /soc/fb never
+  comes up). This script does not comment out vc4-kms-v3d. Doing that
+  turns off the accelerated display path, and it is only the fallback
+  if no HDMI framebuffer appears after reboot.
+
+* hdmi_force_hotplug=1 plus hdmi_group=1 / hdmi_mode=4 (CEA 1280x720p60)
+  allocates the firmware mode at boot, which is what makes a projector
+  plugged in later sync to a known picture. KMS does its own hotplug.
+  The cmdline token video=HDMI-A-1:1280x720@60e forces that connector
+  enabled at 720p60 even with no display detected (the trailing e).
+  The fbdev node does not reliably resize when a different display is
+  attached afterwards, so the mirror keeps using the mode from boot.
+  720p is deliberate on a Pi 3B with 1GB: a 1080p 32-bit frame is about
+  8MB and the splash is already using the 20fps budget on the SPI panel.
+
+* Framebuffer numbers are not stable. tty1 follows whichever device
+  registers first, which may be HDMI, so boot text can move off the
+  panel. field_touch and /etc/profile.d/doomsday-fb.sh select the panel
+  by name, not by fb0 or fb1.
+
+* max_framebuffers=2 is a Pi 4 firmware setting for a second HDMI port.
+  It does not create the SPI panel's framebuffer. This script leaves it.
+
+Boot files are /boot/firmware (Trixie and Bookworm) or /boot. Each file
+is copied to a timestamped .doomsday-bak beside it before it is changed.
+Running the same command again changes nothing and writes no backup.
+"""
+
+import os
+import re
+import shutil
+import sys
+import time
+
+DISABLE_OVERLAY = "dtoverlay=disable-fwfb"
+DISABLE_MARK = "disabled by doomsday-hdmi"
+SIMPLEFB_SYMBOL = "simplefb_driver_init"
+VIDEO_TOKEN = "video=HDMI-A-1:1280x720@60e"
+BLOCK_BEGIN = "# BEGIN DOOMSDAY HDMI"
+BLOCK_END = "# END DOOMSDAY HDMI"
+HDMI_BLOCK = """# BEGIN DOOMSDAY HDMI
+# Managed by doomsday-hdmi. HDMI framebuffer beside the TFT.
+# CEA 720p60 is allocated at boot, including with no projector plugged in.
+hdmi_force_hotplug=1
+hdmi_group=1
+hdmi_mode=4
+# END DOOMSDAY HDMI
+"""
+
+ACTIVE_DISABLE = re.compile(
+    r"^(\s*)dtoverlay\s*=\s*disable-fwfb\b\s*(?:#.*)?$",
+    re.IGNORECASE,
+)
+MARKED_DISABLE = re.compile(
+    r"^(\s*)#\s*dtoverlay\s*=\s*disable-fwfb\b.*\bdisabled by doomsday-hdmi\s*$",
+    re.IGNORECASE,
+)
+SECTION = re.compile(r"^\[([^\]]+)\]\s*(?:#.*)?$")
+BLOCK = re.compile(
+    r"# BEGIN DOOMSDAY HDMI\n.*?# END DOOMSDAY HDMI\n?",
+    re.DOTALL,
+)
+
+
+def boot_dir():
+    override = os.environ.get("DOOMSDAY_BOOT", "").strip()
+    if override:
+        return override
+    for path in ("/boot/firmware", "/boot"):
+        if os.path.isfile(os.path.join(path, "config.txt")) and os.path.isfile(
+            os.path.join(path, "cmdline.txt")
+        ):
+            return path
+    return None
+
+
+def backup(path):
+    stamp = time.strftime("%Y%m%d%H%M%S")
+    dest = f"{path}.doomsday-bak-{stamp}"
+    suffix = 0
+    while os.path.exists(dest):
+        suffix += 1
+        dest = f"{path}.doomsday-bak-{stamp}-{suffix}"
+    shutil.copy2(path, dest)
+    return dest
+
+
+def read_text(path):
+    with open(path, encoding="utf-8") as handle:
+        return handle.read()
+
+
+def write_if_changed(path, new_text):
+    old = read_text(path)
+    if old == new_text:
+        return None
+    copied = backup(path)
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(new_text)
+    return copied
+
+
+def _lines(text):
+    return text.splitlines()
+
+
+def has_active_disable(text):
+    return any(ACTIVE_DISABLE.match(line) for line in _lines(text))
+
+
+def has_marked_disable(text):
+    return any(MARKED_DISABLE.match(line) for line in _lines(text))
+
+
+def has_block(text):
+    return BLOCK_BEGIN in text and BLOCK_END in text
+
+
+def comment_disable(text):
+    changed = []
+    for line in text.splitlines(keepends=True):
+        bare = line[:-1] if line.endswith("\n") else line
+        ending = "\n" if line.endswith("\n") else ""
+        if ACTIVE_DISABLE.match(bare):
+            indent = ACTIVE_DISABLE.match(bare).group(1)
+            changed.append(f"{indent}# {DISABLE_OVERLAY}  # {DISABLE_MARK}{ending}")
+        else:
+            changed.append(line)
+    return "".join(changed)
+
+
+def restore_disable(text):
+    changed = []
+    for line in text.splitlines(keepends=True):
+        bare = line[:-1] if line.endswith("\n") else line
+        ending = "\n" if line.endswith("\n") else ""
+        match = MARKED_DISABLE.match(bare)
+        if match:
+            changed.append(f"{match.group(1)}{DISABLE_OVERLAY}{ending}")
+        else:
+            changed.append(line)
+    return "".join(changed)
+
+
+def remove_block(text):
+    return BLOCK.sub("", text)
+
+
+def _section_name(line):
+    match = SECTION.match(line.strip())
+    if not match:
+        return None
+    return match.group(1).strip().lower()
+
+
+def insert_in_all(text, chunk):
+    """Insert ``chunk`` at the end of the [all] section, or append [all]."""
+    if not chunk.endswith("\n"):
+        chunk += "\n"
+    lines = text.splitlines(keepends=True)
+    all_at = None
+    for index, line in enumerate(lines):
+        if _section_name(line) == "all":
+            all_at = index
+            break
+    if all_at is None:
+        body = text
+        if body and not body.endswith("\n"):
+            body += "\n"
+        if body and not body.endswith("\n\n"):
+            body += "\n"
+        return body + "[all]\n" + chunk
+    end = len(lines)
+    for index in range(all_at + 1, len(lines)):
+        if _section_name(lines[index]) is not None:
+            end = index
+            break
+    return "".join(lines[:end] + [chunk] + lines[end:])
+
+
+def config_for_on(text):
+    text = comment_disable(text)
+    text = remove_block(text)
+    return insert_in_all(text, HDMI_BLOCK)
+
+
+def config_for_off(text):
+    text = restore_disable(text)
+    text = remove_block(text)
+    if not has_active_disable(text):
+        text = insert_in_all(text, DISABLE_OVERLAY + "\n")
+    return text
+
+
+def cmdline_tokens(text):
+    return text.split()
+
+
+def render_cmdline(tokens, original):
+    body = " ".join(tokens)
+    if original.endswith("\n") or original == "":
+        return body + "\n"
+    return body
+
+
+def _blacklist_items(token):
+    return [item for item in token.split("=", 1)[1].split(",") if item]
+
+
+def cmdline_for(text, enable_hdmi):
+    tokens = []
+    seen_video = False
+    for token in cmdline_tokens(text):
+        if token.startswith("initcall_blacklist="):
+            items = _blacklist_items(token)
+            if enable_hdmi:
+                items = [item for item in items if item != SIMPLEFB_SYMBOL]
+            elif SIMPLEFB_SYMBOL not in items:
+                items.append(SIMPLEFB_SYMBOL)
+            if items:
+                tokens.append("initcall_blacklist=" + ",".join(items))
+            continue
+        if token == VIDEO_TOKEN:
+            seen_video = True
+            if enable_hdmi:
+                tokens.append(token)
+            continue
+        tokens.append(token)
+    if not enable_hdmi and not any(token.startswith("initcall_blacklist=") for token in tokens):
+        # The blacklist parameter was absent, or the only symbol was removed
+        # above and we are turning HDMI off. Make sure the symbol is present.
+        if not any(SIMPLEFB_SYMBOL in token for token in tokens):
+            tokens.append("initcall_blacklist=" + SIMPLEFB_SYMBOL)
+    if enable_hdmi and not seen_video:
+        tokens.append(VIDEO_TOKEN)
+    if not enable_hdmi:
+        # A blacklist that lost its only symbol was dropped above. Re-add it
+        # when this file never had the parameter to begin with.
+        if not any(token.startswith("initcall_blacklist=") for token in tokens):
+            tokens.append("initcall_blacklist=" + SIMPLEFB_SYMBOL)
+    return render_cmdline(tokens, text)
+
+
+def describe(config, cmdline):
+    active = has_active_disable(config)
+    blocked = any(
+        token.startswith("initcall_blacklist=") and SIMPLEFB_SYMBOL in _blacklist_items(token)
+        for token in cmdline_tokens(cmdline)
+    )
+    block = has_block(config)
+    video = VIDEO_TOKEN in cmdline_tokens(cmdline)
+    off = active and blocked and not block and not video
+    on = (not active) and (not blocked) and block and video
+    if on:
+        mode = "on"
+    elif off:
+        mode = "off"
+    else:
+        mode = "mixed"
+    return mode
+
+
+def kms_note(config):
+    active = False
+    commented = False
+    for line in _lines(config):
+        stripped = line.strip()
+        if re.match(r"dtoverlay\s*=\s*vc4-kms-v3d\b", stripped, re.IGNORECASE):
+            active = True
+        elif re.match(r"#+\s*dtoverlay\s*=\s*vc4-kms-v3d\b", stripped, re.IGNORECASE):
+            commented = True
+    if active:
+        return (
+            "dtoverlay=vc4-kms-v3d is enabled. HDMI will show up as vc4drmfb "
+            "after KMS takes over from simple-framebuffer, not as a second "
+            "legacy BCM2708 FB. The video= token forces HDMI-A-1 on at 720p60."
+        )
+    if commented:
+        return (
+            "dtoverlay=vc4-kms-v3d is commented out. HDMI should come back as "
+            "the firmware framebuffer (BCM2708 FB, or simple-framebuffer)."
+        )
+    return (
+        "dtoverlay=vc4-kms-v3d was not found. If no HDMI framebuffer appears "
+        "after reboot, the firmware framebuffer is the one to look for."
+    )
+
+
+def _check_writable(directory):
+    config = os.path.join(directory, "config.txt")
+    cmdline = os.path.join(directory, "cmdline.txt")
+    missing = [path for path in (config, cmdline) if not os.path.isfile(path)]
+    if missing:
+        sys.stderr.write("doomsday-hdmi: missing " + " and ".join(missing) + "\n")
+        return None
+    if not os.access(config, os.W_OK) or not os.access(cmdline, os.W_OK) or not os.access(directory, os.W_OK):
+        sys.stderr.write("doomsday-hdmi: cannot write the boot files. Run with sudo.\n")
+        return None
+    return config, cmdline
+
+
+def _report_backups(copies):
+    for path in copies:
+        if path:
+            print(f"Backed up to {path}")
+
+
+def cmd_status(directory):
+    config_path = os.path.join(directory, "config.txt")
+    cmdline_path = os.path.join(directory, "cmdline.txt")
+    if not os.path.isfile(config_path) or not os.path.isfile(cmdline_path):
+        sys.stderr.write(f"doomsday-hdmi: no config.txt and cmdline.txt in {directory}\n")
+        return 1
+    config = read_text(config_path)
+    cmdline = read_text(cmdline_path)
+    mode = describe(config, cmdline)
+    print(f"doomsday-hdmi: {mode}")
+    print(f"boot files: {directory}")
+    if mode == "off":
+        print("TFT only. The firmware HDMI framebuffer stays disabled.")
+    elif mode == "on":
+        print("HDMI framebuffer requested at 1280x720. The TFT overlay is unchanged.")
+    else:
+        print("Boot files do not match a full on or off setup.")
+    print(kms_note(config))
+    print("Panel and HDMI devices are chosen by name after boot:")
+    print("  cat /sys/class/graphics/fb*/name")
+    print("Reboot before a change to these files takes effect.")
+    return 0
+
+
+def cmd_apply(directory, enable_hdmi):
+    found = _check_writable(directory)
+    if found is None:
+        return 1
+    config_path, cmdline_path = found
+    config = read_text(config_path)
+    cmdline = read_text(cmdline_path)
+    new_config = config_for_on(config) if enable_hdmi else config_for_off(config)
+    new_cmdline = cmdline_for(cmdline, enable_hdmi)
+    copies = [
+        write_if_changed(config_path, new_config),
+        write_if_changed(cmdline_path, new_cmdline),
+    ]
+    mode = "on" if enable_hdmi else "off"
+    if not any(copies):
+        print(f"doomsday-hdmi: already {mode}. No files changed.")
+    else:
+        _report_backups(copies)
+        print(f"doomsday-hdmi: boot config set to {mode}.")
+    print(kms_note(new_config))
+    if enable_hdmi:
+        print("HDMI is requested as a second framebuffer. The TFT is still fb_ili9486.")
+        print("A projector plugged in after boot needs to accept 1280x720p60.")
+        print("If no HDMI framebuffer appears after reboot, comment out")
+        print("dtoverlay=vc4-kms-v3d and reboot once more. This command does not")
+        print("do that on its own, because the panel already works without it.")
+    else:
+        print("HDMI framebuffer disabled (disable-fwfb and the simplefb blacklist).")
+        print("The TFT stays the panel field_touch writes.")
+    print("Reboot to apply this.")
+    return 0
+
+
+def main(argv):
+    command = argv[0] if argv else ""
+    if command not in {"on", "off", "status"}:
+        sys.stderr.write(
+            "usage: doomsday-hdmi on|off|status\n"
+            "  on      HDMI framebuffer beside the TFT. Reboot after.\n"
+            "  off     TFT only (current setup). Reboot after.\n"
+            "  status  Show what the boot files request.\n"
+        )
+        return 2
+    directory = boot_dir()
+    if directory is None:
+        sys.stderr.write(
+            "doomsday-hdmi: could not find config.txt and cmdline.txt "
+            "in /boot/firmware or /boot.\n"
+        )
+        return 1
+    if command == "status":
+        return cmd_status(directory)
+    return cmd_apply(directory, command == "on")
+
+
+def self_test():
+    import contextlib
+    import io
+    import tempfile
+
+    failures = []
+    quiet = io.StringIO()
+
+    def check(condition, message):
+        if not condition:
+            failures.append(message)
+
+    config = (
+        "dtoverlay=vc4-kms-v3d\n"
+        "max_framebuffers=2\n"
+        "[all]\n"
+        "dtparam=spi=on\n"
+        "dtoverlay=tft35a:rotate=90\n"
+        "dtoverlay=disable-fwfb\n"
+        "[pi4]\n"
+        "dtparam=spi=on\n"
+    )
+    cmdline = "console=tty1 rootwait initcall_blacklist=simplefb_driver_init quiet\n"
+    check(describe(config, cmdline) == "off", "current boot files read as off")
+    turned_on = config_for_on(config)
+    turned_cmd = cmdline_for(cmdline, True)
+    check(describe(turned_on, turned_cmd) == "on", "on reaches a clean on state")
+    check("dtoverlay=disable-fwfb\n" not in turned_on, "disable-fwfb commented out")
+    check(DISABLE_MARK in turned_on, "disable-fwfb kept, marked")
+    check("dtoverlay=tft35a:rotate=90" in turned_on, "panel overlay kept")
+    check(turned_on.strip().endswith("dtparam=spi=on"), "pi4 section stays last")
+    check("[pi4]\n" in turned_on, "pi4 header kept")
+    check(HDMI_BLOCK.strip() in turned_on, "hdmi block inserted")
+    check(turned_on.index(BLOCK_BEGIN) < turned_on.index("[pi4]"), "block stays in [all]")
+    check(SIMPLEFB_SYMBOL not in turned_cmd, "simplefb blacklist removed")
+    check("console=tty1" in turned_cmd and "quiet" in turned_cmd, "other cmdline tokens kept")
+    check(VIDEO_TOKEN in turned_cmd.split(), "kms force token added")
+    again = config_for_on(turned_on)
+    again_cmd = cmdline_for(turned_cmd, True)
+    check(again == turned_on, "on is idempotent for config.txt")
+    check(again_cmd == turned_cmd, "on is idempotent for cmdline.txt")
+
+    shared = "console=tty1 initcall_blacklist=other_init,simplefb_driver_init,another_init\n"
+    shared_on = cmdline_for(shared, True)
+    check(
+        "initcall_blacklist=other_init,another_init" in shared_on.split(),
+        f"other blacklist symbols kept {shared_on!r}",
+    )
+    check(SIMPLEFB_SYMBOL not in shared_on, "only the simplefb symbol is removed")
+
+    turned_off = config_for_off(turned_on)
+    off_cmd = cmdline_for(turned_cmd, False)
+    check(describe(turned_off, off_cmd) == "off", "off restores tft-only")
+    check(ACTIVE_DISABLE.match("dtoverlay=disable-fwfb"), "disable line matches")
+    check(has_active_disable(turned_off), "disable-fwfb restored")
+    check(BLOCK_BEGIN not in turned_off, "hdmi block removed")
+    check("dtoverlay=tft35a:rotate=90" in turned_off, "panel overlay still there")
+    check(SIMPLEFB_SYMBOL in off_cmd.split()[-1] or any(
+        token.startswith("initcall_blacklist=") and SIMPLEFB_SYMBOL in token for token in off_cmd.split()
+    ), "blacklist restored")
+    check(VIDEO_TOKEN not in off_cmd.split(), "video token removed")
+    check(config_for_off(turned_off) == turned_off, "off is idempotent for config.txt")
+    check(cmdline_for(off_cmd, False) == off_cmd, "off is idempotent for cmdline.txt")
+
+    bare = "console=tty1 rootwait\n"
+    bare_off = cmdline_for(bare, False)
+    check(f"initcall_blacklist={SIMPLEFB_SYMBOL}" in bare_off.split(), "off adds a missing blacklist")
+    bare_config = "[all]\ndtparam=spi=on\n"
+    bare_off_config = config_for_off(bare_config)
+    check(has_active_disable(bare_off_config), "off adds disable-fwfb when it was absent")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        os.environ["DOOMSDAY_BOOT"] = tmp
+        try:
+            conf = os.path.join(tmp, "config.txt")
+            cmd = os.path.join(tmp, "cmdline.txt")
+            with open(conf, "w", encoding="utf-8") as handle:
+                handle.write(config)
+            with open(cmd, "w", encoding="utf-8") as handle:
+                handle.write(cmdline)
+            with contextlib.redirect_stdout(quiet):
+                check(main(["status"]) == 0, "status exit")
+                before = set(os.listdir(tmp))
+                check(main(["off"]) == 0, "off when already off")
+                check(set(os.listdir(tmp)) == before, "already-off writes no backup")
+                check(main(["on"]) == 0, "on exit")
+            names = set(os.listdir(tmp))
+            check(any(name.startswith("config.txt.doomsday-bak-") for name in names), "config backup")
+            check(any(name.startswith("cmdline.txt.doomsday-bak-") for name in names), "cmdline backup")
+            check(describe(read_text(conf), read_text(cmd)) == "on", "files are on")
+            backups = names
+            with contextlib.redirect_stdout(quiet):
+                check(main(["on"]) == 0, "second on")
+                check(set(os.listdir(tmp)) == backups, "second on writes no backup")
+                check(main(["off"]) == 0, "off exit")
+            check(describe(read_text(conf), read_text(cmd)) == "off", "files are off again")
+            saved = read_text(conf)
+            check("dtoverlay=tft35a:rotate=90" in saved, "round trip keeps the panel line")
+            check("[pi4]" in saved, "round trip keeps pi4")
+        finally:
+            os.environ.pop("DOOMSDAY_BOOT", None)
+
+    if failures:
+        for message in failures:
+            sys.stderr.write("doomsday-hdmi: " + message + "\n")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--self-test":
+        sys.exit(self_test())
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        sys.exit(130)
+    except OSError as error:
+        sys.stderr.write(f"doomsday-hdmi: {error}\n")
+        sys.exit(1)
