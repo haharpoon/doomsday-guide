@@ -11,7 +11,7 @@ sudo bash /tmp/install.sh
 
 The installer asks whether login on this screen should open the touch guide or the keyboard guide. If a touchscreen is connected, touch is the default. It installs `python3-pygame`, `python3-evdev`, `python3-numpy`, and `python3-serial`, copies `cavemap` onto `PATH`, and adds your user to the `input`, `video`, and `dialout` groups. Log in again so those groups apply.
 
-Type `field` for the keyboard menu. Type `field_touch` for the 480×320 touchscreen. The top bar is GUIDE, SCAN, and RADIO. GUIDE is this guide. SCAN runs `cavemap` and comes back here when it exits. RADIO is the frequency guide, listening log, and Morse trainer. Tap a section. Prev and Next turn pages, and so does a swipe. Search uses the on-screen keyboard.
+Type `field` for the keyboard menu. Type `field_touch` for the 480×320 touchscreen. The top bar is GUIDE, SCAN, and RADIO. GUIDE is this guide. SCAN runs `cavemap` and comes back here when it exits. RADIO is the frequency guide, listening log, and Morse trainer. Tap a section. Prev and Next turn pages, and so does a swipe. Search on the GUIDE home row looks through every card already on the Pi: titles match first, then the card text, and the list updates as you type. A-Z is every card title. Archive search still uses the on-screen keyboard.
 
 The picture is written to `/dev/fb0` (16-bit color). Touch calibration is `~/.touchcal.json`:
 
