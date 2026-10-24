@@ -35,9 +35,27 @@ fetch_file tabbar.py /usr/local/bin/tabbar.py
 fetch_file cavemap.py /usr/local/bin/cavemap
 fetch_file content.py /usr/local/bin/content.py
 fetch_file radio.py /usr/local/bin/radio.py
-chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/tabbar.py
-chmod 644 /usr/local/bin/content.py /usr/local/bin/radio.py
-python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap /usr/local/bin/tabbar.py /usr/local/bin/content.py /usr/local/bin/radio.py
+fetch_file splash.py /usr/local/bin/splash.py
+fetch_file doomsday_fb.py /usr/local/bin/doomsday_fb.py
+fetch_file scripts/doomsday-hdmi /usr/local/bin/doomsday-hdmi
+mkdir -p /etc/profile.d /etc/doomsday
+fetch_file scripts/doomsday-fb.sh /etc/profile.d/doomsday-fb.sh
+chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap \
+  /usr/local/bin/tabbar.py /usr/local/bin/splash.py /usr/local/bin/doomsday-hdmi
+chmod 644 /usr/local/bin/content.py /usr/local/bin/radio.py \
+  /usr/local/bin/doomsday_fb.py /etc/profile.d/doomsday-fb.sh
+python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap \
+  /usr/local/bin/tabbar.py /usr/local/bin/content.py /usr/local/bin/radio.py \
+  /usr/local/bin/splash.py /usr/local/bin/doomsday_fb.py /usr/local/bin/doomsday-hdmi
+# Commented example only. Install does not turn HDMI on or edit boot files.
+if [ ! -f /etc/doomsday/field-touch.conf ]; then
+  cat > /etc/doomsday/field-touch.conf << 'EOF'
+# splash=on
+# splash_seconds=6
+# hdmi=on
+EOF
+  chmod 644 /etc/doomsday/field-touch.conf
+fi
 
 # Sheets are Markdown. Writers edit those files; the guides only read them.
 install_content() {
@@ -342,4 +360,9 @@ fi
 echo "Cave Mapper is the cavemap command. Log in again if it cannot open the LCD."
 echo "RADIO is the top-right tab: UK frequencies, a listening log, and Morse."
 echo "Plug in an RTL-SDR to tune live FM. Without one, the other radio tools still work."
+echo "Boot splash plays for about 6 seconds. Tap the screen to skip it."
+echo "Disable the splash with FIELD_TOUCH_SPLASH=0, or splash=off in"
+echo "  /etc/doomsday/field-touch.conf or ~/.doomsday/field-touch.conf."
+echo "HDMI mirroring stays off until: sudo doomsday-hdmi on"
+echo "Then reboot. Turn it back off with: sudo doomsday-hdmi off"
 echo "Log out or reboot once so this screen and the groups take effect."

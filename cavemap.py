@@ -2,9 +2,12 @@
 """Cave Mapper: Pip-Boy SCAN screen for the 480x320 Pi LCD.
 
 Draws into an offscreen pygame surface and, on the device, copies RGB565
-bytes to /dev/fb0. SDL2 pygame has no fbcon driver, so the framebuffer
-path sets SDL_VIDEODRIVER=dummy. ``--window`` opens a normal desktop
-window for preview off the Pi.
+bytes to the panel named fb_ili9486. The panel is not assumed to be
+/dev/fb0: HDMI can register first. FIELD_TOUCH_FB still overrides the
+path. When an HDMI framebuffer exists, the same frames are mirrored
+there. SDL2 pygame has no fbcon driver, so the framebuffer path sets
+SDL_VIDEODRIVER=dummy. ``--window`` opens a normal desktop window for
+preview off the Pi.
 
 The top bar is the shared ``tabbar.py`` strip: 36px, GUIDE, SCAN, RADIO.
 SCAN is this screen. GUIDE, and the HOME button under the bar, leave the
@@ -78,6 +81,31 @@ except ImportError as err:
         f"({err})\n"
     )
     sys.exit(1)
+
+
+def _load_sibling(module_name):
+    """Load module_name.py from this file's directory, including /usr/local/bin."""
+    import importlib.machinery
+    import importlib.util
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(here, module_name + ".py")
+    if not os.path.isfile(path):
+        return None
+    loader = importlib.machinery.SourceFileLoader(module_name, path)
+    spec = importlib.util.spec_from_file_location(module_name, path, loader=loader)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+try:
+    import doomsday_fb
+except ImportError:
+    doomsday_fb = _load_sibling("doomsday_fb")
 
 WIDTH = 480
 HEIGHT = 320
@@ -1819,15 +1847,32 @@ class Console:
         self.hid_cursor = False
 
 
-class Framebuffer:
-    """RGB565 writer for the piscreen overlay on /dev/fb0."""
+def panel_device() -> str:
+    """ILI9486 panel. FIELD_TOUCH_FB wins, then the sysfs name, then /dev/fb0."""
+    if doomsday_fb is not None:
+        return doomsday_fb.tft_path()
+    override = os.environ.get("FIELD_TOUCH_FB", "").strip()
+    return override or "/dev/fb0"
 
-    def __init__(self, path="/dev/fb0"):
+
+def _graphics_root() -> str:
+    if doomsday_fb is not None:
+        return doomsday_fb.graphics_root()
+    return os.environ.get("FIELD_TOUCH_SYSFS", "/sys/class/graphics")
+
+
+class Framebuffer:
+    """RGB565 writer for the ILI9486 panel (sysfs name fb_ili9486)."""
+
+    def __init__(self, path=None):
+        if not path:
+            path = panel_device()
         self.path = path
         self.fd = os.open(path, os.O_RDWR)
         name = os.path.basename(path)
-        self.stride = _sysfs_int(f"/sys/class/graphics/{name}/stride", WIDTH * 2)
-        bpp = _sysfs_int(f"/sys/class/graphics/{name}/bits_per_pixel", 16)
+        root = _graphics_root()
+        self.stride = _sysfs_int(f"{root}/{name}/stride", WIDTH * 2)
+        bpp = _sysfs_int(f"{root}/{name}/bits_per_pixel", 16)
         if bpp != 16:
             sys.stderr.write(f"cavemap: {path} is {bpp} bpp; this program writes RGB565\n")
         if self.stride < WIDTH * 2:
@@ -1868,7 +1913,7 @@ def rgb888_to_565(red: int, green: int, blue: int) -> int:
 
 
 def surface_to_rgb565(surface: pygame.Surface) -> np.ndarray:
-    """Height × width little-endian RGB565, the layout /dev/fb0 expects."""
+    """Height × width little-endian RGB565, the layout the panel expects."""
 
     pixels = pygame.surfarray.pixels3d(surface)
     try:
@@ -1882,8 +1927,11 @@ def surface_to_rgb565(surface: pygame.Surface) -> np.ndarray:
     return np.ascontiguousarray(packed, dtype="<u2")
 
 
-def blank_framebuffer(path="/dev/fb0"):
+def blank_framebuffer(path=None):
     """Paint the panel black before pygame is up, so the shell cannot linger."""
+
+    if not path:
+        path = panel_device()
 
     try:
         fd = os.open(path, os.O_WRONLY)
@@ -2013,6 +2061,31 @@ def present(screen, surface, fb):
         fb.blit(surface)
 
 
+def _mirror_scan(hdmi, surface) -> bool:
+    """Copy one SCAN frame to HDMI. False means drop the mirror and keep the panel."""
+    if hdmi is None:
+        return True
+    if hdmi.failed:
+        return False
+    try:
+        hdmi.submit(surface)
+    except Exception as error:
+        hdmi.error = error
+        hdmi.failed = True
+        return False
+    return True
+
+
+def _close_scan_mirror(hdmi):
+    if hdmi is None:
+        return None
+    try:
+        hdmi.close()
+    except Exception:
+        pass
+    return None
+
+
 def run_loop(window: bool, session: Session, fps: int, console: Console | None = None) -> bool:
     screen = boot_pygame(window)
     fonts = load_fonts()
@@ -2020,13 +2093,19 @@ def run_loop(window: bool, session: Session, fps: int, console: Console | None =
     surface = pygame.Surface((WIDTH, HEIGHT))
     surface.fill(BLACK)
     fb = None
+    hdmi = None
     if console is None:
         console = Console()
     evdev = None
     try:
         if not window:
-            fb = Framebuffer("/dev/fb0")
+            fb = Framebuffer()
+            if doomsday_fb is not None:
+                hdmi = doomsday_fb.open_hdmi_mirror(exclude=fb.path)
             fb.blit(surface)
+            if not _mirror_scan(hdmi, surface):
+                sys.stderr.write("cavemap: HDMI mirror stopped. SCAN stays on the panel.\n")
+                hdmi = _close_scan_mirror(hdmi)
             console.enter()
             evdev = EvdevInputs(load_calibration())
         app = App(session)
@@ -2085,6 +2164,9 @@ def run_loop(window: bool, session: Session, fps: int, console: Console | None =
                 capture=clean,
             )
             present(screen, surface, fb)
+            if hdmi is not None and not _mirror_scan(hdmi, surface):
+                sys.stderr.write("cavemap: HDMI mirror stopped. SCAN stays on the panel.\n")
+                hdmi = _close_scan_mirror(hdmi)
             remain = frame_dt - (time.perf_counter() - started)
             if remain > 0:
                 time.sleep(remain)
@@ -2096,9 +2178,13 @@ def run_loop(window: bool, session: Session, fps: int, console: Console | None =
             try:
                 surface.fill(BLACK)
                 fb.blit(surface)
+                if hdmi is not None and not hdmi.failed:
+                    hdmi.submit(surface)
+                    hdmi.flush(timeout=1.0)
             except (OSError, pygame.error):
                 pass
             fb.close()
+        hdmi = _close_scan_mirror(hdmi)
         console.leave()
         pygame.quit()
 
@@ -2173,6 +2259,16 @@ def self_test() -> int:
     def check(cond, message):
         if not cond:
             failures.append(message)
+
+    saved_panel = os.environ.get("FIELD_TOUCH_FB")
+    os.environ["FIELD_TOUCH_FB"] = "/tmp/doomsday-panel-test"
+    try:
+        check(panel_device() == "/tmp/doomsday-panel-test", "FIELD_TOUCH_FB selects the panel")
+    finally:
+        if saved_panel is None:
+            os.environ.pop("FIELD_TOUCH_FB", None)
+        else:
+            os.environ["FIELD_TOUCH_FB"] = saved_panel
 
     check(parse_line("") is None, "blank line")
     check(parse_line("# comment") is None, "comment")
@@ -2396,7 +2492,7 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--window",
         action="store_true",
-        help="open a desktop window instead of writing /dev/fb0",
+        help="open a desktop window instead of writing the ILI9486 panel",
     )
     parser.add_argument("--demo", action="store_true", help="force built-in demo data")
     parser.add_argument("--serial", metavar="PORT", help="read this serial port at 115200")
@@ -2423,13 +2519,14 @@ def main(argv=None) -> int:
 
     signal.signal(signal.SIGTERM, _on_term)
     window = bool(args.window)
-    if not window and not os.path.exists("/dev/fb0"):
-        sys.stderr.write("cavemap: no /dev/fb0, opening a window\n")
+    panel = panel_device()
+    if not window and not os.path.exists(panel):
+        sys.stderr.write(f"cavemap: no {panel}, opening a window\n")
         window = True
     console = Console()
     if not window:
         console.enter()
-        blank_framebuffer()
+        blank_framebuffer(panel)
     try:
         session = open_session(force_demo=args.demo, port=args.serial)
     except Exception as error:
@@ -2444,7 +2541,7 @@ def main(argv=None) -> int:
         console.leave()
         sys.stderr.write(
             f"cavemap: display failed ({error}). "
-            "Need /dev/fb0 (video group or sudo), or run with --window.\n"
+            "Need the ILI9486 panel (video group or sudo), or run with --window.\n"
         )
         return 1
     except KeyboardInterrupt:
