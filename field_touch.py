@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 """Touchscreen front end for the doomsday field guide.
 
-The Pi panel is /dev/fb0 at 480x320, 16-bit RGB565. pygame cannot open that
-framebuffer, so this draws with the dummy SDL driver and writes a frame only
-when the picture changes. With no framebuffer, it opens a 480x320 window.
+The Pi panel is the framebuffer named fb_ili9486, 480x320, 16-bit RGB565.
+pygame cannot open that framebuffer, so this draws with the dummy SDL driver
+and writes a frame only when the picture changes. With no framebuffer, it
+opens a 480x320 window. The panel is never chosen by assuming fb0 or fb1.
+
+On startup a boot splash plays for about six seconds (the title intro once).
+A tap skips it. FIELD_TOUCH_SPLASH=0, or splash=off in
+/etc/doomsday/field-touch.conf, turns it off. When an HDMI framebuffer is
+present, each frame — splash included — is also copied there, scaled and
+letterboxed. A missing display or a failed HDMI write leaves the panel
+running on its own. FIELD_TOUCH_HDMI=0 turns the mirror off.
 
 Touch input is the ADS7846 device via evdev. The top bar is GUIDE | SCAN | RADIO
 (see tabbar.py, shared with Cave Mapper). GUIDE home has Search and A-Z. Search
@@ -35,8 +43,9 @@ import time
 import traceback
 import warnings
 
-# tty1 and /dev/fb0 are the same pixels. pygame's import-time RuntimeWarning
-# ("neon capable ... PYGAME_DETECT_AVX2") is drawn on top of this UI.
+# tty1 and the panel are the same pixels when the console is mapped there.
+# pygame's import-time RuntimeWarning ("neon capable ... PYGAME_DETECT_AVX2")
+# is drawn on top of this UI.
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 warnings.filterwarnings("ignore", category=RuntimeWarning, module="pygame")
 warnings.filterwarnings("ignore", message=".*neon capable.*")
@@ -49,6 +58,30 @@ except ImportError:
     raise
 
 import tabbar
+
+
+def _load_sibling(module_name):
+    """Load module_name.py from this file's directory, including /usr/local/bin."""
+    import importlib.machinery
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(here, module_name + ".py")
+    if not os.path.isfile(path):
+        return None
+    loader = importlib.machinery.SourceFileLoader(module_name, path)
+    spec = importlib.util.spec_from_file_location(module_name, path, loader=loader)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+try:
+    import doomsday_fb
+except ImportError:
+    doomsday_fb = _load_sibling("doomsday_fb")
 
 try:
     import evdev
@@ -533,9 +566,15 @@ def pack_rgb565_rows(frame, stride, y0, y1):
     return _pack_strip(frame, stride, y0, y1 - y0)
 
 
+def graphics_root():
+    if doomsday_fb is not None:
+        return doomsday_fb.graphics_root()
+    return "/sys/class/graphics"
+
+
 def read_fb_geometry(path):
     name = os.path.basename(path)
-    base = os.path.join("/sys/class/graphics", name)
+    base = os.path.join(graphics_root(), name)
     width, height, bpp, stride = 480, 320, 16, None
 
     def read_text(leaf):
@@ -638,6 +677,9 @@ class Framebuffer:
 
 
 def framebuffer_path():
+    """ILI9486 panel. FIELD_TOUCH_FB wins, then the sysfs name, then /dev/fb0."""
+    if doomsday_fb is not None:
+        return doomsday_fb.tft_path()
     return os.environ.get("FIELD_TOUCH_FB", "/dev/fb0")
 
 
@@ -646,7 +688,7 @@ def fb_is_rgb565(path):
         return False
     _width, _height, bpp, _stride = read_fb_geometry(path)
     # No sysfs node: the Pi panel is 16-bit, so trust the default.
-    sysfs_bpp = os.path.join("/sys/class/graphics", os.path.basename(path), "bits_per_pixel")
+    sysfs_bpp = os.path.join(graphics_root(), os.path.basename(path), "bits_per_pixel")
     if not os.path.isfile(sysfs_bpp):
         return True
     return bpp == 16
@@ -670,6 +712,7 @@ class Display:
         self.window = None
         self.canvas = None
         self.fb = None
+        self.hdmi = None
         self.scale = 1
 
     def open(self):
@@ -691,8 +734,18 @@ class Display:
         self.canvas = pygame.Surface((WIDTH, HEIGHT))
         if self.mode == "fb":
             self.fb = Framebuffer(framebuffer_path())
+            self.hdmi = None
+            if doomsday_fb is not None:
+                # Missing HDMI, or a mode we cannot pack, must not stop the panel.
+                self.hdmi = doomsday_fb.open_hdmi_mirror(exclude=self.fb.path)
 
     def close(self):
+        if self.hdmi is not None:
+            try:
+                self.hdmi.close()
+            except Exception:
+                pass
+            self.hdmi = None
         if self.fb is not None:
             self.fb.close()
             self.fb = None
@@ -709,6 +762,7 @@ class Display:
     def present(self, canvas, rows=None):
         if self.mode == "fb" and self.fb is not None:
             self.fb.write(canvas, rows=rows)
+            self._mirror(canvas)
         elif self.mode == "window" and self.window is not None:
             if self.scale == 1:
                 self.window.blit(canvas, (0, 0))
@@ -720,6 +774,30 @@ class Display:
                 frame = pygame.transform.scale(canvas, self.window.get_size())
                 self.window.blit(frame, (0, 0))
                 pygame.display.flip()
+
+    def _mirror(self, canvas):
+        """Copy the full frame to HDMI after the panel write. Failures stop the mirror only."""
+        hdmi = self.hdmi
+        if hdmi is None:
+            return
+        if hdmi.failed:
+            self._drop_hdmi()
+            return
+        try:
+            hdmi.submit(canvas)
+        except Exception as error:
+            sys.stderr.write(f"field_touch: HDMI mirror stopped ({error}).\n")
+            self._drop_hdmi()
+
+    def _drop_hdmi(self):
+        hdmi = self.hdmi
+        self.hdmi = None
+        if hdmi is None:
+            return
+        try:
+            hdmi.close()
+        except Exception:
+            pass
 
     def canvas_xy(self, x, y):
         if self.scale <= 1:
@@ -2364,6 +2442,81 @@ def boot_pygame():
         pygame.display.init()
 
 
+def load_splash():
+    try:
+        import splash
+        return splash
+    except ImportError:
+        module = _load_sibling("splash")
+        if module is None:
+            raise ImportError("splash.py")
+        return module
+
+
+def _drain_pointer(touch):
+    if touch is not None:
+        try:
+            touch.poll()
+        except Exception:
+            pass
+    if pygame.display.get_init():
+        pygame.event.get()
+
+
+def _splash_skipped(touch):
+    if touch is not None:
+        try:
+            events = touch.poll()
+        except Exception:
+            events = []
+        for event in events:
+            if event and event[0] in ("down", "up"):
+                return True
+    if pygame.display.get_init():
+        for event in pygame.event.get():
+            if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.QUIT):
+                return True
+    return False
+
+
+def play_boot_splash(display, touch, seconds=None, splash_module=None):
+    """Play the splash, then return. A tap or key skips. Failures return 0."""
+    try:
+        return _play_boot_splash(display, touch, seconds, splash_module)
+    except Exception as error:
+        sys.stderr.write(f"field_touch: splash skipped ({error}).\n")
+        return 0
+
+
+def _play_boot_splash(display, touch, seconds, splash_module):
+    if doomsday_fb is None or doomsday_fb.setting_off("splash", "FIELD_TOUCH_SPLASH"):
+        return 0
+    if seconds is None:
+        seconds = doomsday_fb.splash_seconds() if doomsday_fb is not None else 6.0
+    if seconds <= 0 or display is None or display.canvas is None:
+        return 0
+    splash_mod = splash_module if splash_module is not None else load_splash()
+    splash = splash_mod.Splash()
+    screen = pygame.Surface((splash_mod.W, splash_mod.H))
+    canvas = pygame.Surface((splash_mod.W, splash_mod.H))
+    frames = max(1, int(round(seconds * splash_mod.FPS)))
+    clock = pygame.time.Clock()
+    # Drop a contact that was already down before the splash, so it does not skip.
+    _drain_pointer(touch)
+    shown = 0
+    for frame in range(frames):
+        if _splash_skipped(touch):
+            break
+        # Intro (title flicker and slam) plays on the first loop only.
+        splash.render(canvas, screen, frame, intro=(frame < splash_mod.LOOP))
+        display.present(screen)
+        shown += 1
+        clock.tick(splash_mod.FPS)
+    # The skip tap must not fall through onto Search, A-Z, or a card.
+    _drain_pointer(touch)
+    return shown
+
+
 def present_frame(app, display, force=False):
     if force:
         display.force_next()
@@ -2435,28 +2588,35 @@ def run(start=None):
     elif mode == "dummy":
         os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
     boot_pygame()
-    app = App()
-    if start == "radio":
-        app.open_radio()
     display = Display(mode)
     touch = TouchInput()
+    app = None
     try:
         display.open()
         touch.open()
         if mode == "fb" and touch.dev is None:
             sys.stderr.write("field_touch: ADS7846 touchscreen was not found.\n")
+        # Splash first, before fonts and the home grid, so the panel is not
+        # blank while the menu builds. The last splash frame stays until the
+        # menu paint below replaces it. Nothing is cleared in between.
+        if mode in ("fb", "window"):
+            play_boot_splash(display, touch)
+        app = App()
+        if start == "radio":
+            app.open_radio()
         # Paint immediately, then once more after the console has had a chance
-        # to stamp leftover text onto /dev/fb0. The second write ignores the
+        # to stamp leftover text onto the panel. The second write ignores the
         # unchanged-frame skip so it covers that text.
-        present_frame(app, display)
+        present_frame(app, display, force=True)
         time.sleep(0.5)
         present_frame(app, display, force=True)
         loop(app, display, touch)
-        if display.mode == "fb" and display.canvas is not None:
+        if display.mode == "fb" and display.canvas is not None and app is not None:
             app.draw_goodbye(display.canvas)
             display.present(display.canvas)
     finally:
-        app.stop_radio_audio()
+        if app is not None:
+            app.stop_radio_audio()
         touch.close()
         display.close()
     return 0
@@ -2611,6 +2771,329 @@ GUIDE7_SLUGS = (
     "navigation", "nav_nocompass", "nav_route",
 )
 GUIDE7_PICTURES = 91
+
+
+def exercise_splash_hdmi(failures):
+    """Fake panel and HDMI files. Search and A-Z still paint after the splash."""
+    if doomsday_fb is None:
+        failures.append("doomsday_fb imports")
+        return
+
+    def check(condition, message):
+        if not condition:
+            failures.append(message)
+
+    import struct
+    import tempfile
+    from pathlib import Path
+
+    env_keys = (
+        "FIELD_TOUCH_FB",
+        "FIELD_TOUCH_SYSFS",
+        "FIELD_TOUCH_DEVDIR",
+        "FIELD_TOUCH_HDMI",
+        "FIELD_TOUCH_HDMI_DEV",
+        "FIELD_TOUCH_SPLASH",
+        "FIELD_TOUCH_SPLASH_SECONDS",
+        "FIELD_TOUCH_CONFIG",
+    )
+    saved_env = {key: os.environ.get(key) for key in env_keys}
+
+    def restore_env():
+        for key, value in saved_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+    class ScriptedTouch:
+        def __init__(self, polls):
+            self.polls = list(polls)
+
+        def poll(self):
+            if not self.polls:
+                return []
+            return self.polls.pop(0)
+
+    class MiniSplash:
+        def render(self, _canvas, screen, frame, intro=True):
+            screen.fill((255, 0, 0) if frame == 0 else (0, 255, 0))
+
+    class MiniMod:
+        W = 8
+        H = 4
+        FPS = 1000
+        LOOP = 5
+        Splash = MiniSplash
+
+    def write_node(root, entry, name, size, bpp, stride, modes=None):
+        node = Path(root) / entry
+        node.mkdir(parents=True, exist_ok=True)
+        (node / "name").write_text(name + "\n", encoding="ascii")
+        (node / "virtual_size").write_text("%d,%d\n" % size, encoding="ascii")
+        (node / "bits_per_pixel").write_text("%d\n" % bpp, encoding="ascii")
+        (node / "stride").write_text("%d\n" % stride, encoding="ascii")
+        if modes:
+            (node / "modes").write_text(modes, encoding="ascii")
+
+    try:
+        with tempfile.TemporaryDirectory() as confdir:
+            conf = os.path.join(confdir, "field-touch.conf")
+            with open(conf, "w", encoding="utf-8") as handle:
+                handle.write("splash=off\nhdmi=off\nsplash_seconds=3\n")
+            os.environ["FIELD_TOUCH_CONFIG"] = conf
+            os.environ.pop("FIELD_TOUCH_SPLASH", None)
+            os.environ.pop("FIELD_TOUCH_HDMI", None)
+            os.environ.pop("FIELD_TOUCH_SPLASH_SECONDS", None)
+            check(doomsday_fb.setting_off("splash", "FIELD_TOUCH_SPLASH"), "config splash=off")
+            check(doomsday_fb.setting_off("hdmi", "FIELD_TOUCH_HDMI"), "config hdmi=off")
+            check(doomsday_fb.splash_seconds() == 3.0, "config splash seconds")
+            os.environ["FIELD_TOUCH_SPLASH"] = "1"
+            os.environ["FIELD_TOUCH_HDMI"] = "on"
+            check(not doomsday_fb.setting_off("splash", "FIELD_TOUCH_SPLASH"), "env enables splash over config")
+            check(not doomsday_fb.setting_off("hdmi", "FIELD_TOUCH_HDMI"), "env enables hdmi over config")
+        os.environ.pop("FIELD_TOUCH_CONFIG", None)
+        os.environ.pop("FIELD_TOUCH_SPLASH", None)
+        os.environ.pop("FIELD_TOUCH_HDMI", None)
+        os.environ.pop("FIELD_TOUCH_SPLASH_SECONDS", None)
+
+        here = os.path.dirname(os.path.abspath(__file__))
+        tool = os.path.join(here, "scripts", "doomsday-hdmi")
+        if not os.path.isfile(tool):
+            tool = "/usr/local/bin/doomsday-hdmi"
+        check(os.path.isfile(tool), "doomsday-hdmi is present")
+        if os.path.isfile(tool):
+            import importlib.machinery
+
+            loader = importlib.machinery.SourceFileLoader("doomsday_hdmi_tool", tool)
+            spec = importlib.util.spec_from_file_location("doomsday_hdmi_tool", tool, loader=loader)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            check(module.self_test() == 0, "doomsday-hdmi self-test")
+
+        profile = os.path.join(here, "scripts", "doomsday-fb.sh")
+        if not os.path.isfile(profile):
+            profile = "/etc/profile.d/doomsday-fb.sh"
+        with tempfile.TemporaryDirectory() as tmp:
+            sysfs = os.path.join(tmp, "sys")
+            dev = os.path.join(tmp, "dev")
+            os.makedirs(dev)
+            write_node(sysfs, "fb0", "vc4drmfb", (1280, 1440), 32, 5120, "D:1280x720p-60\n")
+            write_node(sysfs, "fb1", "fb_ili9486", (480, 320), 16, 960)
+            open(os.path.join(dev, "fb0"), "wb").close()
+            open(os.path.join(dev, "fb1"), "wb").close()
+            os.environ.pop("FIELD_TOUCH_FB", None)
+            os.environ["FIELD_TOUCH_SYSFS"] = sysfs
+            os.environ["FIELD_TOUCH_DEVDIR"] = dev
+            os.environ.pop("FIELD_TOUCH_HDMI_DEV", None)
+            check(framebuffer_path().endswith("/fb1"), "panel is fb1 by name, not fb0")
+            check(doomsday_fb.hdmi_path().endswith("/fb0"), "hdmi is fb0 by name")
+            info = doomsday_fb.inspect_fb(os.path.join(dev, "fb0"))
+            check(
+                (info.width, info.height) == (1280, 720),
+                "double-buffered virtual size uses the visible mode %dx%d" % (info.width, info.height),
+            )
+            if os.path.isfile(profile):
+                env = os.environ.copy()
+                env.pop("FIELD_TOUCH_FB", None)
+                env["DOOMSDAY_FB_SYSFS"] = sysfs
+                env["DOOMSDAY_FB_DEVDIR"] = dev
+                found = subprocess.run(
+                    ["bash", "-c", 'source "$1"; printf %s "$FIELD_TOUCH_FB"', "bash", profile],
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                    check=False,
+                )
+                check(
+                    found.stdout.endswith("/fb1"),
+                    "profile script finds the panel %r %r" % (found.stdout, found.stderr),
+                )
+                env["FIELD_TOUCH_FB"] = "/dev/fb9"
+                kept = subprocess.run(
+                    ["bash", "-c", 'source "$1"; printf %s "$FIELD_TOUCH_FB"', "bash", profile],
+                    capture_output=True,
+                    text=True,
+                    env=env,
+                    check=False,
+                )
+                check(kept.stdout == "/dev/fb9", "profile script keeps an existing FIELD_TOUCH_FB")
+
+        boot_pygame()
+        chip = pygame.Surface((2, 1))
+        chip.fill(GREEN)
+        info16 = doomsday_fb.FbInfo(2, 1, 16, 4, 0, (11, 5), (5, 6), (0, 5), (0, 0))
+        check(
+            doomsday_fb.compose_frame(pygame.image.tobytes(chip, "RGB"), 2, 1, info16) == pack_rgb565(chip, 4),
+            "hdmi 16-bit matches pack_rgb565",
+        )
+        var = bytearray(160)
+        struct.pack_into("=8I", var, 0, 1920, 1080, 1920, 2160, 0, 0, 32, 0)
+        struct.pack_into("=3I", var, 32, 16, 8, 0)
+        struct.pack_into("=3I", var, 44, 8, 8, 0)
+        struct.pack_into("=3I", var, 56, 0, 8, 0)
+        struct.pack_into("=3I", var, 68, 24, 8, 0)
+        parsed = doomsday_fb.parse_var_screeninfo(var)
+        check(
+            parsed["xres"] == 1920 and parsed["yres"] == 1080 and parsed["red"] == (16, 8),
+            "ioctl var screeninfo",
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sysfs = os.path.join(tmp, "sys")
+            dev = os.path.join(tmp, "dev")
+            os.makedirs(dev)
+            # HDMI enumerates first. The panel is still found by name.
+            write_node(sysfs, "fb0", "BCM2708 FB", (200, 180), 32, 800)
+            write_node(sysfs, "fb1", "fb_ili9486", (480, 320), 16, 960)
+            tft_file = os.path.join(dev, "fb1")
+            hdmi_file = os.path.join(dev, "fb0")
+            tft_bytes = 960 * 320
+            hdmi_bytes = 800 * 180
+            with open(tft_file, "wb") as handle:
+                handle.write(b"\x5a" * tft_bytes)
+            with open(hdmi_file, "wb") as handle:
+                handle.write(b"\x5a" * hdmi_bytes)
+            os.environ["FIELD_TOUCH_SYSFS"] = sysfs
+            os.environ["FIELD_TOUCH_DEVDIR"] = dev
+            os.environ["FIELD_TOUCH_FB"] = tft_file
+            os.environ.pop("FIELD_TOUCH_HDMI_DEV", None)
+            os.environ.pop("FIELD_TOUCH_HDMI", None)
+            os.environ.pop("FIELD_TOUCH_SPLASH", None)
+            check(choose_mode() == "fb", "named panel selects framebuffer mode")
+
+            display = Display("fb")
+            try:
+                display.open()
+                check(display.fb is not None and display.fb.path == tft_file, "display opens the named panel")
+                check(display.hdmi is not None and display.hdmi.path == hdmi_file, "display opens HDMI by name")
+
+                os.environ["FIELD_TOUCH_SPLASH"] = "0"
+                untouched = open(tft_file, "rb").read(16)
+                shown = play_boot_splash(display, ScriptedTouch([[("down", 1, 1)]]), seconds=2)
+                check(shown == 0, "FIELD_TOUCH_SPLASH=0 plays nothing")
+                check(open(tft_file, "rb").read(16) == untouched, "disabled splash leaves the panel alone")
+                os.environ.pop("FIELD_TOUCH_SPLASH", None)
+
+                shown = play_boot_splash(display, ScriptedTouch([[], [("down", 4, 4)]]), seconds=3, splash_module=MiniMod)
+                check(shown == 0, "a tap skips the splash")
+
+                shown = play_boot_splash(display, ScriptedTouch([]), seconds=1.0 / 20)
+                check(shown == 1, "splash shows one intro frame (%s)" % shown)
+                display.hdmi.flush()
+                splash_tft = open(tft_file, "rb").read(tft_bytes)
+                check(splash_tft != b"\x5a" * tft_bytes and any(splash_tft), "splash replaced the panel")
+
+                app = App(show_cave=False)
+                present_frame(app, display, force=True)
+                labels = [widget["label"] for widget in app.widgets]
+                check("Search" in labels and "A-Z" in labels, "home still has Search and A-Z %s" % labels[-6:])
+                menu = pack_rgb565(display.canvas, display.fb.stride)
+                panel = open(tft_file, "rb").read(len(menu))
+                check(panel == menu and panel != splash_tft, "menu replaced the splash on the panel")
+                check(any(panel), "menu frame is not a black wipe")
+                display.hdmi.flush()
+                mirrored = open(hdmi_file, "rb").read(hdmi_bytes)
+                expect = doomsday_fb.compose_frame(
+                    pygame.image.tobytes(display.canvas, "RGB"), WIDTH, HEIGHT, display.hdmi.info
+                )
+                check(mirrored == expect, "HDMI shows the same home frame, letterboxed")
+                _out_w, _out_h, _x0, y0 = doomsday_fb.fitted_size(WIDTH, HEIGHT, 200, 180)
+                check(y0 > 0 and mirrored[:4] == bytes.fromhex("000000ff"), "HDMI letterbox is black")
+
+                app.activate("guide-search")
+                app.current()["query"] = "knot"
+                present_frame(app, display, force=True)
+                check(app.current()["kind"] == "find", "search screen still opens")
+                check(
+                    any(str(widget["id"]).startswith("hit:") or str(widget["id"]).startswith("key:") for widget in app.widgets),
+                    "search screen still draws",
+                )
+                search_panel = open(tft_file, "rb").read(len(menu))
+                check(search_panel == pack_rgb565(display.canvas, display.fb.stride), "search screen is on the panel")
+                display.hdmi.flush()
+                search_expect = doomsday_fb.compose_frame(
+                    pygame.image.tobytes(display.canvas, "RGB"), WIDTH, HEIGHT, display.hdmi.info
+                )
+                check(open(hdmi_file, "rb").read(len(search_expect)) == search_expect, "search screen is on HDMI")
+
+                app.activate("guide-index")
+                present_frame(app, display, force=True)
+                check(app.current()["kind"] == "index", "A-Z screen still opens")
+                check(
+                    any(str(widget["id"]).startswith("letter:") for widget in app.widgets),
+                    "A-Z letter jumps still draw",
+                )
+                index_panel = open(tft_file, "rb").read(len(menu))
+                check(index_panel == pack_rgb565(display.canvas, display.fb.stride), "A-Z screen is on the panel")
+                check(index_panel != search_panel, "A-Z replaced the search frame")
+
+                class Boom:
+                    def seek(self, *_args, **_kwargs):
+                        return 0
+
+                    def write(self, _data):
+                        raise OSError("hdmi down")
+
+                    def close(self):
+                        pass
+
+                display.hdmi.fd.close()
+                display.hdmi.fd = Boom()
+                display.hdmi.failed = False
+                present_frame(app, display, force=True)
+                still = display.hdmi
+                failed = still is not None and still.failed
+                if still is not None:
+                    failed = (not still.flush(timeout=1.0)) and still.failed
+                check(failed, "HDMI write failure is recorded")
+                check(
+                    open(tft_file, "rb").read(len(menu)) == pack_rgb565(display.canvas, display.fb.stride),
+                    "panel still updated when HDMI fails",
+                )
+                present_frame(app, display, force=True)
+                check(display.hdmi is None, "failed mirror is dropped")
+                check(
+                    open(tft_file, "rb").read(len(menu)) == pack_rgb565(display.canvas, display.fb.stride),
+                    "panel keeps updating tft-only",
+                )
+            finally:
+                display.close()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            sysfs = os.path.join(tmp, "sys")
+            dev = os.path.join(tmp, "dev")
+            os.makedirs(dev)
+            write_node(sysfs, "fb0", "fb_ili9486", (480, 320), 16, 960)
+            tft_file = os.path.join(dev, "fb0")
+            with open(tft_file, "wb") as handle:
+                handle.write(b"\x00" * (960 * 320))
+            os.environ["FIELD_TOUCH_SYSFS"] = sysfs
+            os.environ["FIELD_TOUCH_DEVDIR"] = dev
+            os.environ["FIELD_TOUCH_FB"] = tft_file
+            os.environ.pop("FIELD_TOUCH_HDMI_DEV", None)
+            os.environ.pop("FIELD_TOUCH_HDMI", None)
+            boot_pygame()
+            display = Display("fb")
+            try:
+                display.open()
+                check(display.hdmi is None, "no HDMI framebuffer means TFT only")
+                canvas = pygame.Surface((WIDTH, HEIGHT))
+                canvas.fill(GREEN)
+                display.present(canvas)
+                check(open(tft_file, "rb").read(4) == pack_rgb565(canvas, 960)[:4], "tft-only write")
+            finally:
+                display.close()
+
+        help_text = subprocess.run(
+            [sys.executable, os.path.join(here, "splash.py"), "--help"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        check(help_text.returncode == 0 and "--export" in help_text.stdout, "splash.py still exports previews")
+    finally:
+        restore_env()
 
 
 def self_test(screenshot_dir=None):
@@ -4012,6 +4495,8 @@ def self_test(screenshot_dir=None):
         radio.exercise(lambda: App(show_cave=True), canvas, lambda cond, msg: check(cond, msg, failures), screenshot_dir)
     else:
         check(False, "radio module imports", failures)
+
+    exercise_splash_hdmi(failures)
 
     if failures:
         for message in failures:
