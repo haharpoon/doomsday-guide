@@ -38,15 +38,21 @@ fetch_file radio.py /usr/local/bin/radio.py
 fetch_file splash.py /usr/local/bin/splash.py
 fetch_file doomsday_fb.py /usr/local/bin/doomsday_fb.py
 fetch_file scripts/doomsday-hdmi /usr/local/bin/doomsday-hdmi
+# ADS7846 calibrator. Install only copies the tool. A ~/.touchcal.json already
+# on the Pi is left as it is. goodtft 3.5in tft35a rotate=90:
+#   sudo touch_calibrate --preset
+fetch_file scripts/touch_calibrate /usr/local/bin/touch_calibrate
 mkdir -p /etc/profile.d /etc/doomsday
 fetch_file scripts/doomsday-fb.sh /etc/profile.d/doomsday-fb.sh
 chmod 755 /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap \
-  /usr/local/bin/tabbar.py /usr/local/bin/splash.py /usr/local/bin/doomsday-hdmi
+  /usr/local/bin/tabbar.py /usr/local/bin/splash.py /usr/local/bin/doomsday-hdmi \
+  /usr/local/bin/touch_calibrate
 chmod 644 /usr/local/bin/content.py /usr/local/bin/radio.py \
   /usr/local/bin/doomsday_fb.py /etc/profile.d/doomsday-fb.sh
 python3 -m py_compile /usr/local/bin/field /usr/local/bin/field_touch /usr/local/bin/cavemap \
   /usr/local/bin/tabbar.py /usr/local/bin/content.py /usr/local/bin/radio.py \
-  /usr/local/bin/splash.py /usr/local/bin/doomsday_fb.py /usr/local/bin/doomsday-hdmi
+  /usr/local/bin/splash.py /usr/local/bin/doomsday_fb.py /usr/local/bin/doomsday-hdmi \
+  /usr/local/bin/touch_calibrate
 # Commented example only. Install does not turn HDMI on or edit boot files.
 if [ ! -f /etc/doomsday/field-touch.conf ]; then
   cat > /etc/doomsday/field-touch.conf << 'EOF'
@@ -365,4 +371,8 @@ echo "Disable the splash with FIELD_TOUCH_SPLASH=0, or splash=off in"
 echo "  /etc/doomsday/field-touch.conf or ~/.doomsday/field-touch.conf."
 echo "HDMI mirroring stays off until: sudo doomsday-hdmi on"
 echo "Then reboot. Turn it back off with: sudo doomsday-hdmi off"
+echo "Touch calibration is ~/.touchcal.json. Install leaves an existing file in place."
+echo "Recalibrate with: sudo touch_calibrate"
+echo "goodtft tft35a rotate=90: sudo touch_calibrate --preset"
+echo "A previous calibration is kept as ~/.touchcal.json.bak-<date>."
 echo "Log out or reboot once so this screen and the groups take effect."
