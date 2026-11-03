@@ -1,0 +1,385 @@
+#!/usr/bin/env python3
+"""touch_calibrate: calibrate the ADS7846 touch panel for field_touch and cavemap.
+
+Run on the Pi as root:  sudo touch_calibrate
+It stops the tty1 login (and with it field_touch), shows 5 crosshairs on the
+TFT framebuffer one at a time, records the raw ABS_X/ABS_Y for a tap on each,
+fits the affine map the repo uses, and saves it to ~admin/.touchcal.json:
+
+    {"cx": [a, b, c], "cy": [d, e, f]}   x = a*rawX + b*rawY + c, y = d*rawX + e*rawY + f
+
+Then it restarts the tty1 login so field_touch opens with the new calibration.
+An existing file is backed up to .touchcal.json.bak-<date> first.
+
+Options:
+  --timeout N   seconds to wait for each tap (default 30). No tap: nothing is saved.
+  --preset      skip tapping; write the goodtft tft35a rotate=90 preset
+                (LCD-show 99-calibration.conf-35-90: SwapAxes, X 3936..227, Y 268..3880).
+  --dry-run     show the fit but do not save
+  --no-restart  leave tty1 stopped afterwards (for testing)
+  --user NAME   whose ~/.touchcal.json to write (default: $SUDO_USER or admin)
+  --self-test   check the preset, the fit, and the backup without hardware
+"""
+import argparse, glob, json, os, pwd, select, shutil, subprocess, sys, time
+
+W, H = 480, 320
+PRESET = {"cx": [0.0, -479.0 / 3709.0, 3936.0 * 479.0 / 3709.0],
+          "cy": [319.0 / 3612.0, 0.0, -268.0 * 319.0 / 3612.0]}
+# Rounded the same way save() writes them. These are the values in use on the Pi.
+PRESET_ROUNDED = {"cx": [0.0, -0.129145, 508.315988], "cy": [0.088317, 0.0, -23.668882]}
+TARGETS = [(40, 40), (440, 40), (440, 280), (40, 280), (240, 160)]
+PANEL_NAME = "fb_ili9486"
+
+
+def tft_fb(graphics_root=None):
+    """Return (device, sysfs dir) for the panel whose name is fb_ili9486.
+
+    HDMI can register as fb0, so the panel is chosen by that name. fb0 is
+    only the fallback when the name is not listed. ``graphics_root`` exists
+    so the self-test can point at a fake sysfs tree; the Pi call passes none.
+    """
+    root = graphics_root or "/sys/class/graphics"
+    for entry in sorted(glob.glob(os.path.join(root, "fb[0-9]*"))):
+        try:
+            with open(os.path.join(entry, "name")) as handle:
+                name = handle.read()
+        except OSError:
+            continue
+        # The name file ends with a newline. Match the panel, not any fb that
+        # happens to be fb0.
+        if name.strip() == PANEL_NAME:
+            return "/dev/" + os.path.basename(entry), entry
+    return "/dev/fb0", os.path.join(root, "fb0")
+
+
+class FB:
+    def __init__(self):
+        self.path, sysfs = tft_fb()
+        try:
+            with open(sysfs + "/stride") as handle:
+                self.stride = int(handle.read())
+        except (OSError, ValueError):
+            self.stride = W * 2
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
+        import pygame
+        self.pg = pygame
+        pygame.font.init()
+        self.font = pygame.font.Font(None, 26)
+        self.surf = pygame.Surface((W, H))
+
+    def show(self, target=None, lines=()):
+        pg, s = self.pg, self.surf
+        s.fill((0, 0, 0))
+        if target:
+            x, y = target
+            pg.draw.line(s, (255, 255, 255), (x - 18, y), (x + 18, y), 2)
+            pg.draw.line(s, (255, 255, 255), (x, y - 18), (x, y + 18), 2)
+            pg.draw.circle(s, (255, 60, 60), (x, y), 8, 2)
+        for i, text in enumerate(lines):
+            img = self.font.render(text, True, (60, 255, 120))
+            s.blit(img, ((W - img.get_width()) // 2, 90 + i * 28))
+        import numpy as np
+        a = pg.surfarray.array3d(s).transpose(1, 0, 2).astype(np.uint16)
+        px = ((a[:, :, 0] >> 3) << 11) | ((a[:, :, 1] >> 2) << 5) | (a[:, :, 2] >> 3)
+        rows = np.zeros((H, self.stride // 2), np.uint16)
+        rows[:, :W] = px
+        with open(self.path, "r+b") as f:
+            f.write(rows.astype("<u2").tobytes())
+
+
+def touch_device():
+    import evdev
+    for p in evdev.list_devices():
+        d = evdev.InputDevice(p)
+        if "ads7846" in (d.name or "").lower() or "touchscreen" in (d.name or "").lower():
+            return d
+    return None
+
+
+def read_tap(dev, timeout):
+    """Wait for one press; return median raw (x, y) while pressed, or None on timeout."""
+    from evdev import ecodes as e
+    end = time.time() + timeout
+    xs, ys, rx, ry, down = [], [], None, None, False
+    while True:
+        left = end - time.time()
+        if left <= 0 and not down:
+            return None
+        r, _, _ = select.select([dev.fd], [], [], max(0.05, min(left, 0.5)) if not down else 0.5)
+        if not r:
+            continue
+        for ev in dev.read():
+            if ev.type == e.EV_ABS and ev.code == e.ABS_X:
+                rx = ev.value
+            elif ev.type == e.EV_ABS and ev.code == e.ABS_Y:
+                ry = ev.value
+            elif ev.type == e.EV_KEY and ev.code == e.BTN_TOUCH:
+                if ev.value == 1:
+                    down, xs, ys = True, [], []
+                elif down:
+                    if len(xs) >= 3:
+                        xs.sort(); ys.sort()
+                        return xs[len(xs) // 2], ys[len(ys) // 2]
+                    down = False
+            elif ev.type == e.EV_SYN and down and rx is not None and ry is not None:
+                xs.append(rx); ys.append(ry)
+
+
+def drain(dev):
+    """Drop queued events so a bounce or a late tap is not taken for the next target."""
+    while True:
+        r, _, _ = select.select([dev.fd], [], [], 0)
+        if not r:
+            return
+        try:
+            list(dev.read())
+        except (BlockingIOError, OSError):
+            return
+
+
+def fit(raw, scr):
+    import numpy as np
+    A = np.array([[rx, ry, 1.0] for rx, ry in raw])
+    X = np.array([p[0] for p in scr], float)
+    Y = np.array([p[1] for p in scr], float)
+    cx = np.linalg.lstsq(A, X, rcond=None)[0]
+    cy = np.linalg.lstsq(A, Y, rcond=None)[0]
+    err = np.hypot(A @ cx - X, A @ cy - Y)
+    return {"cx": [float(v) for v in cx], "cy": [float(v) for v in cy]}, float(err.max())
+
+
+def save(cal, user, directory=None):
+    pw = pwd.getpwnam(user)
+    home = pw.pw_dir if directory is None else directory
+    path = os.path.join(home, ".touchcal.json")
+    if os.path.exists(path):
+        bak = path + ".bak-" + time.strftime("%Y%m%d-%H%M%S")
+        shutil.copy2(path, bak)
+        print("backup:", bak)
+    written = {"cx": [round(v, 6) for v in cal["cx"]], "cy": [round(v, 6) for v in cal["cy"]]}
+    with open(path + ".tmp", "w") as f:
+        json.dump(written, f)
+        f.write("\n")
+    os.replace(path + ".tmp", path)
+    os.chown(path, pw.pw_uid, pw.pw_gid)
+    print("saved:", path, json.dumps(cal))
+
+
+def tty1(action):
+    subprocess.run(["systemctl", action, "getty@tty1.service"], check=False)
+
+
+def self_test():
+    """Check the preset, the affine fit, panel lookup, and backup. No hardware."""
+    import contextlib
+    import io
+    import tempfile
+
+    failures = []
+    quiet = io.StringIO()
+
+    def check(condition, message):
+        if not condition:
+            failures.append(message)
+
+    rounded = {"cx": [round(v, 6) for v in PRESET["cx"]], "cy": [round(v, 6) for v in PRESET["cy"]]}
+    check(rounded == PRESET_ROUNDED, "preset rounds to the Pi tft35a rotate=90 values: %s" % rounded)
+
+    def apply(cal, rx, ry):
+        return (
+            cal["cx"][0] * rx + cal["cx"][1] * ry + cal["cx"][2],
+            cal["cy"][0] * rx + cal["cy"][1] * ry + cal["cy"][2],
+        )
+
+    # LCD-show 35-90: swapped axes, raw X 268..3880 -> screen y, raw Y 3936..227 -> screen x.
+    check(abs(apply(PRESET, 268, 3936)[0]) < 1e-6, "preset screen x is 0 at raw Y 3936")
+    check(abs(apply(PRESET, 268, 227)[0] - 479) < 1e-6, "preset screen x is 479 at raw Y 227")
+    check(abs(apply(PRESET, 268, 2000)[1]) < 1e-6, "preset screen y is 0 at raw X 268")
+    check(abs(apply(PRESET, 3880, 2000)[1] - 319) < 1e-6, "preset screen y is 319 at raw X 3880")
+
+    raw = [(268, 3936), (3880, 3900), (3800, 227), (300, 400), (2000, 2000)]
+    recovered, err = fit(raw, [apply(PRESET, rx, ry) for rx, ry in raw])
+    check(err < 1e-4, "fit of the preset samples is exact (err %s)" % err)
+    for key in ("cx", "cy"):
+        for got, want in zip(recovered[key], PRESET[key]):
+            check(abs(got - want) < 1e-4, "fit recovered %s %s vs %s" % (key, got, want))
+
+    skewed = {"cx": [0.02, -0.11, 410.0], "cy": [0.09, -0.01, -30.0]}
+    skewed_raw = [(100, 3900), (3700, 3800), (3600, 250), (150, 280), (1800, 2100)]
+    skewed_fit, skewed_err = fit(skewed_raw, [apply(skewed, rx, ry) for rx, ry in skewed_raw])
+    check(skewed_err < 1e-4, "fit recovers a tilted map")
+    for key in ("cx", "cy"):
+        for got, want in zip(skewed_fit[key], skewed[key]):
+            check(abs(got - want) < 1e-4, "tilted %s %s vs %s" % (key, got, want))
+
+    messy, messy_err = fit(
+        [(0, 0), (1, 0), (0, 1), (1, 1), (2, 2)],
+        [(0, 0), (10, 0), (0, 10), (0, 0), (100, 100)],
+    )
+    check(messy_err > 30, "inconsistent taps report max error %s" % messy_err)
+    check(len(messy["cx"]) == 3 and len(messy["cy"]) == 3, "fit still returns six coefficients")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        fb0 = os.path.join(tmp, "fb0")
+        fb1 = os.path.join(tmp, "fb1")
+        os.makedirs(fb0)
+        os.makedirs(fb1)
+        with open(os.path.join(fb0, "name"), "w") as handle:
+            handle.write("ili9486\n")
+        with open(os.path.join(fb1, "name"), "w") as handle:
+            handle.write("fb_ili9486\n")
+        device, sysfs = tft_fb(tmp)
+        check(device == "/dev/fb1", "panel device is fb1 by name, got %s" % device)
+        check(sysfs == fb1, "panel sysfs is the fb_ili9486 node")
+        with open(os.path.join(fb1, "name"), "w") as handle:
+            handle.write("simple-framebuffer\n")
+        device, sysfs = tft_fb(tmp)
+        check(device == "/dev/fb0", "missing panel name falls back to fb0, got %s" % device)
+        check(os.path.basename(sysfs) == "fb0", "fallback sysfs is fb0")
+
+    user = pwd.getpwuid(os.getuid()).pw_name
+    with tempfile.TemporaryDirectory() as tmp:
+        previous = os.path.join(tmp, ".touchcal.json")
+        previous_body = '{"cx": [1, 0, 0], "cy": [0, 1, 0]}\n'
+        with open(previous, "w") as handle:
+            handle.write(previous_body)
+        with contextlib.redirect_stdout(quiet):
+            save(PRESET, user, directory=tmp)
+        with open(previous) as handle:
+            body = handle.read()
+        check(body == json.dumps(PRESET_ROUNDED) + "\n", "saved text is the rounded preset: %s" % body)
+        backups = [name for name in os.listdir(tmp) if ".touchcal.json.bak-" in name]
+        check(len(backups) == 1, "one backup, found %s" % backups)
+        if backups:
+            with open(os.path.join(tmp, backups[0])) as handle:
+                check(handle.read() == previous_body, "backup keeps the previous calibration")
+        stat = os.stat(previous)
+        pw = pwd.getpwnam(user)
+        check(stat.st_uid == pw.pw_uid and stat.st_gid == pw.pw_gid, "saved file is owned by the user")
+
+        fresh = os.path.join(tmp, "empty")
+        os.makedirs(fresh)
+        with contextlib.redirect_stdout(quiet):
+            save(PRESET, user, directory=fresh)
+        names = os.listdir(fresh)
+        check(names == [".touchcal.json"], "first save writes no backup, found %s" % names)
+
+    help_run = subprocess.run(
+        [sys.executable, os.path.abspath(__file__), "--help"],
+        capture_output=True, text=True, check=False,
+    )
+    check(help_run.returncode == 0, "touch_calibrate --help exits 0")
+    check("--preset" in help_run.stdout and "tft35a" in help_run.stdout, "help mentions the preset")
+    check("touchcal.json" in help_run.stdout, "help mentions the calibration file")
+    if os.geteuid() != 0:
+        blocked = subprocess.run(
+            [sys.executable, os.path.abspath(__file__), "--preset", "--dry-run"],
+            capture_output=True, text=True, check=False,
+        )
+        check(blocked.returncode != 0, "preset still requires root")
+        check("sudo touch_calibrate" in blocked.stderr, "root hint is %r" % blocked.stderr)
+
+    if failures:
+        for message in failures:
+            sys.stderr.write("touch_calibrate: " + message + "\n")
+        return 1
+    print("touch_calibrate self-test ok")
+    return 0
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        description="Calibrate the TFT touch panel for field_touch.",
+        epilog="Writes ~/.touchcal.json. An existing file is copied to "
+               ".touchcal.json.bak-<date> first. --preset is the goodtft "
+               "tft35a rotate=90 map.",
+    )
+    ap.add_argument("--timeout", type=float, default=30, help="seconds to wait for each tap (default 30)")
+    ap.add_argument("--preset", action="store_true", help="write the goodtft tft35a rotate=90 preset")
+    ap.add_argument("--dry-run", action="store_true", help="show the fit but do not save")
+    ap.add_argument("--no-restart", action="store_true", help="leave tty1 stopped afterwards")
+    ap.add_argument("--user", default=os.environ.get("SUDO_USER") or "admin",
+                    help="whose ~/.touchcal.json to write (default: $SUDO_USER or admin)")
+    ap.add_argument("--self-test", action="store_true",
+                    help="check the preset, fit, and backup without hardware")
+    a = ap.parse_args(argv)
+    if a.self_test:
+        return self_test()
+    if os.geteuid() != 0:
+        sys.exit("Run as root: sudo touch_calibrate")
+    if a.user == "root":
+        a.user = "admin"
+    if a.preset:
+        if a.dry_run:
+            print("preset:", json.dumps(PRESET))
+        else:
+            save(PRESET, a.user)
+            if not a.no_restart:
+                tty1("restart")
+                print("tty1 restarted; field_touch reopens with the preset.")
+        return
+    dev = touch_device()
+    if dev is None:
+        sys.exit("No ADS7846 touchscreen found.")
+    print("Stopping tty1 (field_touch) ...")
+    tty1("stop")
+    time.sleep(1)
+    blink = "/sys/class/graphics/fbcon/cursor_blink"
+    try:
+        with open(blink, "w") as handle:
+            handle.write("0")
+    except OSError:
+        pass
+    ok = False
+    try:
+        fb = FB()
+        dev.grab()
+        raw = []
+        for i, t in enumerate(TARGETS):
+            fb.show(t, ["Tap the centre of the cross", f"point {i + 1} of {len(TARGETS)}"])
+            time.sleep(0.3)
+            drain(dev)
+            print(f"point {i + 1}/{len(TARGETS)} at {t}: waiting up to {a.timeout:.0f}s ...", flush=True)
+            got = read_tap(dev, a.timeout)
+            if got is None:
+                fb.show(None, ["Calibration timed out.", "Nothing was saved."])
+                print("timed out, nothing saved")
+                time.sleep(1.5)
+                return 2
+            print("   raw", got, flush=True)
+            raw.append(got)
+            fb.show(None, ["OK"])
+            time.sleep(0.6)
+        cal, err = fit(raw, TARGETS)
+        print(f"fit: {json.dumps(cal)}  max error {err:.1f}px")
+        if err > 30:
+            fb.show(None, ["Taps did not line up", f"(error {err:.0f}px). Not saved.", "Run touch_calibrate again."])
+            print("error too large, not saved")
+            time.sleep(3)
+            return 3
+        fb.show(None, ["Calibration done", f"max error {err:.0f}px"])
+        if a.dry_run:
+            print("dry run: not saved")
+        else:
+            save(cal, a.user)
+        ok = True
+        time.sleep(1.5)
+        return 0
+    finally:
+        try:
+            dev.ungrab()
+        except Exception:
+            pass
+        try:
+            with open(blink, "w") as handle:
+                handle.write("1")
+        except OSError:
+            pass
+        if not a.no_restart:
+            tty1("start")
+            print("tty1 restarted; field_touch reopens" + (" with the new calibration." if ok else "."))
+
+
+if __name__ == "__main__":
+    sys.exit(main() or 0)

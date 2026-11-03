@@ -21,6 +21,8 @@ The picture is written to `/dev/fb0` (16-bit color). Touch calibration is `~/.to
 
 Screen position is `x = a*rawX + b*rawY + c` and `y = d*rawX + e*rawY + f`. Raw values are ABS_X / ABS_Y from the ADS7846. On a desktop with no framebuffer, `field_touch` opens a window instead.
 
+Recalibrate on the Pi with `sudo touch_calibrate`. It stops the touch guide, shows five crosshairs on the panel named `fb_ili9486`, and writes that map to `~/.touchcal.json`. For the goodtft 3.5 inch screen with `dtoverlay=tft35a:rotate=90`, `sudo touch_calibrate --preset` writes the known map without tapping. A previous file is copied to `~/.touchcal.json.bak-<date>` before the new one is saved. The installer puts the tool at `/usr/local/bin/touch_calibrate` and leaves a calibration that is already there in place.
+
 In the keyboard guide, type a number, then Enter. Enter continues a page. `n` is the next set of search results. `q` goes back. Page Up and Page Down are not used. Once `cavemap` is on `PATH`, the keyboard guide asks `Start Cave Mapper?` at startup and lists it under More.
 
 ## Cave Mapper
