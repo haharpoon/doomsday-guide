@@ -13,8 +13,11 @@ The top bar is the shared ``tabbar.py`` strip: 36px, GUIDE, SCAN, RADIO.
 SCAN is this screen. GUIDE, and the HOME button under the bar, leave the
 scanner and return to the touch guide. RADIO leaves for the radio screen.
 
-There is no range sensor wired yet. Built-in demo geometry runs until a
-USB serial device shows up, and the picture is labelled DEMO DATA.
+Built-in demo geometry runs until a USB serial device shows up, and the
+picture is labelled DEMO DATA. The ESP32 sketch in
+``firmware/doomsday_scan`` is what streams these frames from a Pimoroni
+VL53L5CX. It only sends ``F`` lines today. Pan and tilt servos are not
+fitted, so ``A`` lines are reserved for later.
 
 ESP32 link (115200 8N1, UTF-8, one record per line, LF or CRLF)
 ----------------------------------------------------------------
@@ -37,6 +40,30 @@ LEFT  RIGHT  UP  DOWN  PUSH  PULL  HOLD  BREACH
     LEFT/RIGHT/UP/DOWN nudge the head.
     PUSH/PULL step a cave-log station in or back.
     BREACH trips the perimeter alarm. HOLD clears it.
+
+Desktop / manual aim (no servos yet)
+------------------------------------
+``--desktop`` (also ``CAVEMAP_DESKTOP=1``, and the default on Windows)
+opens a 2x window, never hands off to the guide, and turns on manual aim
+when the serial link is live. Until the first ``A`` line arrives the
+keyboard sets pan/tilt, and those angles go into frame_to_points exactly
+as if ``A pan tilt`` had arrived. ``--manual-aim`` turns manual aim on
+without the rest of desktop mode. ``CAVEMAP_MANUAL_AIM=1`` does the same.
+With no port open the screen stays on DEMO DATA, and the arrow keys keep
+orbiting that picture.
+
+    LEFT/RIGHT  pan -/+ 10        UP/DOWN  tilt +/- 10 (shift: 2 deg)
+    W A S D     turn the view     mouse drag also turns the view
+    SPACE/ENTER capture again     L  live capture on/off
+    C  clear the cloud            Z  aim back to 90/90
+    1-4 modes                     Q / Esc / H quit
+
+To avoid smearing while the sensor is being turned by hand, a manual
+angle change waits AIM_SETTLE_S, then takes the per-zone median of
+AIM_SNAP_FRAMES frames as one snapshot. A zone has to return in more
+than half of those frames. Live capture adds every frame instead, still
+only once the angle has been steady for AIM_SETTLE_S. If the link drops,
+manual aim turns off with the fallback to the demo.
 
 Touch calibration is ``~/.touchcal.json``::
 
@@ -143,6 +170,12 @@ FLASH_HZ = 8.0
 CLOUD_CAP = 6000
 FOV_RAD = math.radians(45.0)
 
+# Manual aim (desktop testing before servos exist).
+AIM_STEP = 10.0
+AIM_FINE_STEP = 2.0
+AIM_SETTLE_S = 0.5
+AIM_SNAP_FRAMES = 5
+
 EVENTS = frozenset({"LEFT", "RIGHT", "UP", "DOWN", "PUSH", "PULL", "HOLD", "BREACH"})
 
 DEMO_STATIONS = (
@@ -161,6 +194,8 @@ FONT_REGULAR = (
     "/usr/share/fonts/dejavu/DejaVuSansMono.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
     "/usr/share/fonts/truetype/freefont/FreeMono.ttf",
+    "C:/Windows/Fonts/consola.ttf",
+    "C:/Windows/Fonts/cour.ttf",
 )
 FONT_BOLD = (
     "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
@@ -168,6 +203,8 @@ FONT_BOLD = (
     "/usr/share/fonts/dejavu/DejaVuSansMono-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
     "/usr/share/fonts/truetype/freefont/FreeMonoBold.ttf",
+    "C:/Windows/Fonts/consolab.ttf",
+    "C:/Windows/Fonts/courbd.ttf",
 )
 
 KDSETMODE = 0x4B3A
@@ -660,6 +697,14 @@ class Session:
     cloud: np.ndarray = field(default_factory=lambda: np.zeros((CLOUD_CAP, 3), np.float32))
     cloud_n: int = 0
     cloud_i: int = 0
+    frames_rx: int = 0
+    # Manual aim: keyboard sets pan/tilt until a servo "A" line arrives.
+    manual_aim: bool = False
+    aim_changed_at: float = 0.0
+    aim_live: bool = False
+    aim_want: bool = True
+    aim_buf: list = field(default_factory=list)
+    snapshots: int = 0
 
     def __post_init__(self):
         if self.demo and self.points is None:
@@ -671,6 +716,8 @@ class Session:
 
     def engage_demo(self):
         self.demo = True
+        self.manual_aim = False
+        self.aim_buf = []
         self.alarm_latched = False
         self.stations = [tuple(item) for item in DEMO_STATIONS]
         self.cloud_n = 0
@@ -725,14 +772,88 @@ class Session:
 
     def apply_reading(self, reading: Reading):
         if reading.pan is not None:
+            # A real pan/tilt head is talking. It owns the angles from now on.
+            self.manual_aim = False
+            self.aim_buf = []
             self.pan = reading.pan
             self.tilt = reading.tilt if reading.tilt is not None else self.tilt
         if reading.frame is not None:
             self.frame = reading.frame
-            self._absorb(frame_to_points(reading.frame, self.pan, self.tilt))
+            self.frames_rx += 1
+            if self.manual_aim:
+                self._manual_frame(reading.frame)
+            else:
+                self._absorb(frame_to_points(reading.frame, self.pan, self.tilt))
         if reading.event:
             self.last_event = reading.event
             self._apply_event(reading.event)
+
+    def aim(self, d_pan: float = 0.0, d_tilt: float = 0.0, to=None):
+        """Set the manual angle. Ignored once a servo sends ``A`` lines."""
+
+        if not self.manual_aim:
+            return
+        if to is not None:
+            pan, tilt = to
+        else:
+            pan, tilt = self.pan + d_pan, self.tilt + d_tilt
+        pan = min(180.0, max(0.0, pan))
+        tilt = min(180.0, max(0.0, tilt))
+        if (pan, tilt) != (self.pan, self.tilt):
+            self.pan, self.tilt = pan, tilt
+            self.aim_changed_at = self.t
+            self.aim_buf = []
+            self.aim_want = True
+
+    def recapture(self):
+        if self.manual_aim:
+            self.aim_buf = []
+            self.aim_want = True
+
+    def clear_cloud(self):
+        self.cloud_n = 0
+        self.cloud_i = 0
+        self.snapshots = 0
+        self.aim_buf = []
+        self.aim_want = True
+
+    def aim_steady(self) -> bool:
+        return self.t - self.aim_changed_at >= AIM_SETTLE_S
+
+    def aim_status(self) -> str:
+        if not self.manual_aim:
+            return ""
+        if not self.aim_steady():
+            return "SETTLE"
+        if self.aim_live:
+            return "LIVE"
+        if self.aim_want:
+            return f"SNAP {len(self.aim_buf)}/{AIM_SNAP_FRAMES}"
+        return "HELD"
+
+    def _manual_frame(self, frame: np.ndarray):
+        if not self.aim_steady():
+            return
+        if self.aim_live:
+            self._absorb(frame_to_points(frame, self.pan, self.tilt))
+            return
+        if not self.aim_want:
+            return
+        self.aim_buf.append(np.array(frame, dtype=np.float32))
+        if len(self.aim_buf) < AIM_SNAP_FRAMES:
+            return
+        stack = np.stack(self.aim_buf)
+        good = (stack >= 30.0) & (stack <= 4000.0)
+        masked = np.where(good, stack, np.nan)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            median = np.nanmedian(masked, axis=0)
+        # A zone needs a return in most of the frames to count.
+        median = np.where(good.sum(axis=0) * 2 > len(self.aim_buf), median, 0.0)
+        self._absorb(frame_to_points(np.nan_to_num(median).astype(np.float32), self.pan, self.tilt))
+        self.snapshots += 1
+        self.aim_buf = []
+        self.aim_want = False
 
     def _absorb(self, pts: np.ndarray):
         count = len(pts)
@@ -1077,8 +1198,16 @@ def draw_room(surface, fonts, session: Session, rect: pygame.Rect):
         f"PAN {session.pan:05.1f}",
         f"TLT {session.tilt:05.1f}",
     )
+    if session.manual_aim and not session.demo:
+        lines = lines + (f"AIM {session.aim_status()}",)
     line_h = font.get_linesize()
-    hud = pygame.Rect(rect.left + 8, rect.bottom - (12 + line_h * len(lines) + 8), 132, line_h * len(lines) + 8)
+    text_w = max((font.size(line)[0] for line in lines), default=0)
+    hud = pygame.Rect(
+        rect.left + 8,
+        rect.bottom - (12 + line_h * len(lines) + 8),
+        max(132, text_w + 12),
+        line_h * len(lines) + 8,
+    )
     pygame.draw.rect(surface, BLACK, hud)
     pygame.draw.rect(surface, DIM, hud, 1)
     for index, line in enumerate(lines):
@@ -1520,6 +1649,12 @@ class InputState:
     click: tuple | None = None
     press: tuple | None = None
     dragged: bool = False
+    aim_pan: float = 0.0
+    aim_tilt: float = 0.0
+    aim_home: bool = False
+    capture: bool = False
+    live: bool = False
+    clear: bool = False
 
 
 class PointerTracker:
@@ -1747,7 +1882,12 @@ def _classify(dev, ecodes):
     return touch, keyboard
 
 
-def poll_window(scale: int, held: set, tracker: PointerTracker, view: pygame.Rect) -> InputState:
+def poll_window(
+    scale: int, held: set, tracker: PointerTracker, view: pygame.Rect, aim: bool = False
+) -> InputState:
+    """Desktop window input. ``aim`` gives the arrows to manual pan/tilt and
+    leaves W/A/S/D (and mouse drag) for turning the view."""
+
     state = InputState()
     now = time.monotonic()
     for event in pygame.event.get():
@@ -1760,6 +1900,24 @@ def poll_window(scale: int, held: set, tracker: PointerTracker, view: pygame.Rec
                 state.mode = modes[event.key]
             if event.key in (pygame.K_q, pygame.K_ESCAPE, pygame.K_h):
                 state.quit = True
+            if aim:
+                step = AIM_FINE_STEP if event.mod & pygame.KMOD_SHIFT else AIM_STEP
+                if event.key == pygame.K_LEFT:
+                    state.aim_pan -= step
+                elif event.key == pygame.K_RIGHT:
+                    state.aim_pan += step
+                elif event.key == pygame.K_UP:
+                    state.aim_tilt += step
+                elif event.key == pygame.K_DOWN:
+                    state.aim_tilt -= step
+                elif event.key == pygame.K_z:
+                    state.aim_home = True
+                elif event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_KP_ENTER):
+                    state.capture = True
+                elif event.key == pygame.K_l:
+                    state.live = True
+            if event.key == pygame.K_c:
+                state.clear = True
         elif event.type == pygame.KEYUP:
             held.discard(event.key)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -1778,16 +1936,20 @@ def poll_window(scale: int, held: set, tracker: PointerTracker, view: pygame.Rec
                 state.click = click
     if tracker.pressing:
         state.press = tracker.pos
-    if pygame.K_LEFT in held:
+    if aim:
+        left, right, up, down = pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s
+    else:
+        left, right, up, down = pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN
+    if left in held:
         state.yaw -= 0.045
         state.dragged = True
-    if pygame.K_RIGHT in held:
+    if right in held:
         state.yaw += 0.045
         state.dragged = True
-    if pygame.K_UP in held:
+    if up in held:
         state.pitch += 0.035
         state.dragged = True
-    if pygame.K_DOWN in held:
+    if down in held:
         state.pitch -= 0.035
         state.dragged = True
     return state
@@ -1970,6 +2132,7 @@ class App:
     pressed: str | None = None
     flash: str | None = None
     flash_until: float = 0.0
+    desktop: bool = False
 
     def active_note(self) -> str:
         if self.note and self.session.t < self.note_until:
@@ -2007,9 +2170,30 @@ class App:
         if inp.mode:
             self._set_mode(inp.mode, now)
         self.pressed = layout.identify(*inp.press) if inp.press else None
+        session = self.session
+        if inp.aim_pan or inp.aim_tilt:
+            session.aim(inp.aim_pan, inp.aim_tilt)
+        if inp.aim_home:
+            session.aim(to=(90.0, 90.0))
+        if inp.capture:
+            session.recapture()
+        if inp.live and session.manual_aim:
+            session.aim_live = not session.aim_live
+            self.note = "LIVE CAPTURE" if session.aim_live else "SNAPSHOT CAPTURE"
+            self.note_until = session.t + 1.5
+        if inp.clear and not session.demo:
+            session.clear_cloud()
+            self.note = "CLOUD CLEARED"
+            self.note_until = session.t + 1.5
         if inp.click:
             widget = layout.identify(*inp.click)
-            if widget in ("HOME", "GUIDE"):
+            if self.desktop and widget in ("HOME", "GUIDE", "RADIO"):
+                # No guide on the desktop. Esc / Q closes the window.
+                self.flash = widget
+                self.flash_until = now + FLASH_S
+                self.note = "DESKTOP: ESC QUITS"
+                self.note_until = session.t + 1.5
+            elif widget in ("HOME", "GUIDE"):
                 self.handoff = "guide"
                 self._arm_exit(widget, now)
             elif widget == "RADIO":
@@ -2086,7 +2270,15 @@ def _close_scan_mirror(hdmi):
     return None
 
 
-def run_loop(window: bool, session: Session, fps: int, console: Console | None = None) -> bool:
+def run_loop(
+    window: bool,
+    session: Session,
+    fps: int,
+    console: Console | None = None,
+    desktop: bool = False,
+    run_for: float | None = None,
+    autostep: float | None = None,
+) -> bool:
     screen = boot_pygame(window)
     fonts = load_fonts()
     layout = make_layout()
@@ -2108,7 +2300,7 @@ def run_loop(window: bool, session: Session, fps: int, console: Console | None =
                 hdmi = _close_scan_mirror(hdmi)
             console.enter()
             evdev = EvdevInputs(load_calibration())
-        app = App(session)
+        app = App(session, desktop=desktop)
         held: set = set()
         tracker = PointerTracker()
         clean = pygame.Surface(layout.view.size)
@@ -2126,12 +2318,29 @@ def run_loop(window: bool, session: Session, fps: int, console: Console | None =
                 instant = 1.0 / max(started - last_tick, 1e-4)
                 fps_ema = instant if fps_ema <= 0 else fps_ema * 0.9 + instant * 0.1
             last_tick = started
+            if run_for is not None and started - boot_t0 >= run_for:
+                break
             if window:
-                incoming = poll_window(2, held, tracker, layout.view)
+                incoming = poll_window(2, held, tracker, layout.view, aim=session.manual_aim)
+                if autostep and session.manual_aim and not session.demo:
+                    # Test hook: step the manual pan 30..150 every ``autostep`` s.
+                    slot = int((started - boot_t0) / autostep)
+                    incoming.aim_pan = 0.0
+                    session.aim(to=(30.0 + 20.0 * (slot % 7), session.tilt))
             else:
                 incoming = evdev.poll(layout.view) if evdev else InputState()
             if (not boot_done) and (
-                incoming.click or incoming.press or incoming.mode or incoming.quit or incoming.dragged
+                incoming.click
+                or incoming.press
+                or incoming.mode
+                or incoming.quit
+                or incoming.dragged
+                or incoming.aim_pan
+                or incoming.aim_tilt
+                or incoming.aim_home
+                or incoming.capture
+                or incoming.live
+                or incoming.clear
             ):
                 boot_done = True
             if app.handle(layout, incoming, started) == "quit":
@@ -2364,14 +2573,82 @@ def self_test() -> int:
     live.advance(0.05, spin=False)
     check(live.pan == 10 and live.tilt == 80, "session angles")
     check(live.cloud_n == 64, "session absorbed frame")
+    check(live.frames_rx == 1, "session counts frames")
     check(live.alarm_latched is False, "HOLD cleared BREACH")
     check(len(live.stations) == len(DEMO_STATIONS) + 1, "PUSH added a stop")
     check(live.demo is False, "stays live while the port is quiet")
+    live.manual_aim = True
     live.serial.ser.payload = b""
     live.serial.ser.read = lambda _n: (_ for _ in ()).throw(OSError("gone"))
     live.advance(0.05, spin=False)
     check(live.demo is True, "dead port falls back to demo")
+    check(live.manual_aim is False, "link loss leaves manual aim")
     check(live.notice == "LINK LOST", "link loss stays on the status line")
+
+    base = np.full((8, 8), 1000.0, np.float32)
+    fresh = Session(demo=False, manual_aim=True)
+    fresh.apply_reading(Reading(frame=base))
+    check(fresh.cloud_n == 0 and fresh.frames_rx == 1, "manual aim waits out the settle")
+    check(fresh.aim_status() == "SETTLE", "settle status")
+    fresh.t = AIM_SETTLE_S
+    fresh.apply_reading(Reading(frame=base))
+    check(fresh.aim_status() == f"SNAP 1/{AIM_SNAP_FRAMES}", "snap progress")
+    check(fresh.cloud_n == 0, "partial snapshot is not absorbed")
+
+    manual = Session(demo=False, manual_aim=True)
+    manual.t = AIM_SETTLE_S
+    weak = base.copy()
+    weak[:, 0] = 0
+    weak[0, 1] = 10
+    for _ in range(3):
+        manual.apply_reading(Reading(frame=weak))
+    for _ in range(2):
+        manual.apply_reading(Reading(frame=base))
+    check(manual.snapshots == 1, "median snapshot commits")
+    check(manual.cloud_n == 55, "zones without a majority return are dropped")
+    dists = np.linalg.norm(manual.cloud[: manual.cloud_n], axis=1)
+    check(abs(float(dists.mean()) - 1.0) < 0.05, "snapshot ranges are the median in metres")
+    manual.apply_reading(Reading(frame=base))
+    check(manual.cloud_n == 55 and manual.aim_status() == "HELD", "snapshot holds")
+    manual.recapture()
+    check(manual.aim_want and manual.aim_buf == [], "recapture arms another snapshot")
+    manual.aim_live = True
+    manual.apply_reading(Reading(frame=base))
+    check(manual.cloud_n == 55 + 64 and manual.aim_status() == "LIVE", "live capture takes each frame")
+    manual.aim(10, -10)
+    check((manual.pan, manual.tilt) == (100.0, 80.0), "aim steps pan and tilt")
+    manual.t = manual.aim_changed_at + AIM_SETTLE_S - 0.01
+    held_n = manual.cloud_n
+    manual.apply_reading(Reading(frame=base))
+    check(manual.cloud_n == held_n, "a new angle waits out the settle again")
+    manual.aim(to=(200.0, -4.0))
+    check((manual.pan, manual.tilt) == (180.0, 0.0), "aim clamps to 0..180")
+    stamp = manual.aim_changed_at
+    manual.aim(to=(180.0, 0.0))
+    check(manual.aim_changed_at == stamp and manual.aim_buf == [], "same aim does not resettle")
+    manual.clear_cloud()
+    check(
+        manual.cloud_n == 0 and manual.cloud_i == 0 and manual.snapshots == 0 and manual.aim_want,
+        "clear cloud",
+    )
+
+    servo = Session(demo=False, manual_aim=True)
+    servo.t = 10
+    servo.aim_buf = [base]
+    servo.apply_reading(Reading(pan=15, tilt=100))
+    check(
+        servo.manual_aim is False and servo.aim_buf == [] and servo.pan == 15 and servo.tilt == 100,
+        "A line owns the head",
+    )
+    servo.apply_reading(Reading(frame=base))
+    check(servo.cloud_n == 64 and servo.snapshots == 0, "servo frames skip the snapshot")
+    servo.aim(d_pan=10)
+    check(servo.pan == 15, "keyboard aim stops after A")
+    servo.manual_aim = True
+    servo.serial = SerialSource(MemoryPort(b""), "memory")
+    servo.serial.ser.read = lambda _n: (_ for _ in ()).throw(OSError("gone"))
+    servo.advance(0.05, spin=False)
+    check(servo.demo is True and servo.manual_aim is False, "link loss clears manual aim")
 
     armed, _flash = breach_state(1.2)
     hot, flash_on = breach_state(5.0)
@@ -2471,6 +2748,67 @@ def self_test() -> int:
         check(app.handle(layout, guide_click, now=3) == "", "guide holds for the flash")
         check(app.exit_at == 3 + FLASH_S, "guide leaves")
         check(app.handoff == "guide", "guide handoff stays the guide")
+
+        def keydown(key, mod=0):
+            pygame.event.post(
+                pygame.event.Event(pygame.KEYDOWN, key=key, mod=mod, unicode="", scancode=0)
+            )
+
+        pygame.event.clear()
+        keydown(pygame.K_LEFT, 0)
+        keydown(pygame.K_UP, pygame.KMOD_SHIFT)
+        keydown(pygame.K_z)
+        keydown(pygame.K_SPACE)
+        keydown(pygame.K_l)
+        keydown(pygame.K_c)
+        aimed_keys = poll_window(2, set(), PointerTracker(), layout.view, aim=True)
+        check(aimed_keys.aim_pan == -AIM_STEP, "left pans")
+        check(aimed_keys.aim_tilt == AIM_FINE_STEP, "shift-up is a fine tilt")
+        check(
+            aimed_keys.aim_home and aimed_keys.capture and aimed_keys.live and aimed_keys.clear,
+            "home, capture, live, and clear keys",
+        )
+        pygame.event.clear()
+        wasd = poll_window(2, {pygame.K_a, pygame.K_s}, PointerTracker(), layout.view, aim=True)
+        check(wasd.yaw < 0 and wasd.pitch < 0 and wasd.dragged, "wasd orbits while aiming")
+        pygame.event.clear()
+        arrows = poll_window(2, {pygame.K_LEFT, pygame.K_UP}, PointerTracker(), layout.view, aim=False)
+        check(arrows.yaw < 0 and arrows.pitch > 0 and arrows.aim_pan == 0, "arrows orbit when not aiming")
+
+        aimed_session = Session(demo=False, manual_aim=True)
+        aimed_session.t = AIM_SETTLE_S
+        aimed_surface = pygame.Surface((WIDTH, HEIGHT))
+        render(aimed_surface, fonts, layout, aimed_session, 1, "", clock="12:00:00")
+        check(aimed_surface.get_size() == (WIDTH, HEIGHT), "manual aim room renders")
+        aim_app = App(aimed_session)
+        aim_app.handle(layout, InputState(aim_pan=AIM_STEP, aim_tilt=-AIM_STEP), now=1)
+        check((aimed_session.pan, aimed_session.tilt) == (100.0, 80.0), "app applies aim")
+        aim_app.handle(layout, InputState(aim_home=True), now=2)
+        check((aimed_session.pan, aimed_session.tilt) == (90.0, 90.0), "app homes aim")
+        aim_app.handle(layout, InputState(live=True), now=3)
+        check(aimed_session.aim_live and aim_app.note == "LIVE CAPTURE", "app toggles live")
+        aim_app.handle(layout, InputState(live=True), now=4)
+        check((not aimed_session.aim_live) and aim_app.note == "SNAPSHOT CAPTURE", "app toggles snapshot")
+        aimed_session.cloud_n = 4
+        aim_app.handle(layout, InputState(clear=True), now=5)
+        check(aimed_session.cloud_n == 0 and aim_app.note == "CLOUD CLEARED", "app clears the cloud")
+        aim_app.handle(layout, InputState(capture=True), now=6)
+        check(aimed_session.aim_want and aimed_session.aim_buf == [], "app recapture")
+        demo_aim = App(Session(demo=True, manual_aim=True))
+        demo_aim.session.place(t=1.0)
+        demo_aim.handle(layout, InputState(clear=True), now=4)
+        check(demo_aim.note == "", "demo ignores clear")
+
+        desk = App(Session(demo=True), desktop=True)
+        desk.session.place(t=1.0)
+        check(desk.handle(layout, InputState(click=layout.home.center), now=5) == "", "desktop home stays")
+        check(desk.exit_at is None and desk.note == "DESKTOP: ESC QUITS", "desktop home explains esc")
+        check(desk.handoff == "guide", "desktop home does not change handoff")
+        radio_desk = InputState(click=layout.tabs[2][1].center)
+        check(desk.handle(layout, radio_desk, now=6) == "", "desktop radio stays")
+        check(desk.exit_at is None, "desktop radio does not arm an exit")
+        check(desk.handle(layout, InputState(quit=True), now=7) == "quit", "desktop still quits on esc")
+
         argv = guide_argv("radio")
         check(argv is not None and argv[-1] == "--radio", f"radio handoff argv {argv}")
         check(RADIO_EXIT == 7, "radio exit code")
@@ -2481,7 +2819,7 @@ def self_test() -> int:
         for message in failures:
             sys.stderr.write(f"FAIL {message}\n")
         return 1
-    print(f"cavemap self-test ok ({len(SHOTS)} shot cases, protocol, serial stub)")
+    print(f"cavemap self-test ok ({len(SHOTS)} shot cases, protocol, serial stub, manual aim)")
     return 0
 
 
@@ -2499,7 +2837,16 @@ def main(argv=None) -> int:
     parser.add_argument("--fps", type=int, default=TARGET_FPS, help="frame cap (default 18)")
     parser.add_argument("--dump", metavar="DIR", help="write 480x320 screenshots and exit")
     parser.add_argument("--self-test", action="store_true", help="check the protocol, serial stub, and renderer")
+    parser.add_argument(
+        "--desktop",
+        action="store_true",
+        help="desktop window, manual aim, no guide handoff (default on Windows, or CAVEMAP_DESKTOP=1)",
+    )
+    parser.add_argument("--manual-aim", action="store_true", help="keyboard sets pan/tilt until A lines arrive")
+    parser.add_argument("--run-for", type=float, metavar="S", help="quit after S seconds and print link stats")
+    parser.add_argument("--autostep", type=float, metavar="S", help="test hook: step manual pan every S seconds")
     args = parser.parse_args(argv)
+    desktop = bool(args.desktop) or os.environ.get("CAVEMAP_DESKTOP") == "1" or os.name == "nt"
 
     if args.self_test:
         code = self_test()
@@ -2518,7 +2865,7 @@ def main(argv=None) -> int:
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGTERM, _on_term)
-    window = bool(args.window)
+    window = bool(args.window) or desktop
     panel = panel_device()
     if not window and not os.path.exists(panel):
         sys.stderr.write(f"cavemap: no {panel}, opening a window\n")
@@ -2534,9 +2881,19 @@ def main(argv=None) -> int:
         sys.stderr.write(f"cavemap: {error}\n")
         return 1
 
+    if desktop or args.manual_aim or os.environ.get("CAVEMAP_MANUAL_AIM") == "1":
+        session.manual_aim = not session.demo
     tab = ""
     try:
-        tab = run_loop(window=window, session=session, fps=args.fps, console=console)
+        tab = run_loop(
+            window=window,
+            session=session,
+            fps=args.fps,
+            console=console,
+            desktop=desktop,
+            run_for=args.run_for,
+            autostep=args.autostep,
+        )
     except (OSError, pygame.error) as error:
         console.leave()
         sys.stderr.write(
@@ -2550,6 +2907,15 @@ def main(argv=None) -> int:
         if session.serial is not None:
             session.serial.close()
         console.leave()
+        if args.run_for is not None:
+            print(
+                f"cavemap stats: link={session.link_name or 'demo'} demo={session.demo} "
+                f"frames={session.frames_rx} snapshots={session.snapshots} "
+                f"cloud={session.cloud_n} pan={session.pan:.0f} tilt={session.tilt:.0f}"
+            )
+    if desktop:
+        print("Scanner closed.")
+        return 0
     if tab == "radio" and returning_to_parent():
         return RADIO_EXIT
     if tab and handoff_guide(tab):
