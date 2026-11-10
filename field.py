@@ -10,15 +10,30 @@ import re
 import shutil
 import sys
 import textwrap
+import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
 
 HOST = "http://127.0.0.1:8080"
 NOTES = Path("/var/lib/kiwix/notes/field.txt")
+# Fallback stems, used only when library.xml and the OPDS catalog cannot be read.
+# kiwix-serve matches books.name to the ZIM file stem, not the short library name.
 MED = "wikipedia_en_medicine_nopic_2026-04"
 VOY = "wikivoyage_en_all_nopic_2026-09"
+MED_PREFIX = "wikipedia_en_medicine"
+VOY_PREFIX = "wikivoyage_en_all"
+LIBRARY_XML = os.environ.get("DOOMSDAY_LIBRARY_XML", "/var/lib/kiwix/library.xml")
+_FALLBACK_BOOKS = {
+    MED_PREFIX: MED,
+    VOY_PREFIX: VOY,
+}
+_LOCAL_CACHE = {}
+_OPDS_BOOKS = None
+_TOTAL_RE = re.compile(r"of <b>(\d[\d,.\s\u00a0\u202f]*)</b>")
+_LOOSE_STEM = re.compile(r"[A-Za-z0-9][\w.-]*20\d{2}-\d{2}")
 
 BANNER = r"""
 ######   ####   ####  #   #  ####  ######  ####  #   #
@@ -247,6 +262,221 @@ def fetch(url, timeout=60):
         return response.read().decode("utf-8", errors="replace")
 
 
+def missing_book(error):
+    """True when Kiwix rejected the book id (the archive is up, the name is not)."""
+    for attr in ("code", "status"):
+        value = getattr(error, attr, None)
+        try:
+            value = int(value)
+        except (TypeError, ValueError):
+            continue
+        if value in (400, 404):
+            return True
+    return False
+
+
+def family_prefix(book):
+    """Medicine or places family for a prefix or a dated stem. None otherwise."""
+    if not book:
+        return None
+    text = str(book).strip()
+    for prefix in sorted(_FALLBACK_BOOKS, key=len, reverse=True):
+        if text.startswith(prefix):
+            return prefix
+    return None
+
+
+def reset_library_cache():
+    """Drop cached library.xml and OPDS results."""
+    global _OPDS_BOOKS
+    _LOCAL_CACHE.clear()
+    _OPDS_BOOKS = None
+
+
+def _local_tag(tag):
+    if not tag:
+        return ""
+    return tag.rsplit("}", 1)[-1]
+
+
+def _file_stem(value):
+    """ZIM id Kiwix search accepts: the file name without a directory or .zim."""
+    if not value:
+        return ""
+    text = str(value).strip().replace("\\", "/")
+    text = text.split("?", 1)[0].split("#", 1)[0]
+    base = text.rstrip("/").rsplit("/", 1)[-1]
+    if base.lower().endswith(".zim"):
+        base = base[:-4]
+    return base
+
+
+def _stem_rank(stem):
+    dates = re.findall(r"20\d{2}-\d{2}", stem)
+    date = dates[-1] if dates else ""
+    if "_maxi" in stem:
+        flavour = 3
+    elif "_nopic" in stem:
+        flavour = 2
+    elif "_mini" in stem:
+        flavour = 1
+    else:
+        flavour = 0
+    return (date, flavour, stem)
+
+
+def _book_records(element):
+    name = (element.attrib.get("name") or "").strip()
+    stems = []
+    for key in ("path", "url"):
+        raw = (element.attrib.get(key) or "").strip()
+        if raw:
+            stems.append(raw)
+    for child in list(element):
+        tag = _local_tag(child.tag)
+        text = (child.text or "").strip()
+        if tag == "name" and text:
+            name = text
+        elif tag in {"path", "url"} and text:
+            stems.append(text)
+        elif tag == "link":
+            href = (child.attrib.get("href") or "").strip()
+            if href:
+                stems.append(href)
+    return name, stems
+
+
+def parse_catalog(text):
+    """Books from library.xml or an OPDS catalog. Each item is (name, stems)."""
+    if not text or not str(text).strip():
+        return []
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        stems = [_file_stem(match.group(0)) for match in _LOOSE_STEM.finditer(text)]
+        stems = [stem for stem in stems if stem]
+        return [("", stems)] if stems else []
+    books = []
+    for element in root.iter():
+        if _local_tag(element.tag) not in {"book", "entry"}:
+            continue
+        name, stems = _book_records(element)
+        if name or stems:
+            books.append((name, stems))
+    return books
+
+
+def choose_book(books, prefix):
+    """File stem for one family. A newer date wins, then maxi over nopic."""
+    found = []
+    for name, stems in books:
+        for candidate in list(stems or []) + ([name] if name else []):
+            stem = _file_stem(candidate)
+            if stem.startswith(prefix) and stem != prefix:
+                found.append(stem)
+    if not found:
+        return ""
+    return max(set(found), key=_stem_rank)
+
+
+def local_books(path):
+    """Books listed in one library.xml, cached by path and mtime."""
+    if not path:
+        return []
+    try:
+        mtime = os.stat(path).st_mtime
+    except OSError:
+        return []
+    cached = _LOCAL_CACHE.get(path)
+    if cached and cached[0] == mtime:
+        return cached[1]
+    try:
+        text = Path(path).read_text(encoding="utf-8-sig", errors="replace")
+    except OSError:
+        return []
+    books = parse_catalog(text)
+    _LOCAL_CACHE[path] = (mtime, books)
+    return books
+
+
+def _next_catalog_url(text, current):
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError:
+        return ""
+    for element in root.iter():
+        if _local_tag(element.tag) != "link":
+            continue
+        rel = (element.attrib.get("rel") or "").strip()
+        if rel != "next" and not rel.endswith("/next"):
+            continue
+        href = (element.attrib.get("href") or "").strip()
+        if href:
+            return urllib.parse.urljoin(current, href)
+    return ""
+
+
+def opds_books():
+    """Books from kiwix-serve /catalog/v2/entries. A failed first page is not cached."""
+    global _OPDS_BOOKS
+    if _OPDS_BOOKS is not None:
+        return _OPDS_BOOKS
+    books = []
+    url = HOST + "/catalog/v2/entries?" + urllib.parse.urlencode({"count": "400"})
+    try:
+        for _page in range(5):
+            text = fetch(url, timeout=8)
+            books.extend(parse_catalog(text))
+            if all(choose_book(books, prefix) for prefix in _FALLBACK_BOOKS):
+                break
+            nxt = _next_catalog_url(text, url)
+            if not nxt or nxt == url:
+                break
+            url = nxt
+    except Exception:
+        if not books:
+            return []
+    _OPDS_BOOKS = books
+    return books
+
+
+def resolve_book(book, library_xml=None, catalog_xml=None):
+    """ZIM file stem for books.name.
+
+    A medicine or places id (the family prefix, or an older dated stem) is
+    matched against library.xml, then the OPDS catalog. Any other book id is
+    sent through unchanged. When the library cannot be read, the fallback
+    constants are used.
+    """
+    prefix = family_prefix(book)
+    if prefix is None:
+        return book or ""
+    path = LIBRARY_XML if library_xml is None else library_xml
+    found = choose_book(local_books(path), prefix) if path else ""
+    if not found and catalog_xml is not None:
+        found = choose_book(parse_catalog(catalog_xml), prefix)
+    elif not found and catalog_xml is None and library_xml is None:
+        found = choose_book(opds_books(), prefix)
+    if found:
+        return found
+    return _FALLBACK_BOOKS.get(prefix, book)
+
+
+def parse_result_total(html):
+    """Hit count from a kiwix-serve search page.
+
+    The page says ``Results <b>1-25</b> of <b>168,399</b>``. The count may
+    contain commas or other thousands separators.
+    """
+    found = _TOTAL_RE.search(html or "")
+    if not found:
+        return 0
+    digits = re.sub(r"\D", "", found.group(1))
+    if not digits:
+        return 0
+    return int(digits)
+
+
 def page_length():
     rows = term_size()[1]
     return max(3, min(8, (rows - 5) // 2))
@@ -255,11 +485,11 @@ def page_length():
 def search(query, book, start=0, timeout=60, page_size=None):
     length = page_length() if page_size is None else page_size
     params = {"pattern": query, "start": str(start), "pageLength": str(length)}
-    if book:
-        params["books.name"] = book
+    resolved = resolve_book(book) if book else ""
+    if resolved:
+        params["books.name"] = resolved
     html = fetch(HOST + "/search?" + urllib.parse.urlencode(params), timeout)
-    found = re.search(r"of <b>(\d+)</b>", html)
-    total = int(found.group(1)) if found else 0
+    total = parse_result_total(html)
     hits = []
     for href, title, cite in re.findall(
         r'<a href="(/content/[^"]+)">\s*([^<]+?)\s*</a>\s*<cite>(.*?)</cite>',
@@ -290,14 +520,17 @@ def article_text(href, timeout=60):
     return "\n".join(lines).strip() or "(No readable text in that entry.)"
 
 
+def _search_scope(book):
+    prefix = family_prefix(book)
+    if prefix == MED_PREFIX:
+        return "the medical encyclopedia"
+    if prefix == VOY_PREFIX:
+        return "the travel guide"
+    return "both archives on this Pi"
+
+
 def run_search(book):
-    scope = (
-        "the medical encyclopedia"
-        if book == MED
-        else "the travel guide"
-        if book == VOY
-        else "both archives on this Pi"
-    )
+    scope = _search_scope(book)
     print(dim(f"Searching {scope}. This does not use the network."))
     query = input(green("look up> ")).strip()
     if not query or query.lower() in ("q", "b"):
@@ -307,6 +540,14 @@ def run_search(book):
         try:
             print(dim("searching..."))
             total, hits = search(query, book, start)
+        except urllib.error.HTTPError as error:
+            if missing_book(error):
+                print(green("That book is not in the library."))
+            else:
+                print(green(f"Library not reachable ({error})."))
+            print(green("The numbered sheets in the menu still work."))
+            pause()
+            return
         except Exception as error:
             print(green(f"Library not reachable ({error})."))
             print(green("The numbered sheets in the menu still work."))
@@ -371,13 +612,14 @@ def _run_extra(kind):
         print(green("Look up a condition or a symptom: hypothermia, burn, bleeding,"))
         print(green("fracture, dehydration, diarrhea, wound, infection, frostbite."))
         print(green("This guide does not give drug doses."))
-        run_search(MED)
+        run_search(MED_PREFIX)
 
 
 def _offer_search(book):
-    if book == MED:
+    prefix = family_prefix(book)
+    if prefix == MED_PREFIX:
         print(dim("s then Enter searches the medical archive. Enter alone returns."))
-    elif book == VOY:
+    elif prefix == VOY_PREFIX:
         print(dim("s then Enter searches the travel archive. Enter alone returns."))
     elif book == "":
         print(dim("s then Enter searches both archives. Enter alone returns."))
@@ -473,7 +715,7 @@ def open_places_note():
     print(bright("PLACES"))
     print(green("Offline travel guide on this Pi."))
     print(green("Type a town, region, river, or country."))
-    run_search(VOY)
+    run_search(VOY_PREFIX)
 
 
 def run_cavemap():

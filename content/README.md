@@ -33,7 +33,7 @@ Front matter keys:
 | `title` | Name on the menu. The touch and keyboard guides show this. |
 | `order` | Sort key. Lower numbers come first. Home-menu files need an `order`. |
 | `intro` | One line under the section title. Use `intro: \|` when you need several lines. |
-| `book` | Kiwix archive book name. When set, the section can search that archive. |
+| `book` | Which offline archive search uses. A family name, such as `wikipedia_en_medicine`. An old dated file name for that same archive is accepted too. |
 | `hint` | Line shown above the search keyboard. Optional. |
 | `parent` | Slug of the section this file belongs under, instead of the home menu. |
 | `merge` | `cards` folds this file's cards into the parent, in `order`, before the parent's own cards. |
@@ -41,10 +41,12 @@ Front matter keys:
 
 `archive` is accepted as another name for `book`.
 
-Archive book names on this Pi:
+Archive families on this Pi:
 
-- Medicine: `wikipedia_en_medicine_nopic_2026-04`
-- Places: `wikivoyage_en_all_nopic_2026-09`
+- Medicine: `wikipedia_en_medicine`
+- Places: `wikivoyage_en_all`
+
+Search asks Kiwix which file is installed. It reads `/var/lib/kiwix/library.xml`, then the catalog on port 8080 if that file has no match. Kiwix matches a book by the ZIM file stem (`wikipedia_en_medicine_maxi_2026-10`), not the short name in library.xml. The dated names `wikipedia_en_medicine_nopic_2026-04` and `wikivoyage_en_all_nopic_2026-09` are used only when that lookup cannot be read.
 
 A `book` value with nothing after the colon searches both archives.
 

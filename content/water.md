@@ -2,7 +2,7 @@
 title: Water
 order: 3
 intro: Settle, then boil when you can. Finding and collecting water, and every way to make it safe, are at the end.
-book: wikipedia_en_medicine_nopic_2026-04
+book: wikipedia_en_medicine
 ---
 
 ## Find it and carry it

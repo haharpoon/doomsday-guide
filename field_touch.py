@@ -157,6 +157,10 @@ DIM = (0x0A, 0x5C, 0x2E)
 BLACK = (0, 0, 0)
 RGB565_MASKS = (0xF800, 0x07E0, 0x001F, 0)
 LIBRARY_DOWN = "Library not reachable. The sheets in this guide still work."
+BOOK_MISSING = "That book is not in the library. The sheets in this guide still work."
+SEARCHING = "Searching..."
+# A cold search across the ZIMs on a Pi 3B can take well over 8 seconds.
+LIBRARY_SEARCH_TIMEOUT = 25
 FONT_REGULAR = (
     "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
     "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
@@ -169,6 +173,13 @@ FONT_BOLD = (
 )
 DIAGRAM = set(r"\/|_()XO-:. ")
 _MISSING = object()
+
+
+def search_failure_status(error):
+    """Library down, unless Kiwix answered 400 or 404 for this book id."""
+    if field.missing_book(error):
+        return BOOK_MISSING
+    return LIBRARY_DOWN
 
 
 def env_flag(name):
@@ -959,7 +970,7 @@ def topic_to_item(topic):
     for child in children:
         items.append(topic_to_item(child))
     if topic.slug == "more":
-        items.append(search_action("Places", field.VOY, "PLACES", "Type a town, region, river, or country."))
+        items.append(search_action("Places", field.VOY_PREFIX, "PLACES", "Type a town, region, river, or country."))
         items.append(search_action("Search all archives", "", "SEARCH", "Search both archives on this Pi."))
     if book is not None and (cards or children):
         items.append(
@@ -980,7 +991,7 @@ def home_items():
         return [
             search_action(
                 "Medicine",
-                field.MED,
+                field.MED_PREFIX,
                 "MEDICINE",
                 "Medical encyclopedia on this Pi. Doses: see First aid.",
             ),
@@ -990,9 +1001,10 @@ def home_items():
 
 
 def search_hint(book):
-    if book == field.MED:
+    prefix = field.family_prefix(book)
+    if prefix == field.MED_PREFIX:
         return "Search the medical encyclopedia on this Pi."
-    if book == field.VOY:
+    if prefix == field.VOY_PREFIX:
         return "Type a town, region, river, or country."
     return "Search both archives on this Pi."
 
@@ -1204,11 +1216,10 @@ class App:
             screen["page"] = old + 1
             moved = True
         elif screen["kind"] == "results" and len(screen["results"]) < screen.get("total", 0):
-            before = len(screen["results"])
-            self.fetch_more()
-            if len(screen["results"]) > before and old + 1 < self.page_count(screen):
-                screen["page"] = old + 1
-                moved = True
+            # The fetch blocks. The main loop paints Searching... before it runs.
+            screen["status"] = SEARCHING
+            self.pending = "more"
+            return True
         if moved:
             self.slide_from = old
         return moved
@@ -1480,7 +1491,7 @@ class App:
         if token in ("BACK",):
             self.back()
         elif token in ("SEARCH", "ENTER"):
-            screen["status"] = "Searching the library on this Pi..."
+            screen["status"] = SEARCHING
             screen["status_bad"] = False
             self.pending = "search"
         elif token in ("DEL", "BKSP"):
@@ -1509,11 +1520,13 @@ class App:
             screen["status_bad"] = False
             return
         book = screen.get("book") or ""
+        screen["status"] = SEARCHING
+        screen["status_bad"] = False
         try:
-            total, hits = field.search(query, book, 0, timeout=8, page_size=8)
+            total, hits = field.search(query, book, 0, timeout=LIBRARY_SEARCH_TIMEOUT, page_size=8)
         except Exception as error:
             sys.stderr.write(f"field_touch search failed: {error}\n")
-            screen["status"] = LIBRARY_DOWN
+            screen["status"] = search_failure_status(error)
             screen["status_bad"] = True
             return
         if not hits:
@@ -1536,21 +1549,35 @@ class App:
 
     def fetch_more(self):
         screen = self.current()
+        if screen.get("kind") != "results":
+            return
+        screen["status"] = SEARCHING
+        before = len(screen.get("results") or [])
+        old = screen.get("page", 0)
         try:
             total, hits = field.search(
                 screen["query"],
                 screen.get("book") or "",
-                len(screen["results"]),
-                timeout=8,
+                before,
+                timeout=LIBRARY_SEARCH_TIMEOUT,
                 page_size=8,
             )
         except Exception as error:
             sys.stderr.write(f"field_touch search failed: {error}\n")
-            screen["status"] = LIBRARY_DOWN
+            screen["status"] = search_failure_status(error)
             return
         screen["total"] = total
+        screen["intro"] = f"{total} entries"
         if hits:
             screen["results"].extend(hits)
+        if len(screen["results"]) > before and old + 1 < self.page_count(screen):
+            screen["page"] = old + 1
+            self.slide_from = old
+            screen["status"] = ""
+        elif not hits:
+            screen["status"] = "No more entries."
+        else:
+            screen["status"] = ""
 
     def open_result(self, index):
         screen = self.current()
@@ -2678,6 +2705,18 @@ def loop(app, display, touch):
         if app.tab_flash:
             flash_tab(app, display)
             changed = True
+        if app.pending in ("search", "more"):
+            # Paint Searching... before the call. A cold search on a Pi 3B can
+            # take long enough that the panel otherwise looks frozen.
+            app.draw(display.canvas)
+            display.present(display.canvas)
+            action = app.pending
+            app.pending = None
+            if action == "search":
+                app.run_search()
+            else:
+                app.fetch_more()
+            changed = True
         if app.slide_from is not None:
             old = app.slide_from
             app.slide_from = None
@@ -2700,9 +2739,7 @@ def loop(app, display, touch):
             display.present(display.canvas)
             action = app.pending
             app.pending = None
-            if action == "search":
-                app.run_search()
-            elif action == "cave":
+            if action == "cave":
                 app.launch_cave(display, touch)
             changed = True
         if changed and not app.quit_requested:
@@ -3168,6 +3205,140 @@ def self_test(screenshot_dir=None):
     check(guide.returncode == 0, f"keyboard guide exit {guide.returncode}", failures)
     check(b"Shelter" in guide.stdout, "keyboard guide still prints Shelter", failures)
 
+    check(
+        field.parse_result_total("Results <b>1-25</b> of <b>168,399</b>") == 168399,
+        "comma total",
+        failures,
+    )
+    check(field.parse_result_total("Results <b>1-8</b> of <b>12</b>") == 12, "plain total", failures)
+    check(field.parse_result_total("of <b>168 399</b>") == 168399, "spaced total", failures)
+    check(field.parse_result_total("of <b>1.234</b>") == 1234, "dot thousands separator", failures)
+    check(field.parse_result_total("no results here") == 0, "missing total", failures)
+    check(field.missing_book(type("E", (), {"code": 400})()) is True, "HTTP 400 is a missing book", failures)
+    check(field.missing_book(type("E", (), {"code": 404})()) is True, "HTTP 404 is a missing book", failures)
+    check(field.missing_book(OSError("refused")) is False, "connection errors are library down", failures)
+    check(search_failure_status(type("E", (), {"code": 400})()) == BOOK_MISSING, "menu wording for a missing book", failures)
+    check(search_failure_status(OSError("refused")) == LIBRARY_DOWN, "menu wording for library down", failures)
+    for slug in ("medicine", "food", "water", "sanitation"):
+        topic = field.GUIDE.topics.get(slug)
+        check(
+            topic is not None and topic.book == field.MED_PREFIX,
+            f"{slug} searches the medicine family ({None if topic is None else topic.book})",
+            failures,
+        )
+    check(set(content.BOOK_PREFIXES) == {field.MED_PREFIX, field.VOY_PREFIX}, "book families match", failures)
+    check(content.canonical_book(field.MED) == field.MED_PREFIX, "dated medicine stem canonicalizes", failures)
+    check(content.canonical_book(field.VOY) == field.VOY_PREFIX, "dated places stem canonicalizes", failures)
+    check(content.canonical_book("ifixit_en_all_2025-12") == "ifixit_en_all_2025-12", "other book ids stay as written", failures)
+    check(search_hint(field.MED).startswith("Search the medical"), "fallback medicine hint", failures)
+    check(search_hint(field.MED_PREFIX).startswith("Search the medical"), "medicine family hint", failures)
+    check("town" in search_hint(field.VOY_PREFIX), "places hint", failures)
+    check(search_hint("").startswith("Search both"), "all-archives hint", failures)
+    check(field.resolve_book(field.MED_PREFIX, library_xml="/no/such/library.xml") == field.MED, "medicine falls back when the library cannot be read", failures)
+    check(field.resolve_book(field.VOY, library_xml="/no/such/library.xml") == field.VOY, "places falls back to the dated stem", failures)
+    check(field.resolve_book("ifixit_en_all_2025-12", library_xml="/no/such/library.xml") == "ifixit_en_all_2025-12", "unknown books are not rewritten", failures)
+    check(field.resolve_book("", library_xml="/no/such/library.xml") == "", "empty book searches every archive", failures)
+    library_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<library version="20110515">
+  <book name="wikipedia_en_medicine" path="/var/lib/kiwix/zim/wikipedia_en_medicine_nopic_2026-04.zim"/>
+  <book name="wikipedia_en_medicine" path="/var/lib/kiwix/zim/wikipedia_en_medicine_maxi_2026-10.zim"/>
+  <book path="zim/wikivoyage_en_all_maxi_2026-09.zim">
+    <name>wikivoyage_en_all</name>
+  </book>
+  <book name="wikipedia_en_all" path="/var/lib/kiwix/zim/wikipedia_en_all_nopic_2026-06.zim"/>
+</library>
+"""
+    with tempfile.TemporaryDirectory() as libdir:
+        xml_path = os.path.join(libdir, "library.xml")
+        with open(xml_path, "w", encoding="utf-8") as handle:
+            handle.write(library_xml)
+        resolved = field.resolve_book(field.MED, library_xml=xml_path)
+        check(resolved == "wikipedia_en_medicine_maxi_2026-10", f"newer medicine stem {resolved}", failures)
+        resolved = field.resolve_book("wikipedia_en_medicine", library_xml=xml_path)
+        check(resolved == "wikipedia_en_medicine_maxi_2026-10", f"prefix resolves to the file stem {resolved}", failures)
+        voy = field.resolve_book(field.VOY_PREFIX, library_xml=xml_path)
+        check(voy == "wikivoyage_en_all_maxi_2026-09", f"places stem from a child name {voy}", failures)
+        name_only = os.path.join(libdir, "name-only.xml")
+        with open(name_only, "w", encoding="utf-8") as handle:
+            handle.write('<library><book name="wikipedia_en_medicine" path=""/></library>')
+        short = field.resolve_book(field.MED_PREFIX, library_xml=name_only)
+        check(short == field.MED, f"short library name is not sent as books.name {short}", failures)
+        captured = []
+
+        def fake_fetch(url, timeout=60):
+            captured.append(url)
+            return (
+                "Results <b>1-25</b> of <b>168,399</b>\n"
+                '<a href="/content/hypothermia"> Hypothermia </a> <cite>Core temperature falls.</cite>'
+            )
+
+        saved_fetch = field.fetch
+        saved_library = field.LIBRARY_XML
+        field.fetch = fake_fetch
+        field.LIBRARY_XML = xml_path
+        field.reset_library_cache()
+        try:
+            total, hits = field.search("burn", field.MED_PREFIX, timeout=25, page_size=8)
+        finally:
+            field.fetch = saved_fetch
+            field.LIBRARY_XML = saved_library
+            field.reset_library_cache()
+        check(total == 168399, f"search comma total {total}", failures)
+        check(len(hits) == 1 and hits[0][0] == "Hypothermia", f"search hit {hits}", failures)
+        check(
+            len(captured) == 1 and "books.name=wikipedia_en_medicine_maxi_2026-10" in captured[0],
+            f"search uses the resolved stem {captured}",
+            failures,
+        )
+        check(captured and "nopic_2026-04" not in captured[0], "stale medicine stem is not queried", failures)
+    catalog = """<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <entry>
+    <title>Wikivoyage</title>
+    <name>wikivoyage_en_all</name>
+    <link href="/raw/wikivoyage_en_all_nopic_2026-09.zim" type="application/x-zim"/>
+    <link type="text/html" href="/content/wikivoyage_en_all_maxi_2026-09"/>
+  </entry>
+</feed>
+"""
+    from_catalog = field.resolve_book(field.VOY, library_xml="/no/such/library.xml", catalog_xml=catalog)
+    check(from_catalog == "wikivoyage_en_all_maxi_2026-09", f"OPDS stem {from_catalog}", failures)
+    loose = field.resolve_book(
+        field.MED_PREFIX,
+        library_xml="/no/such/library.xml",
+        catalog_xml="not xml but wikipedia_en_medicine_nopic_2026-04.zim and wikipedia_en_medicine_maxi_2026-10.zim",
+    )
+    check(loose == "wikipedia_en_medicine_maxi_2026-10", f"loose catalog stem {loose}", failures)
+    pages = {
+        "1": (
+            "<feed><entry><name>wikipedia_en_medicine</name>"
+            '<link href="/content/wikipedia_en_medicine_maxi_2026-10"/></entry>'
+            '<link rel="next" href="http://catalog.test/p2"/></feed>'
+        ),
+        "2": (
+            "<feed><entry><name>wikivoyage_en_all</name>"
+            '<link href="/content/wikivoyage_en_all_maxi_2026-09"/></entry></feed>'
+        ),
+    }
+
+    def paged_catalog(url, timeout=60):
+        return pages["2"] if "p2" in url else pages["1"]
+
+    saved_fetch = field.fetch
+    field.fetch = paged_catalog
+    field.reset_library_cache()
+    try:
+        paged_books = field.opds_books()
+    finally:
+        field.fetch = saved_fetch
+        field.reset_library_cache()
+    check(
+        field.choose_book(paged_books, field.MED_PREFIX) == "wikipedia_en_medicine_maxi_2026-10"
+        and field.choose_book(paged_books, field.VOY_PREFIX) == "wikivoyage_en_all_maxi_2026-09",
+        f"OPDS next page is read {paged_books}",
+        failures,
+    )
+
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     os.environ["SDL_AUDIODRIVER"] = "dummy"
     boot_pygame()
@@ -3323,6 +3494,90 @@ def self_test(screenshot_dir=None):
     app.pointer("up", *space["rect"].center)
     check(app.current()["query"] == "  ", "tap works again after the debounce", failures)
 
+    missing = App(show_cave=False)
+    missing.stack.append(
+        {
+            "kind": "search",
+            "title": "SEARCH",
+            "hint": "",
+            "status": "",
+            "status_bad": False,
+            "query": "burn",
+            "book": field.MED_PREFIX,
+            "num_mode": False,
+        }
+    )
+
+    def raise_missing(*_args, **_kwargs):
+        error = OSError("bad book")
+        error.code = 400
+        raise error
+
+    saved_search = field.search
+    field.search = raise_missing
+    try:
+        missing.run_search()
+    finally:
+        field.search = saved_search
+    check(missing.current()["kind"] == "search", "missing book stays on the keyboard", failures)
+    check(missing.current()["status"] == BOOK_MISSING, "missing book is not library down", failures)
+    check(missing.current().get("status_bad") is True, "missing book status is visible", failures)
+
+    waited = {"calls": 0}
+
+    def not_yet(*_args, **_kwargs):
+        waited["calls"] += 1
+        raise AssertionError("search ran before the screen could paint")
+
+    field.search = not_yet
+    try:
+        missing.on_token("SEARCH")
+    finally:
+        field.search = saved_search
+    check(
+        waited["calls"] == 0 and missing.pending == "search" and missing.current()["status"] == SEARCHING,
+        "Searching... is set before the blocking call",
+        failures,
+    )
+
+    seen = {}
+
+    def capture_search(_query, _book, start=0, timeout=60, page_size=None):
+        seen["timeout"] = timeout
+        seen["start"] = start
+        seen["page_size"] = page_size
+        return 4, [("Later", "/content/later", "next page")]
+
+    more = App(show_cave=False)
+    more.stack.append(
+        {
+            "kind": "results",
+            "title": "RESULTS",
+            "intro": "4 entries",
+            "query": "burn",
+            "book": field.MED_PREFIX,
+            "results": [
+                ("Burn", "/content/burn", "heat"),
+                ("Scald", "/content/scald", "liquid"),
+            ],
+            "total": 4,
+            "page": 0,
+            "status": "",
+        }
+    )
+    field.search = capture_search
+    try:
+        armed = more.page_delta(1)
+        check(armed and "timeout" not in seen and more.pending == "more", "next page does not fetch inside the tap", failures)
+        check(more.current()["status"] == SEARCHING, "more results say Searching...", failures)
+        more.fetch_more()
+    finally:
+        field.search = saved_search
+    check(seen.get("timeout") == LIBRARY_SEARCH_TIMEOUT, f"fetch more timeout {seen}", failures)
+    check(seen.get("start") == 2 and seen.get("page_size") == 8, f"fetch more page {seen}", failures)
+    check(more.current()["page"] == 1 and more.slide_from == 0, "fetch more advances and arms a slide", failures)
+    check(more.current()["status"] == "" and more.current()["intro"] == "4 entries", "searching clears after a page arrives", failures)
+
     food = App(show_cave=False)
     food.activate("home:8")
     food.draw(canvas)
@@ -3333,6 +3588,11 @@ def self_test(screenshot_dir=None):
         failures,
     )
     check(food_items and food_items[0]["label"] == "Food" and food_items[0]["body"].startswith("Cook meat, fish,"), "food first card", failures)
+    check(
+        bool(food_items) and food_items[-1].get("book") == field.MED_PREFIX,
+        "food search is the medicine family",
+        failures,
+    )
 
     check(content is not None, "content loader imports", failures)
     home_titles = [topic.title for topic in field.GUIDE.home_topics()]
@@ -3945,7 +4205,7 @@ def self_test(screenshot_dir=None):
                 f"medicine cards plus search {labels}",
                 failures,
             )
-            check(item["items"][-1].get("book") == field.MED, "medicine search archive", failures)
+            check(item["items"][-1].get("book") == field.MED_PREFIX, "medicine search archive", failures)
         finally:
             field.GUIDE = saved_guide
         empty = content.load_guide(os.path.join(tmp, "absent"))
