@@ -1,7 +1,7 @@
 ---
 title: Sanitation
 order: 7
-book: wikipedia_en_medicine_nopic_2026-04
+book: wikipedia_en_medicine
 intro: Most camp sickness is hands, water and flies. Break the chain.
 ---
 

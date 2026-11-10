@@ -7,6 +7,6 @@ intro: |
   fracture, dehydration, diarrhea, wound, infection, frostbite.
   For doses of paracetamol, ibuprofen and other common medicines,
   see the Dose cards under First aid.
-book: wikipedia_en_medicine_nopic_2026-04
+book: wikipedia_en_medicine
 hint: Medical encyclopedia on this Pi. Doses: see First aid.
 ---

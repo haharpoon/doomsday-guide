@@ -22,6 +22,9 @@ fi
 K=https://download.kiwix.org/zim
 
 # bytes  url
+# These dated names are the download URLs. Search does not use them.
+# Medicine and places match any ZIM whose name or file stem starts with
+# wikipedia_en_medicine or wikivoyage_en_all (see field.py).
 ZIMS="
 52690706555 $K/wikipedia/wikipedia_en_all_nopic_2026-06.zim
 1864210320 $K/wikipedia/wikipedia_en_medicine_maxi_2026-10.zim

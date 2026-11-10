@@ -1,7 +1,7 @@
 ---
 title: Food
 order: 6
-book: wikipedia_en_medicine_nopic_2026-04
+book: wikipedia_en_medicine
 intro: Know it for certain or leave it. Deadly plants first, then greens, fruit and nuts, the shore and mushrooms.
 ---
 

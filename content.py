@@ -23,6 +23,13 @@ FIXED_CONTENT = Path("/usr/local/share/doomsday/content")
 IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)\)")
 HEADING_RE = re.compile(r"(?m)^## ")
 _BLOCK_MARKERS = ("|", ">", "|-", ">-", "|+", ">+")
+# Archive families. A dated stem such as wikipedia_en_medicine_nopic_2026-04
+# is the same book. field.py turns the prefix into the ZIM file on this Pi.
+# Keep these in step with MED_PREFIX and VOY_PREFIX in field.py.
+BOOK_PREFIXES = (
+    "wikipedia_en_medicine",
+    "wikivoyage_en_all",
+)
 
 
 class Topic:
@@ -366,6 +373,24 @@ def parse_front_matter(raw):
     return meta
 
 
+def canonical_book(book):
+    """Map a dated ZIM stem back to its family prefix. Other values stay put.
+
+    ``wikipedia_en_medicine_nopic_2026-04`` and ``wikipedia_en_medicine`` are
+    the same archive. The file installed on the Pi is chosen later, when
+    search runs.
+    """
+    if book is None:
+        return None
+    text = str(book).strip()
+    if not text:
+        return ""
+    for prefix in sorted(BOOK_PREFIXES, key=len, reverse=True):
+        if text.startswith(prefix):
+            return prefix
+    return text
+
+
 def parse_cards(body, fallback_title):
     body = body.replace("\r\n", "\n").replace("\r", "\n")
     chunks = HEADING_RE.split(body)
@@ -396,9 +421,9 @@ def parse_topic(path):
     order = _parse_order(meta["order"]) if "order" in meta else None
     book = None
     if "book" in meta:
-        book = meta.get("book") or ""
+        book = canonical_book(meta.get("book") or "")
     elif "archive" in meta:
-        book = meta.get("archive") or ""
+        book = canonical_book(meta.get("archive") or "")
     parent = (meta.get("parent") or "").strip() or None
     merge = (meta.get("merge") or "").strip().lower() == "cards"
     tint = _parse_bool(meta["tint"]) if "tint" in meta else True
