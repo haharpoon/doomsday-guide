@@ -1,0 +1,15 @@
+# EXAMPLE ONLY. Raspberry Pi Imager writes the real network-config when
+# you enter Wi-Fi in its settings. Keep Imager's file. Do not put your
+# SSID or password in the repo.
+#
+# version: 2
+# wifis:
+#   wlan0:
+#     dhcp4: true
+#     regulatory-domain: "YOUR_COUNTRY"
+#     access-points:
+#       "YOUR_SSID":
+#         password: "YOUR_WIFI_PASSWORD"
+#
+# A USB stick shows up as wlan1. You can give that interface its own
+# access-point entry the same way. The name and password stay on the card.

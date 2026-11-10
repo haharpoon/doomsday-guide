@@ -1,0 +1,24 @@
+/dts-v1/;
+/plugin/;
+
+/*
+ * Disable the firmware HDMI framebuffer at /soc/fb.
+ * With this loaded, dtoverlay=tft35a becomes /dev/fb0 and gets the console.
+ *
+ * Decompiled from the dtbo on the working Pi (the .dts that used to live
+ * at /root/doomsday-fb/disable-fwfb-overlay.dts was not in the snapshot).
+ * Recompiles to the same bytes:
+ *   dtc -I dts -O dtb -o disable-fwfb.dtbo disable-fwfb-overlay.dts
+ */
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	fragment@0 {
+		target-path = "/soc/fb";
+
+		__overlay__ {
+			status = "disabled";
+		};
+	};
+};

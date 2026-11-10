@@ -1,0 +1,8 @@
+[Unit]
+Description=Kiwix offline library
+After=network.target
+[Service]
+ExecStart=/usr/bin/kiwix-serve --library --monitorLibrary --port 8080 /var/lib/kiwix/library.xml
+Restart=always
+[Install]
+WantedBy=multi-user.target

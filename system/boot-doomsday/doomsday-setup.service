@@ -1,0 +1,11 @@
+[Unit]
+Description=Doomsday cyberdeck first-boot install
+After=network-online.target cloud-final.service
+Wants=network-online.target
+ConditionPathExists=!/var/lib/doomsday-setup-done
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /boot/firmware/doomsday/setup.sh
+TimeoutStartSec=0
+[Install]
+WantedBy=multi-user.target

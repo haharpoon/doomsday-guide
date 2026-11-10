@@ -2,12 +2,173 @@
 
 Offline field guide for a Raspberry Pi. Shelter, first aid, water, fire, knots, food, tools and wildlife, sanitation, navigation, signals and radio, clothing, weather, power, emergency planning, and an offline library guide are stored on the Pi. Medicine and places search the Kiwix archives already on the device.
 
-On the Pi, install it with:
+A blank microSD card and a Raspberry Pi are enough to rebuild the whole deck from this repo. The steps below are the ones that match the working card: a Pi 3B, Raspberry Pi OS Lite 64-bit (Debian 13 Trixie), and a 128 GB card whose library uses about 83 GB under `/var/lib/kiwix`.
+
+Wi-Fi names, Wi-Fi passwords, and the Pi login are not in this repo. Examples say `YOUR_SSID`, `YOUR_WIFI_PASSWORD`, and `YOUR_USER`. Put the real values into Raspberry Pi Imager, or into NetworkManager on the card.
+
+## Build your own
+
+### Hardware
+
+- Raspberry Pi 3B or newer. This screen setup was taken from a Pi 3B. A Pi 4 uses the same kind of SPI panel overlay. On a Pi 5, prefer HDMI or SSH unless you already know this overlay on that board.
+- goodtft or Waveshare-style 3.5 inch resistive touchscreen, 480×320, ILI9486, on SPI. Skip it if you will use HDMI or SSH. See [No touchscreen?](#no-touchscreen).
+- microSD card. 128 GB is the comfortable size, because the full library is about 83 GB on disk. `scripts/fetch_library.sh` prints a higher download total, about 89 GB, because it counts the files in decimal gigabytes and checks free space before it starts. A smaller card works if you trim that list first (the English Wikipedia file is the big one, about 53 GB).
+- A power supply meant for that Pi, or a power bank that can hold 5 V with the Pi and the screen on.
+- Optional, for the SCAN tab: an ESP32-WROOM-32 and a Pimoroni VL53L5CX. See `firmware/doomsday_scan/README.md`.
+- Optional, for live FM on the RADIO tab: a USB RTL-SDR dongle. The frequency cards, the listening log, and Morse work without it.
+
+### Flash the card
+
+1. Install [Raspberry Pi Imager](https://www.raspberrypi.com/software/) on a computer.
+2. Choose Raspberry Pi OS Lite, 64-bit. The working card is Debian 13 (Trixie), aarch64.
+3. Open the OS customisation settings. Set a hostname, a username, and a password. Turn SSH on. Enter your Wi-Fi name, password, and country. Those stay on the card.
+4. Write the image and boot the Pi on that network.
+
+With only the little panel fitted, the screen stays blank on this first boot. The panel overlay is not on a stock image yet. SSH is how you get in. With an HDMI monitor and a USB keyboard you can log in on the console instead.
+
+### Run the setup
+
+On the Pi:
+
+```bash
+sudo apt update
+sudo apt install -y git
+git clone https://github.com/haharpoon/doomsday-guide.git
+cd doomsday-guide
+sudo bash scripts/setup_pi.sh
+```
+
+The script is safe to run again. It installs the packages from `system/packages.txt` (Kiwix, the guide libraries, RTL-SDR, ALSA, BlueZ, and PipeWire), turns Wi-Fi powersave off, blacklists the TV driver that grabs RTL-SDR sticks, and installs the Wi-Fi watchdog, Kiwix, and the library download.
+
+It then asks about the 3.5 inch panel. Answer yes if that screen is fitted. The script copies `config.txt` and `cmdline.txt` to `config.txt.doomsday-pre-tft` and `cmdline.txt.doomsday-pre-tft` before it changes them, comments out `dtoverlay=vc4-kms-v3d`, installs `disable-fwfb.dtbo`, and adds:
+
+```
+dtparam=spi=on
+dtoverlay=disable-fwfb
+dtoverlay=tft35a:rotate=90
+```
+
+plus `initcall_blacklist=simplefb_driver_init` on the kernel command line. That is what makes the panel `/dev/fb0`. The card's own `root=PARTUUID=...` stays as it is.
+
+`system/boot/config.txt.example` is the working Pi's config, for reading. The script edits the card's own file. Copying the example over the card would replace another board's settings. `system/boot/cmdline.txt.example` shows the extra token with a placeholder `PARTUUID`. Leave the card's cmdline in place.
+
+Answer no for an HDMI or SSH Pi. The boot files stay as Imager wrote them. To skip the question:
+
+```bash
+sudo DOOMSDAY_TFT=1 bash scripts/setup_pi.sh
+sudo DOOMSDAY_TFT=0 bash scripts/setup_pi.sh
+```
+
+It finishes by running `install.sh`, which asks whether login on this screen should open the touch guide or the keyboard guide. Choose touch for the panel. Choose the keyboard guide for HDMI. The console then logs itself in as the user you created, and the guide opens. SSH still asks for your key or password.
+
+Reboot when it tells you to.
+
+```bash
+sudo reboot
+```
+
+To install only the guide, on a Pi that is already set up:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/haharpoon/doomsday-guide/main/install.sh -o /tmp/install.sh
 sudo bash /tmp/install.sh
 ```
+
+#### Unattended first boot
+
+`system/boot-doomsday/` is the first-boot installer from the working Pi, pointed at this repo so the steps are not copied twice. `setup.sh` waits for the network, installs git, clones the repo, and runs `scripts/setup_pi.sh`.
+
+On a computer that can see the card's boot partition, copy the contents of `system/boot-doomsday/` to a folder named `doomsday` on that partition (`/boot/firmware/doomsday` once the Pi is running). If the panel is fitted, also copy `enable-tft.example` to `enable-tft` in that folder. The file's contents are not read. Only the name matters.
+
+The service file also has to be installed on the Linux partition, as `/etc/systemd/system/doomsday-setup.service`, with a symlink in `multi-user.target.wants`. That needs a machine that can write ext4. The log is `/var/log/doomsday-setup.log`. If writing the Linux partition is awkward, boot, SSH in, and run `setup_pi.sh` yourself.
+
+Wi-Fi for that first boot still comes from Imager. `system/cloud-init/` shows the shape of those files with placeholders, for a card you are writing by hand. If Imager already wrote `user-data` and `network-config`, keep those.
+
+### The library download
+
+`doomsday-library.service` runs `scripts/fetch_library.sh` with the prompt already answered, so the download starts on its own and resumes after a dropout (`wget -c`, and the service tries again two minutes after a failure). The full set is tens of gigabytes. On a home connection it is an afternoon or an overnight job. A faster line finishes sooner.
+
+For a smaller card, edit the `ZIMS` list in `scripts/fetch_library.sh` before the first boot finishes the big files. Stop a download that has already started with `sudo systemctl stop doomsday-library`, edit the list, then `sudo systemctl start doomsday-library`. The script refuses to start when the free space is short of the total it printed.
+
+Watch it:
+
+```bash
+tail -f /var/log/doomsday-library.log
+du -sh /var/lib/kiwix
+systemctl status doomsday-library
+systemctl status kiwix
+```
+
+`/var/lib/kiwix/.library-done` appears when the fetch has finished. Until then, Kiwix may restart in a loop because `library.xml` is not there yet, and the guide will say `Library not reachable`. The sheets in the guide still work. When the download has finished, `systemctl status kiwix` should show `kiwix-serve` running.
+
+### Calibration, the splash, and HDMI
+
+On the panel, the touch map for this screen (tft35a, rotate 90) is:
+
+```bash
+sudo touch_calibrate --preset
+```
+
+If taps land in the wrong place, `sudo touch_calibrate` draws five crosshairs on the panel named `fb_ili9486` and writes `~/.touchcal.json`. Details are in the next section.
+
+The touch guide plays a boot splash for about six seconds, then the menu. Tap to skip it. `splash=off` in `/etc/doomsday/field-touch.conf`, or `FIELD_TOUCH_SPLASH=0`, turns it off.
+
+The panel setup leaves HDMI off so the small screen owns the console. To mirror the picture on an HDMI display:
+
+```bash
+sudo doomsday-hdmi on
+sudo reboot
+```
+
+`sudo doomsday-hdmi status` prints whether the boot files are asking for that mirror. `sudo doomsday-hdmi off`, then a reboot, returns to the panel only. The tft35a overlay stays either way.
+
+## No touchscreen?
+
+Skip the panel question (`sudo DOOMSDAY_TFT=0 bash scripts/setup_pi.sh`, or answer no). The boot files are left alone, so an HDMI monitor keeps working.
+
+The keyboard guide is `field`. It is a terminal program: it reads the keyboard and prints text. It does not open a framebuffer. On the Pi, plug in an HDMI monitor and a USB keyboard, log in, and type:
+
+```bash
+field
+```
+
+Over SSH it is the same program:
+
+```bash
+ssh YOUR_USER@<pi-ip>
+field
+```
+
+`YOUR_USER` is the account you set in Imager. Find the address with:
+
+```bash
+hostname -I
+```
+
+The console login screen prints it as well, once `install.sh` has written `/etc/issue`.
+
+The offline library is a normal website on port 8080. `kiwix.service` runs:
+
+```
+kiwix-serve --library --monitorLibrary --port 8080 /var/lib/kiwix/library.xml
+```
+
+There is no `--address` flag. Current `kiwix-serve` treats that as every interface, so a phone or a laptop on the same network opens the whole library at:
+
+```
+http://<pi-ip>:8080
+```
+
+The books are on the card. The browser only has to reach the Pi. A router or a phone hotspot with no internet is enough, as long as the Pi and the other device are on that network. The guide's own archive search uses `http://127.0.0.1:8080`, which is the same server.
+
+## Troubleshooting
+
+- **Blank panel.** On the first boot, before setup, a blank panel is expected: SSH in and run the setup. After a reboot with the panel enabled, check that `/boot/firmware/overlays/disable-fwfb.dtbo` is there, that `config.txt` has `dtoverlay=tft35a:rotate=90` and `dtoverlay=disable-fwfb`, that the `dtoverlay=vc4-kms-v3d` line is commented out, and that `cmdline.txt` contains `initcall_blacklist=simplefb_driver_init`. Then reboot. `cat /sys/class/graphics/fb0/name` should print `fb_ili9486`. To go back, copy `/boot/firmware/config.txt.doomsday-pre-tft` over `config.txt` and `/boot/firmware/cmdline.txt.doomsday-pre-tft` over `cmdline.txt`, then reboot.
+- **Library not reachable.** The guide says this when it cannot open Kiwix on port 8080. Check `systemctl status kiwix` and `curl -I localhost:8080`. During the download that failure is normal. Follow `/var/log/doomsday-library.log` until `.library-done` appears. From another device, use `http://<pi-ip>:8080` and the address from `hostname -I`.
+- **Touch is offset.** Run `sudo touch_calibrate`. For this panel, `sudo touch_calibrate --preset` writes the known map for `tft35a` at rotate 90. A previous file is kept as `~/.touchcal.json.bak-<date>`.
+- **Wi-Fi drops.** `wifi-watchdog.timer` runs about two minutes after the previous check, starting three minutes after boot. It pings the gateway, reconnects the USB stick (`wlan1` unless `/etc/default/wifi-watchdog` sets `WIFI_IFACE`), resets that USB port after repeated failures, and reboots the Pi if the gateway is still quiet after several checks. `journalctl -t wifi-watchdog` shows what it did. `sudo systemctl disable --now wifi-watchdog.timer` stops it. Powersave is turned off by `/etc/NetworkManager/conf.d/zz-wifi-powersave-off.conf` (`wifi.powersave = 2`).
+
+## The guides
 
 The installer asks whether login on this screen should open the touch guide or the keyboard guide. If a touchscreen is connected, touch is the default. It installs `python3-pygame`, `python3-evdev`, `python3-numpy`, and `python3-serial`, copies `cavemap` onto `PATH`, and adds your user to the `input`, `video`, and `dialout` groups. Log in again so those groups apply.
 

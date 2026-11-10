@@ -1,0 +1,14 @@
+[Unit]
+Description=Download the doomsday offline library (resumes)
+After=network-online.target doomsday-setup.service
+Wants=network-online.target
+ConditionPathExists=!/var/lib/kiwix/.library-done
+[Service]
+Type=simple
+Environment=YES=1
+EnvironmentFile=/etc/doomsday/repo.env
+ExecStart=/bin/sh -c 'cd "$DOOMSDAY_REPO" && sh scripts/fetch_library.sh >>/var/log/doomsday-library.log 2>&1 && touch /var/lib/kiwix/.library-done'
+Restart=on-failure
+RestartSec=120
+[Install]
+WantedBy=multi-user.target

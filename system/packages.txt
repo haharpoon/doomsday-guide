@@ -1,0 +1,37 @@
+# Packages the working Pi had installed for this deck, plus what the
+# guide and the library download need. Base-system packages are not listed.
+# setup_pi.sh installs any of these that are missing.
+
+# Fetch the repo and the offline library.
+git
+curl
+wget
+ca-certificates
+
+# Kiwix server (kiwix-serve, port 8080).
+kiwix-tools
+
+# Guide, touchscreen, and the ESP32 serial link.
+python3-pygame
+python3-evdev
+python3-numpy
+python3-serial
+
+# Framebuffer checks while bringing the panel up.
+fbset
+
+# Live FM. The TV tuner driver is blacklisted separately so it
+# does not grab the stick.
+rtl-sdr
+alsa-utils
+
+# Bluetooth audio path from the working card.
+bluez
+pipewire
+pipewire-pulse
+wireplumber
+libspa-0.2-bluetooth
+pipewire-alsa
+
+# USB Wi-Fi watchdog talks to NetworkManager.
+network-manager

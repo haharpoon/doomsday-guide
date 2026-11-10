@@ -1,0 +1,23 @@
+#cloud-config
+# EXAMPLE ONLY. Raspberry Pi Imager writes the real user-data onto the
+# boot partition for you (hostname, user, SSH, Wi-Fi). Keep that file if
+# Imager already created it. Do not commit a filled-in copy.
+#
+# Placeholders below are not a login and not a network. Replace them on
+# the card, and leave the passwords off this repo.
+
+hostname: doomsday
+manage_etc_hosts: true
+enable_ssh: true
+
+users:
+  - name: YOUR_USER
+    groups: users,sudo,input,video,dialout,netdev,bluetooth
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    # A hash from `openssl passwd -6`. Not a password.
+    passwd: YOUR_PASSWORD_HASH
+
+# Wi-Fi for a hand-written card belongs in network-config.example,
+# next to this file. Imager writes that as well.

@@ -1,0 +1,19 @@
+NetworkManager profiles from the working Pi, with the real network name removed.
+
+The USB Wi-Fi stick (wlan1) was the connection actually in use. It was
+set to autoconnect with priority 100. The onboard radio (wlan0) had a
+profile at priority 0. Ethernet was a normal automatic profile.
+
+This repo does not contain those profiles. They hold the Wi-Fi name and
+the password. Set the network in Raspberry Pi Imager, or create one
+yourself:
+
+  nmcli device wifi connect "YOUR_SSID" password "YOUR_WIFI_PASSWORD" ifname wlan1
+  nmcli connection modify "YOUR_SSID" connection.autoconnect yes
+  nmcli connection modify "YOUR_SSID" connection.autoconnect-priority 100
+
+Use wlan0 instead of wlan1 if you are on the Pi's own radio and there is
+no USB stick. The watchdog (system/wifi-watchdog/) looks after wlan1
+unless WIFI_IFACE in /etc/default/wifi-watchdog says otherwise.
+
+Powersave is handled by zz-wifi-powersave-off.conf, not by these profiles.
