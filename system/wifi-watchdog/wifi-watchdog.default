@@ -1,0 +1,10 @@
+# Copied to /etc/default/wifi-watchdog by setup_pi.sh.
+# The interface the watchdog looks after. The working Pi uses a USB stick
+# on wlan1. The onboard radio is usually wlan0.
+WIFI_IFACE=wlan1
+
+# NetworkManager profile to bring back up. Leave this empty and the
+# watchdog reconnects WIFI_IFACE with the profile already on the Pi.
+# Example, with your own network name (never a password):
+# WIFI_CONNECTION="YOUR_WIFI"
+WIFI_CONNECTION=

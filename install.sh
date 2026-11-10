@@ -248,12 +248,25 @@ CHOICE=2
 if has_touch; then
   CHOICE=1
 fi
+# setup_pi.sh sets DOOMSDAY_GUIDE=touch when the 3.5 inch panel was
+# selected. The overlay is only live after reboot, so the touch device
+# may not be visible yet. Unset, the choice is the same as before.
+case "${DOOMSDAY_GUIDE:-}" in
+  touch|1) CHOICE=1 ;;
+  keyboard|2) CHOICE=2 ;;
+esac
 if [ -t 0 ]; then
   echo "Open which guide on this screen after login?"
   echo "  1) Touch buttons  (field_touch)"
   echo "  2) Keyboard menu  (field)"
   if [ "$CHOICE" = 1 ]; then
-    echo "A touchscreen is connected. Press Enter to use touch."
+    if has_touch; then
+      echo "A touchscreen is connected. Press Enter to use touch."
+    else
+      echo "Touch was requested. It works after reboot. Press Enter to use touch."
+    fi
+  elif has_touch; then
+    echo "A touchscreen is connected. Press Enter to use the keyboard menu."
   else
     echo "No touchscreen found. Press Enter to use the keyboard menu."
   fi

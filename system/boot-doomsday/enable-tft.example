@@ -1,0 +1,4 @@
+# Copy this file to enable-tft (same folder) before first boot if the
+# 3.5 inch SPI panel is fitted. setup.sh sees the name enable-tft and
+# passes DOOMSDAY_TFT=1. The contents are not read.
+# Leave enable-tft absent for an HDMI-only or SSH-only Pi.
